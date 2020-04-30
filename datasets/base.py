@@ -16,11 +16,71 @@ import pickle
 
 class AbstractDataset(metaclass=ABCMeta):
     def __init__(self, args):
+
         self.args = args
+        self.split = args.split
+
+    @classmethod
+    @abstractmethod
+    def code(cls):
+        pass
+
+    @classmethod
+    def raw_code(cls):
+        return cls.code()
+
+    @classmethod
+    def is_zipfile(cls):
+        return True
+
+    @classmethod
+    def zip_file_content_is_folder(cls):
+        return True
+
+    @classmethod
+    @abstractmethod
+    def all_raw_file_names(cls):
+        return []
+
+    @abstractmethod
+    def load_dataset(self):
+        pass
+
+    @abstractmethod
+    def preprocess(self):
+        pass
+
+    def _get_rawdata_root_path(self):
+        return Path(RAW_DATASET_ROOT_FOLDER)
+
+    def _get_rawdata_folder_path(self):
+        root = self._get_rawdata_root_path()
+        return root.joinpath(self.raw_code())
+
+    def _get_preprocessed_root_path(self):
+        root = self._get_rawdata_root_path()
+        return root.joinpath('preprocessed')
+
+    @abstractmethod
+    def _get_preprocessed_folder_path(self):
+        preprocessed_root = self._get_preprocessed_root_path()
+        folder_name = '{}_min_rating{}-min_uc{}-min_sc{}-split{}' \
+            .format(self.code(), self.min_rating, self.min_uc, self.min_sc, self.split)
+        return preprocessed_root.joinpath(folder_name)
+
+    def _get_preprocessed_dataset_path(self):
+        folder = self._get_preprocessed_folder_path()
+        return folder.joinpath('dataset.pkl')
+
+
+
+class AbstractDatasetML(AbstractDataset):
+    def __init__(self, args):
+        super(AbstractDatasetML, self).__init__(args)
+
         self.min_rating = args.min_rating
         self.min_uc = args.min_uc
         self.min_sc = args.min_sc
-        self.split = args.split
 
         assert self.min_uc >= 2, 'Need at least 2 ratings per user for validation and test'
 
@@ -129,6 +189,7 @@ class AbstractDataset(metaclass=ABCMeta):
         return df
 
     def densify_index(self, df):
+        # map user_ids to indices
         print('Densifying index')
         umap = {u: i for i, u in enumerate(set(df['uid']))}
         smap = {s: i for i, s in enumerate(set(df['sid']))}
@@ -138,6 +199,7 @@ class AbstractDataset(metaclass=ABCMeta):
 
     def split_df(self, df, user_count):
         if self.args.split == 'leave_one_out':
+            # preserve the last two items for validation and testing respectively. remainder for training
             print('Splitting')
             user_group = df.groupby('uid')
             user2items = user_group.progress_apply(lambda d: list(d.sort_values(by='timestamp')['sid']))
@@ -167,6 +229,7 @@ class AbstractDataset(metaclass=ABCMeta):
             val   = dict(val_df.groupby('uid').progress_apply(lambda d: list(d['sid'])))
             test  = dict(test_df.groupby('uid').progress_apply(lambda d: list(d['sid'])))
             return train, val, test
+
         else:
             raise NotImplementedError
 

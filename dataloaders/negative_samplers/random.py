@@ -16,6 +16,7 @@ class RandomNegativeSampler(AbstractNegativeSampler):
         negative_samples = {}
         print('Sampling negative items')
         for user in trange(self.user_count):
+            # determine the items already seen by the user
             if isinstance(self.train[user][1], tuple):
                 seen = set(x[0] for x in self.train[user])
                 seen.update(x[0] for x in self.val[user])
@@ -25,6 +26,8 @@ class RandomNegativeSampler(AbstractNegativeSampler):
                 seen.update(self.val[user])
                 seen.update(self.test[user])
 
+            # sample random unseen items from the full set
+            # note: for 'time_split' need to separate into train and test intervals
             samples = []
             for _ in range(self.sample_size):
                 item = np.random.choice(self.item_count) + 1

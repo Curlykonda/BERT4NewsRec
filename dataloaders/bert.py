@@ -82,6 +82,8 @@ class BertTrainDataset(data_utils.Dataset):
         return len(self.users)
 
     def __getitem__(self, index):
+
+        # generate masked item sequence on-the-fly
         user = self.users[index]
         seq = self._getseq(user)
 
@@ -109,6 +111,8 @@ class BertTrainDataset(data_utils.Dataset):
 
         mask_len = self.max_len - len(tokens)
 
+        # mask token are also append to the left if sequence needs padding
+        # Why not uses separate padding token? how does model know when to predict for an actual masked off item?
         tokens = [0] * mask_len + tokens
         labels = [0] * mask_len + labels
 
@@ -135,12 +139,14 @@ class BertEvalDataset(data_utils.Dataset):
         user = self.users[index]
         seq = self.u2seq[user]
         answer = self.u2answer[user]
+        if answer == []:
+            return
         negs = self.negative_samples[user]
 
         candidates = answer + negs
         labels = [1] * len(answer) + [0] * len(negs)
 
-        seq = seq + [self.mask_token]
+        seq = seq + [self.mask_token] # model can only predict the next
         seq = seq[-self.max_len:]
         padding_len = self.max_len - len(seq)
         seq = [0] * padding_len + seq

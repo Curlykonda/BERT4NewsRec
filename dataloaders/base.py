@@ -12,8 +12,8 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.train = dataset['train']
         self.val = dataset['val']
         self.test = dataset['test']
-        self.umap = dataset['umap']
-        self.smap = dataset['smap']
+        self.umap = dataset['umap'] # mapping from u_id to index
+        self.smap = dataset['smap'] # mapping from item_id to index
         self.user_count = len(self.umap)
         self.item_count = len(self.smap)
 

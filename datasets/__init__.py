@@ -1,10 +1,14 @@
-from .ml_1m import ML1MDataset
-from .ml_20m import ML20MDataset
+from .ml_1m import ML1MDatasetML
+from .ml_20m import ML20MDatasetML
+from .dpg import DPG_Dec19Dataset
 
 DATASETS = {
-    ML1MDataset.code(): ML1MDataset,
-    ML20MDataset.code(): ML20MDataset
+    ML1MDatasetML.code(): ML1MDatasetML,
+    ML20MDatasetML.code(): ML20MDatasetML,
+    DPG_Dec19Dataset.code(): DPG_Dec19Dataset
 }
+
+#DPG_Feb20_med
 
 
 def dataset_factory(args):

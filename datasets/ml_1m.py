@@ -1,11 +1,11 @@
-from .base import AbstractDataset
+from .base import AbstractDatasetML
 
 import pandas as pd
 
 from datetime import date
 
 
-class ML1MDataset(AbstractDataset):
+class ML1MDatasetML(AbstractDatasetML):
     @classmethod
     def code(cls):
         return 'ml-1m'

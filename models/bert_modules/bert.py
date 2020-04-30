@@ -17,8 +17,7 @@ class BERT(nn.Module):
         n_layers = args.bert_num_blocks
         heads = args.bert_num_heads
         vocab_size = num_items + 2
-        hidden = args.bert_hidden_units
-        self.hidden = hidden
+        self.hidden = args.bert_hidden_units
         dropout = args.bert_dropout
 
         # embedding for BERT, sum of positional, segment, token embeddings
@@ -26,7 +25,7 @@ class BERT(nn.Module):
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(
-            [TransformerBlock(hidden, heads, hidden * 4, dropout) for _ in range(n_layers)])
+            [TransformerBlock(self.hidden, heads, self.hidden * 4, dropout) for _ in range(n_layers)])
 
     def forward(self, x):
         mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
@@ -38,6 +37,7 @@ class BERT(nn.Module):
         for transformer in self.transformer_blocks:
             x = transformer.forward(x, mask)
 
+        # (B x seq_len x d_bert)
         return x
 
     def init_weights(self):

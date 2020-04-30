@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default=None)
+parser.add_argument('--template', type=str, default='train_bert_dpg', choices=['train_bert', 'train_dae', 'train_bert_ml', 'train_bert_dpg'])
 
 ################
 # Test
@@ -24,13 +24,27 @@ parser.add_argument('--test_model_path', type=str, default=None)
 # Dataset
 ################
 parser.add_argument('--dataset_code', type=str, default='ml-20m', choices=DATASETS.keys())
+
+## MovieLens
 parser.add_argument('--min_rating', type=int, default=4, help='Only keep ratings greater than equal to this value')
 parser.add_argument('--min_uc', type=int, default=5, help='Only keep users with more than min_uc ratings')
 parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with more than min_sc ratings')
+
+## DPG
+parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
+parser.add_argument('--use_content_emb', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
+parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
+parser.add_argument('--time_threshold', type=str, default="24-12-2019-23-59-59", help='date for splitting train/test')
+
+parser.add_argument('--train_method', type=str, default='masked_interest', choices=['masked_interest', 'wu', 'pos_cut_off'])
+
+
+
 parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
 parser.add_argument('--dataset_split_seed', type=int, default=98765)
 parser.add_argument('--eval_set_size', type=int, default=500, 
                     help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
+
 
 ################
 # Dataloader
@@ -70,7 +84,7 @@ parser.add_argument('--momentum', type=float, default=None, help='SGD momentum')
 parser.add_argument('--decay_step', type=int, default=15, help='Decay step for StepLR')
 parser.add_argument('--gamma', type=float, default=0.1, help='Gamma for StepLR')
 # epochs #
-parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs for training')
+parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs for training') #100
 # logger #
 parser.add_argument('--log_period_as_iter', type=int, default=12800)
 # evaluation #
