@@ -1,11 +1,13 @@
 from .ml_1m import ML1MDatasetML
 from .ml_20m import ML20MDatasetML
-from .dpg import DPG_Dec19Dataset
+from .dpg import *
 
 DATASETS = {
     ML1MDatasetML.code(): ML1MDatasetML,
     ML20MDatasetML.code(): ML20MDatasetML,
-    DPG_Dec19Dataset.code(): DPG_Dec19Dataset
+    DPG_Dec19Dataset.code(): DPG_Dec19Dataset,
+    DPG_Nov19Dataset.code(): DPG_Nov19Dataset
+
 }
 
 #DPG_Feb20_med

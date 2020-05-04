@@ -53,24 +53,26 @@ def set_template(args):
         args.mode = 'train'
 
         #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-        args.dataset_code = 'DPG_dec19'
+        args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
         args.min_hist_len = 6
 
         args.incl_time_stamp = False
-        args.split = 'leave_one_out'
+        #args.split = 'time_threshold' # leave_one_out
+
+        local = False
 
         args.dataloader_code = 'bert'
-        batch = 10
+        batch = 128 if not local else 10
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
 
         args.train_negative_sampler_code = 'random'
         args.train_negative_sample_size = 0
-        args.train_negative_sampling_seed = 0
+        args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
         args.test_negative_sampler_code = 'random'
         args.test_negative_sample_size = 100
-        args.test_negative_sampling_seed = 98765
+        args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
         args.trainer_code = 'bert'
         args.device = 'cuda'
@@ -82,12 +84,12 @@ def set_template(args):
         args.decay_step = 25
         args.gamma = 1.0
         # num_epochs = 100
-        args.num_epochs = 10 if args.dataset_code == 'DPG_dec19' else 100
+        args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 
         args.model_code = 'bert'
-        args.model_init_seed = 0
+        args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
         args.bert_dropout = 0.1
         args.bert_hidden_units = 256

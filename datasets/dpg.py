@@ -8,17 +8,12 @@ from abc import *
 from .base import AbstractDataset
 from pathlib import Path
 
-class DPG_Dec19Dataset(AbstractDataset):
+class AbstractDatasetDPG(AbstractDataset):
+
     def __init__(self, args):
-        super(DPG_Dec19Dataset, self).__init__(args)
+        super(AbstractDatasetDPG, self).__init__(args)
         self.args = args
         self.min_hist_len = self.args.min_hist_len
-        self.sampledata_folder_path = "./Data/DPG_dec19/dev_time_split_wu"
-
-
-    @classmethod
-    def code(cls):
-        return 'DPG_dec19'
 
     @classmethod
     def sample_method(self):
@@ -26,8 +21,7 @@ class DPG_Dec19Dataset(AbstractDataset):
 
     @classmethod
     def all_raw_file_names(cls):
-        return ['items',
-                'users']
+        pass
 
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
@@ -58,6 +52,7 @@ class DPG_Dec19Dataset(AbstractDataset):
         user_data, u_id2idx = self.prep_dpg_user_data(news_data, art_id2idx)
 
         train, val, test = self.split_data(user_data, len(u_id2idx))
+
         dataset = {'train': train,
                    'val': val,
                    'test': test,
@@ -68,6 +63,7 @@ class DPG_Dec19Dataset(AbstractDataset):
 
 
     def split_data(self, user_data, user_count):
+
         if self.args.split == 'leave_one_out':
             # preserve the last two items for validation and testing respectively. remainder for training
             print('Splitting')
@@ -87,7 +83,7 @@ class DPG_Dec19Dataset(AbstractDataset):
             try:
                 threshold_date = int(datetime.datetime.strptime(self.args.time_threshold, '%d-%m-%Y-%H-%M-%S').strftime("%s"))  # 1577228399
             except:
-                raise ValueError("Treshold date must string of format: 'dd-mm-yyyy-HH-MM-SS'")
+                raise ValueError("Threshold date must string of format: 'dd-mm-yyyy-HH-MM-SS'")
 
             print('Splitting')
             train, val, test = defaultdict(list), {}, {}
@@ -152,6 +148,46 @@ class DPG_Dec19Dataset(AbstractDataset):
 
         return news_data
 
+    @abstractmethod
+    def prep_dpg_user_data(self):
+        raise NotImplementedError("Please specify preprocessing of user data for this dataset!")
+
+    @abstractmethod
+    def prep_dpg_news_data(self):
+        news_data = self.load_raw_news_data()
+        raise NotImplementedError("Please specify preprocessing of user data for this dataset!")
+
+
+class DPG_Dec19Dataset(AbstractDatasetDPG):
+    def __init__(self, args):
+        super(DPG_Dec19Dataset, self).__init__(args)
+
+        self.sampledata_folder_path = "./Data/DPG_dec19/dev_time_split_wu"
+
+
+    @classmethod
+    def code(cls):
+        return 'DPG_dec19'
+
+    @classmethod
+    def sample_method(self):
+        return self.args.data_sample_method
+
+    @classmethod
+    def all_raw_file_names(cls):
+        return ['items',
+                'users']
+
+    def sample_dpg_data(self):
+        m = self.sample_method()
+        print(m)
+        if 'wu' == m:
+            pass
+        elif 'm_common' == m:
+            pass
+        else:
+            raise NotImplementedError()
+
     def prep_dpg_user_data(self, news_data, art_id2idx):
 
         user_data = self.load_raw_read_histories()
@@ -168,6 +204,81 @@ class DPG_Dec19Dataset(AbstractDataset):
 
                 hist = [(art_id2idx[art_id], time_stamp) for _, art_id, time_stamp
                             in sorted(user_data[u_id]["articles_read"], key=lambda tup: tup[2])]
+                u_data_prepped[u_id2idx[u_id]] = hist
+
+            elif 'wu' == self.args.train_method:
+                #cand_article_ids = (set(news_data['all'].keys()) - news_data['test']).union(set(news_data['train']))
+                pass
+            elif 'pos_cut_off' == self.args.train_method:
+                pass
+            else:
+                raise NotImplementedError()
+
+        return u_data_prepped, u_id2idx
+
+    def prep_dpg_news_data(self):
+        news_data = self.load_raw_news_data()
+        if self.args.use_content_emb:
+            # use article content to create contextualised representations
+            # vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=path_article_data,
+            #                                                                tokenizer=word_tokenize,
+            #                                                                min_counts_for_vocab=min_counts_for_vocab,
+            #                                                                max_article_len=max_article_len)
+            art_id2idx = None
+        else:
+            art_id2idx = {'0': 0}  # dictionary news indices
+            for art_id in news_data['all'].keys():
+                art_id2idx[art_id] = len(art_id2idx)  # map article id to index
+
+        return news_data, art_id2idx
+
+
+class DPG_Nov19Dataset(AbstractDatasetDPG):
+    def __init__(self, args):
+        super(DPG_Nov19Dataset, self).__init__(args)
+
+        self.sampledata_folder_path = "./Data/DPG_nov19/medium_time_split_wu"
+
+
+    @classmethod
+    def code(cls):
+        return 'DPG_nov19'
+
+    @classmethod
+    def sample_method(self):
+        return self.args.data_sample_method
+
+    @classmethod
+    def all_raw_file_names(cls):
+        return ['items',
+                'users']
+
+    def sample_dpg_data(self):
+        m = self.sample_method()
+        print(m)
+        if 'wu' == m:
+            pass
+        elif 'm_common' == m:
+            pass
+        else:
+            raise NotImplementedError()
+
+    def prep_dpg_user_data(self, news_data, art_id2idx):
+
+        user_data = self.load_raw_read_histories()
+        u_id2idx = {}
+        u_data_prepped = {}
+
+        for u_id in user_data.keys():
+
+            u_id2idx[u_id] = len(u_id2idx)  # create mapping from u_id to index
+
+            # pos_impre, time_stamps = zip(*[(art_id2idx[art_id], time_stamp) for _, art_id, time_stamp in user_data[u_id]["articles_read"]])
+
+            if 'masked_interest' == self.args.train_method:
+
+                hist = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
+                            in sorted(user_data[u_id]["articles_read"], key=lambda tup: tup[1])]
                 u_data_prepped[u_id2idx[u_id]] = hist
 
             elif 'wu' == self.args.train_method:

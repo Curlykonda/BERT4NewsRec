@@ -13,6 +13,9 @@ class BertDataloader(AbstractDataloader):
         self.mask_prob = args.bert_mask_prob
         self.CLOZE_MASK_TOKEN = self.item_count + 1
 
+        self.split_method = args.split
+        self.multiple_eval_items = args.split == "time_threshold"
+
         code = args.train_negative_sampler_code
         train_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
                                                           self.user_count, self.item_count,
@@ -63,8 +66,8 @@ class BertDataloader(AbstractDataloader):
         return dataloader
 
     def _get_eval_dataset(self, mode):
-        answers = self.val if mode == 'val' else self.test
-        dataset = BertEvalDataset(self.train, answers, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples)
+        targets = self.val if mode == 'val' else self.test
+        dataset = BertEvalDataset(self.train, targets, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples, self.multiple_eval_items)
         return dataset
 
 
@@ -124,32 +127,71 @@ class BertTrainDataset(data_utils.Dataset):
 
 
 class BertEvalDataset(data_utils.Dataset):
-    def __init__(self, u2seq, u2answer, max_len, mask_token, negative_samples):
-        self.u2seq = u2seq
-        self.users = sorted(self.u2seq.keys())
-        self.u2answer = u2answer
+    def __init__(self, u2seq, u2answer, max_len, mask_token, negative_samples, multiple_eval_items=True):
+        self.u2hist = u2seq
+        self.u_sample_ids = sorted(self.u2hist.keys())
+        self.u2targets = u2answer
         self.max_len = max_len
         self.mask_token = mask_token
         self.negative_samples = negative_samples
 
+        self.mul_eval_items = multiple_eval_items
+
+        if self.mul_eval_items:
+            u2hist_ext = {}
+            u2targets_ext = {}
+            for u in self.u_sample_ids:
+                hist = self.u2hist[u]
+                for i, item in enumerate(self.u2targets[u]):
+                    u_ext = self.concat_ints(u, i) # extend user id with item enumerator
+                    target = item
+                    u2hist_ext[u_ext] = hist
+                    u2targets_ext[u_ext] = target
+                    hist.append(item)
+
+            self.u_sample_ids = list(u2hist_ext.keys())
+            self.u2hist = u2hist_ext
+            self.u2targets = u2targets_ext
+
     def __len__(self):
-        return len(self.users)
+        return len(self.u_sample_ids)
 
     def __getitem__(self, index):
-        user = self.users[index]
-        seq = self.u2seq[user]
-        answer = self.u2answer[user]
-        if answer == []:
+        user = self.u_sample_ids[index]
+        seq = self.u2hist[user]
+        target = self.u2targets[user]
+
+        if target == []:
             return
-        negs = self.negative_samples[user]
+        else:
+            if isinstance(user, str):
+                negs = self.negative_samples[int(user[:-1])]
+            else:
+                negs = self.negative_samples[user] # get negative samples
+            return self.gen_eval_instance(seq, target, negs)
 
-        candidates = answer + negs
-        labels = [1] * len(answer) + [0] * len(negs)
+        # negs = self.negative_samples[user]
+        #
+        # candidates = target + negs
+        # labels = [1] * len(target) + [0] * len(negs)
+        #
+        # seq = seq + [self.mask_token] # model can only predict the next
+        # seq = seq[-self.max_len:]
+        # padding_len = self.max_len - len(seq)
+        # seq = [0] * padding_len + seq
+        #
+        # return torch.LongTensor(seq), torch.LongTensor(candidates), torch.LongTensor(labels)
 
-        seq = seq + [self.mask_token] # model can only predict the next
-        seq = seq[-self.max_len:]
-        padding_len = self.max_len - len(seq)
-        seq = [0] * padding_len + seq
+    def gen_eval_instance(self, hist, target, negs):
+        candidates = target + negs
+        labels = [1] * len(target) + [0] * len(negs)
 
-        return torch.LongTensor(seq), torch.LongTensor(candidates), torch.LongTensor(labels)
+        hist = hist + [self.mask_token]  # predict only the next/last token in seq
+        hist = hist[-self.max_len:]
+        padding_len = self.max_len - len(hist)
+        hist = [0] * padding_len + hist
 
+        return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
+
+    def concat_ints(self, a, b):
+        return str(f"{a}{b}")
