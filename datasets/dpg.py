@@ -2,11 +2,14 @@ import datetime
 import pickle
 import random
 import numpy as np
+from pathlib import Path
 from collections import defaultdict
 from abc import *
 
 from .base import AbstractDataset
-from pathlib import Path
+from ..source.preprocessing.utils_npa import *
+
+
 
 class AbstractDatasetDPG(AbstractDataset):
 
@@ -218,7 +221,7 @@ class DPG_Dec19Dataset(AbstractDatasetDPG):
 
     def prep_dpg_news_data(self):
         news_data = self.load_raw_news_data()
-        if self.args.use_content_emb:
+        if self.args.use_article_content:
             # use article content to create contextualised representations
             # vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=path_article_data,
             #                                                                tokenizer=word_tokenize,
@@ -295,11 +298,11 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         news_data = self.load_raw_news_data()
         if self.args.use_content_emb:
             # use article content to create contextualised representations
-            # vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=path_article_data,
-            #                                                                tokenizer=word_tokenize,
-            #                                                                min_counts_for_vocab=min_counts_for_vocab,
-            #                                                                max_article_len=max_article_len)
-            art_id2idx = None
+            vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
+                                                                           tokenizer=word_tokenize,
+                                                                           min_counts_for_vocab=self.args.min_counts_for_vocab,
+                                                                           max_article_len=self.args.max_article_len)
+
         else:
             art_id2idx = {'0': 0}  # dictionary news indices
             for art_id in news_data['all'].keys():

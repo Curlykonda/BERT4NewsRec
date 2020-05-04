@@ -369,8 +369,13 @@ def prep_dpg_user_file(user_file, news_file, art_id2idx, train_method, test_inte
 
 def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_article_len=30, max_vocab_size=30000):
 
-    with open(news_file, 'rb') as f:
-        news_data = pickle.load(f)
+    if isinstance(news_file, str):
+        with open(news_file, 'rb') as f:
+            news_data = pickle.load(f)
+    elif isinstance(news_file, dict):
+        news_data = news_file
+    else:
+        raise NotImplementedError()
 
     article_data = news_data['all']
 

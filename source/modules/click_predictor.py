@@ -19,6 +19,15 @@ class SimpleDot(nn.Module):
         # => (B x n_candidates)
         return torch.bmm(user_rep.unsqueeze(1), candidate_reps).squeeze()
 
+class LinLayer(nn.Module):
+    def __init__(self, dim_user_rep, n_items):
+        super(LinLayer, self).__init__()
+
+        self.out = nn.Linear(dim_user_rep, n_items + 1)
+
+    def forward(self, x):
+        return self.out(x)
+
 class MLP(nn.Module):
     def __init__(self, dim_user_rep, dim_cand_rep, n_outputs=1, hidden_units=[200, 100], act_func='tanh'):
 

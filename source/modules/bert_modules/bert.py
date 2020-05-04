@@ -1,12 +1,12 @@
 from torch import nn as nn
 
-from source.modules.bert_modules import BERTEmbedding
-from source.modules.bert_modules import TransformerBlock
+from source.modules.bert_modules.embedding import BERTEmbedding
+from source.modules.bert_modules.transformer import TransformerBlock
 from utils import fix_random_seed_as
 
 
 class BERT(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, token_emb='new', pos_emb='lpe'):
         super().__init__()
 
         fix_random_seed_as(args.model_init_seed)
@@ -20,8 +20,11 @@ class BERT(nn.Module):
         self.hidden = args.bert_hidden_units
         dropout = args.bert_dropout
 
-        # embedding for BERT, sum of positional, segment, token embeddings
-        self.embedding = BERTEmbedding(vocab_size=vocab_size, embed_size=self.hidden, max_len=max_len, dropout=dropout)
+        # embedding for BERT, sum of positional & token embeddings
+        self.token_embedding = token_emb
+        self.pos_embedding = pos_emb
+
+        self.embedding = BERTEmbedding(token_emb, pos_emb, vocab_size=vocab_size, embed_size=self.hidden, max_len=max_len, dropout=dropout)
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(

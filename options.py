@@ -32,7 +32,7 @@ parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with 
 
 ## DPG
 parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
-parser.add_argument('--use_content_emb', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
+parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
 parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
 parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59", help='date for splitting train/test')
 
@@ -97,6 +97,12 @@ parser.add_argument('--total_anneal_steps', type=int, default=2000, help='The st
 parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit of increasing beta. Set this as the best beta found')
 
 ################
+# Pretrained Embeddings
+################
+parser.add_argument('--path_pt_we', type=str, default=None, help='Path to pretrained word embeddings')
+parser.add_argument('--dim_word_emb', type=int, default=300, help='Dimension of word embedding vectors')
+
+################
 # Model
 ################
 parser.add_argument('--model_code', type=str, default='bert', choices=MODELS.keys())
@@ -109,18 +115,20 @@ parser.add_argument('--bert_num_blocks', type=int, default=None, help='Number of
 parser.add_argument('--bert_num_heads', type=int, default=None, help='Number of heads for multi-attention')
 parser.add_argument('--bert_dropout', type=float, default=None, help='Dropout probability to use throughout the model')
 parser.add_argument('--bert_mask_prob', type=float, default=None, help='Probability for masking items in the training sequence')
+
+################################################################
 # DAE #
-parser.add_argument('--dae_num_items', type=int, default=None, help='Number of total items')
-parser.add_argument('--dae_num_hidden', type=int, default=0, help='Number of hidden layers in DAE')
-parser.add_argument('--dae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in DAE')
-parser.add_argument('--dae_latent_dim', type=int, default=200, help="Dimension of latent vector in DAE")
-parser.add_argument('--dae_dropout', type=float, default=0.5, help='Probability of input dropout in DAE')
-# VAE #
-parser.add_argument('--vae_num_items', type=int, default=None, help='Number of total items')
-parser.add_argument('--vae_num_hidden', type=int, default=0, help='Number of hidden layers in VAE')
-parser.add_argument('--vae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in VAE')
-parser.add_argument('--vae_latent_dim', type=int, default=200, help="Dimension of latent vector in VAE (K in paper)")
-parser.add_argument('--vae_dropout', type=float, default=0.5, help='Probability of input dropout in VAE')
+# parser.add_argument('--dae_num_items', type=int, default=None, help='Number of total items')
+# parser.add_argument('--dae_num_hidden', type=int, default=0, help='Number of hidden layers in DAE')
+# parser.add_argument('--dae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in DAE')
+# parser.add_argument('--dae_latent_dim', type=int, default=200, help="Dimension of latent vector in DAE")
+# parser.add_argument('--dae_dropout', type=float, default=0.5, help='Probability of input dropout in DAE')
+# # VAE #
+# parser.add_argument('--vae_num_items', type=int, default=None, help='Number of total items')
+# parser.add_argument('--vae_num_hidden', type=int, default=0, help='Number of hidden layers in VAE')
+# parser.add_argument('--vae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in VAE')
+# parser.add_argument('--vae_latent_dim', type=int, default=200, help="Dimension of latent vector in VAE (K in paper)")
+# parser.add_argument('--vae_dropout', type=float, default=0.5, help='Probability of input dropout in VAE')
 
 ################
 # Experiment
