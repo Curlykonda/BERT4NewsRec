@@ -1,7 +1,5 @@
-import torch
-
 from options import args
-from models import model_factory
+from source.models import model_factory
 from dataloaders import dataloader_factory
 from trainers import trainer_factory
 from utils import *
@@ -14,9 +12,9 @@ def train():
     trainer = trainer_factory(args, model, train_loader, val_loader, test_loader, export_root)
     trainer.train()
 
-    test_model = (input('Test model with test dataset? y/[n]: ') == 'y')
-    if test_model:
-        trainer.test()
+    #test_model = (input('Test model with test dataset? y/[n]: ') == 'y')
+    #if test_model:
+    trainer.test()
 
 
 if __name__ == '__main__':

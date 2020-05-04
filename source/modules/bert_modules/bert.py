@@ -1,7 +1,7 @@
 from torch import nn as nn
 
-from models.bert_modules.embedding import BERTEmbedding
-from models.bert_modules.transformer import TransformerBlock
+from source.modules.bert_modules import BERTEmbedding
+from source.modules.bert_modules import TransformerBlock
 from utils import fix_random_seed_as
 
 

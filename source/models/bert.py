@@ -1,5 +1,5 @@
 from .base import BaseModel
-from .bert_modules.bert import BERT
+from source.modules.bert_modules import BERT
 
 import torch.nn as nn
 
