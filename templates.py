@@ -110,7 +110,6 @@ def set_template(args):
         args.decay_step = 25
         args.gamma = 1.0
 
-        args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 

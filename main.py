@@ -13,9 +13,7 @@ def train():
 
     trainer.train()
 
-    #test_model = (input('Test model with test dataset? y/[n]: ') == 'y')
-    #if test_model:
-    trainer.test()
+    # if test_model:
 
 
 if __name__ == '__main__':
