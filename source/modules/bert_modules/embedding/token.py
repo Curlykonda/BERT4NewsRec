@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -8,3 +9,32 @@ class TokenEmbedding(nn.Embedding):
     @staticmethod
     def code():
         return 'new'
+
+class TokenEmbeddingWithMask(nn.Module):
+    def __init__(self, vocab_size, token_embed_size=300, d_model=256, pretrained=None):
+        super(TokenEmbeddingWithMask, self).__init__()
+
+        if pretrained is None:
+            self.token_embedding = nn.Embedding(vocab_size, token_embed_size, padding_idx=0)
+            self.from_pt = False
+        else:
+            self.token_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained), freeze=False, padding_idx=0)
+            self.from_pt = True
+
+        self.mask_embedding = torch.rand(d_model, requires_grad=True)
+
+    def code(self):
+        if self.from_pt:
+            return 'pt_w_mask'
+        else:
+            return 'new_w_mask'
+
+    def forward(self, token_ids):
+        if len(token_ids) == 1:
+            return self.mask_embedding
+        else:
+            return self.token_embedding(token_ids)
+
+    @property
+    def _mask_embedding(self):
+        return self.mask_embedding

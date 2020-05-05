@@ -17,6 +17,10 @@ class AbstractDatasetDPG(AbstractDataset):
         super(AbstractDatasetDPG, self).__init__(args)
         self.args = args
         self.min_hist_len = self.args.min_hist_len
+        self.use_content = args.use_content_emb
+
+        self.vocab = None
+        self.art_idx2word_ids = None
 
     @classmethod
     def sample_method(self):
@@ -60,7 +64,9 @@ class AbstractDatasetDPG(AbstractDataset):
                    'val': val,
                    'test': test,
                    'umap': u_id2idx,
-                   'smap': art_id2idx}
+                   'smap': art_id2idx,
+                   'vocab': self.vocab,
+                   'art2words': self.art_idx2word_ids}
         with dataset_path.open('wb') as f:
             pickle.dump(dataset, f)
 
@@ -132,7 +138,6 @@ class AbstractDatasetDPG(AbstractDataset):
 
     def _get_sampledata_folder_path(self):
         return Path(self.sampledata_folder_path)
-
 
     def sample_dpg_data(self):
         m = self.sample_method()
@@ -241,7 +246,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         super(DPG_Nov19Dataset, self).__init__(args)
 
         self.sampledata_folder_path = "./Data/DPG_nov19/medium_time_split_wu"
-
+        self.vocab = None
+        self.art_index2word_ids = None
 
     @classmethod
     def code(cls):
@@ -296,16 +302,21 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
     def prep_dpg_news_data(self):
         news_data = self.load_raw_news_data()
-        if self.args.use_content_emb:
+        if self.use_content:
             # use article content to create contextualised representations
             vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
                                                                            tokenizer=word_tokenize,
                                                                            min_counts_for_vocab=self.args.min_counts_for_vocab,
                                                                            max_article_len=self.args.max_article_len)
+            self.vocab = vocab
+            self.art_index2word_ids = news_as_word_ids
 
         else:
             art_id2idx = {'0': 0}  # dictionary news indices
             for art_id in news_data['all'].keys():
-                art_id2idx[art_id] = len(art_id2idx)  # map article id to index
+                art_id2idx[art_id] = len(art_id2idx)  # map article ID -> index
 
         return news_data, art_id2idx
+
+
+#class DatasetDPG_Content(AbstractDatasetDPG):

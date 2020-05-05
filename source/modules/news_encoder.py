@@ -9,7 +9,7 @@ class NewsEncoderWuCNN(nn.Module):
     def __init__(self, n_filters=400, dim_pref_q=200, word_emb_dim=300, kernel_size=3, dropout_p=0.2):
         super(NewsEncoderWuCNN, self).__init__()
 
-        self.n_filters = n_filters
+        self.n_filters = n_filters # output dimension
         self.dim_pref_q = dim_pref_q
         self.word_emb_dim = word_emb_dim
 

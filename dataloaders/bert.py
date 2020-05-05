@@ -8,6 +8,7 @@ import torch.utils.data as data_utils
 class BertDataloader(AbstractDataloader):
     def __init__(self, args, dataset):
         super().__init__(args, dataset)
+
         args.num_items = len(self.smap)
         self.max_len = args.bert_max_len
         self.mask_prob = args.bert_mask_prob
@@ -16,6 +17,12 @@ class BertDataloader(AbstractDataloader):
         self.split_method = args.split
         self.multiple_eval_items = args.split == "time_threshold"
 
+        # if dataset.use_content:
+        #     self.vocab = dataset.vocab
+        #     self.art_idx2word_ids = dataset.art_idx2word_ids
+
+        ####################
+        # Negative Sampling
         code = args.train_negative_sampler_code
         train_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
                                                           self.user_count, self.item_count,
@@ -49,7 +56,7 @@ class BertDataloader(AbstractDataloader):
         return dataloader
 
     def _get_train_dataset(self):
-        dataset = BertTrainDataset(self.train, self.max_len, self.mask_prob, self.CLOZE_MASK_TOKEN, self.item_count, self.rng)
+        dataset = BertTrainDataset(self.train, self.art_idx2word_ids, self.max_len, self.mask_prob, self.CLOZE_MASK_TOKEN, self.item_count, self.rng)
         return dataset
 
     def _get_val_loader(self):
@@ -67,14 +74,21 @@ class BertDataloader(AbstractDataloader):
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDataset(self.train, targets, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples, self.multiple_eval_items)
+        dataset = BertEvalDataset(self.train, targets, self.art_idx2word_ids, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples, self.multiple_eval_items)
         return dataset
+
+def art_idx2word_ids(art_idx, map):
+    if map is not None:
+        return map(art_idx)
+    else:
+        return art_idx
 
 
 class BertTrainDataset(data_utils.Dataset):
-    def __init__(self, u2seq, max_len, mask_prob, mask_token, num_items, rng):
+    def __init__(self, u2seq, art2words, max_len, mask_prob, mask_token, num_items, rng):
         self.u2seq = u2seq
         self.users = sorted(self.u2seq.keys())
+        self.art2words = art2words
         self.max_len = max_len
         self.mask_prob = mask_prob
         self.mask_token = mask_token
@@ -100,13 +114,13 @@ class BertTrainDataset(data_utils.Dataset):
                 if prob < 0.8:
                     tokens.append(self.mask_token)
                 elif prob < 0.9:
-                    tokens.append(self.rng.randint(1, self.num_items))
+                    tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
                 else:
-                    tokens.append(s)
+                    tokens.append(art_idx2word_ids(s, self.art2words))
 
                 labels.append(s)
             else:
-                tokens.append(s)
+                tokens.append(art_idx2word_ids(s, self.art2words))
                 labels.append(0)
 
         tokens = tokens[-self.max_len:]
@@ -127,10 +141,11 @@ class BertTrainDataset(data_utils.Dataset):
 
 
 class BertEvalDataset(data_utils.Dataset):
-    def __init__(self, u2seq, u2answer, max_len, mask_token, negative_samples, multiple_eval_items=True):
+    def __init__(self, u2seq, u2answer, art2words, max_len, mask_token, negative_samples, multiple_eval_items=True):
         self.u2hist = u2seq
         self.u_sample_ids = sorted(self.u2hist.keys())
         self.u2targets = u2answer
+        self.art2words = art2words
         self.max_len = max_len
         self.mask_token = mask_token
         self.negative_samples = negative_samples
@@ -184,6 +199,7 @@ class BertEvalDataset(data_utils.Dataset):
 
     def gen_eval_instance(self, hist, target, negs):
         candidates = target + negs
+        candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         labels = [1] * len(target) + [0] * len(negs)
 
         hist = hist + [self.mask_token]  # predict only the next/last token in seq

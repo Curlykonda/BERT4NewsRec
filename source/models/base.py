@@ -20,7 +20,7 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         pass
 
 class NewsRecBaseModel(BaseModel):
-    def __init__(self, news_encoder, user_encoder, interest_extractor, click_predictor, args):
+    def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args):
         super(NewsRecBaseModel, self).__init__(args)
 
         # self.device = device
@@ -39,12 +39,15 @@ class NewsRecBaseModel(BaseModel):
         self.candidate_reps = None
         self.click_scores = None
 
-        if args.pretrained_emb is not None:
-            #assert pretrained_emb.shape == [vocab_len, emb_dim_words]
-            #print("Emb shape is {} and should {}".format(pretrained_emb.shape, (vocab_len, emb_dim_words)))
-            self.word_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_emb), freeze=False, padding_idx=0)      # word embeddings
+        if token_embedding is not None:
+            self.token_embedding = token_embedding
         else:
-            self.word_embeddings = nn.Embedding(vocab_len, emb_dim_words, padding_idx=0)
+            if args.pretrained_emb is not None:
+                #assert pretrained_emb.shape == [vocab_len, emb_dim_words]
+                #print("Emb shape is {} and should {}".format(pretrained_emb.shape, (vocab_len, emb_dim_words)))
+                self.token_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_emb), freeze=False, padding_idx=0)      # word embeddings
+            else:
+                self.token_embedding = nn.Embedding(vocab_len, args.dim_word_emb, padding_idx=0)
 
         self.user_id_embeddings = nn.Embedding(n_users, self.dim_emb_user_id)
 
@@ -86,7 +89,7 @@ class NewsRecBaseModel(BaseModel):
 
         # (B x hist_len x art_len) -> (vocab_len x emb_dim_word)
         # => (B x hist_len x art_len x emb_dim_word)
-        emb_news = self.word_embeddings(news_articles_as_ids) # assert dtype == 'long'
+        emb_news = self.token_embedding(news_articles_as_ids) # assert dtype == 'long'
 
         pref_q_word = self.pref_q_word(self.user_id_embeddings(user_id))
 

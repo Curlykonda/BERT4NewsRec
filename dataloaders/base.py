@@ -14,8 +14,11 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.test = dataset['test']
         self.umap = dataset['umap'] # mapping from u_id to index
         self.smap = dataset['smap'] # mapping from item_id to index
+        self.vocab = dataset['vocab']
+        self.art_idx2word_ids = dataset['art2words']
         self.user_count = len(self.umap)
         self.item_count = len(self.smap)
+
 
     @classmethod
     @abstractmethod
