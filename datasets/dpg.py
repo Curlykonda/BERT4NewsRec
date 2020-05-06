@@ -7,7 +7,7 @@ from collections import defaultdict
 from abc import *
 
 from .base import AbstractDataset
-from ..source.preprocessing.utils_npa import *
+from source.preprocessing.utils_npa import *
 
 
 
@@ -17,7 +17,7 @@ class AbstractDatasetDPG(AbstractDataset):
         super(AbstractDatasetDPG, self).__init__(args)
         self.args = args
         self.min_hist_len = self.args.min_hist_len
-        self.use_content = args.use_content_emb
+        self.use_content = args.use_article_content
 
         self.vocab = None
         self.art_idx2word_ids = None
@@ -32,8 +32,8 @@ class AbstractDatasetDPG(AbstractDataset):
 
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
-        folder_name = '{}_min_len{}-split{}' \
-            .format(self.code(), self.min_hist_len, self.split)
+        folder_name = '{}-min_len{}-split{}-content{}' \
+            .format(self.code(), self.min_hist_len, self.split, self.use_content)
         return preprocessed_root.joinpath(folder_name)
 
     def load_dataset(self):
@@ -67,6 +67,7 @@ class AbstractDatasetDPG(AbstractDataset):
                    'smap': art_id2idx,
                    'vocab': self.vocab,
                    'art2words': self.art_idx2word_ids}
+
         with dataset_path.open('wb') as f:
             pickle.dump(dataset, f)
 
@@ -307,9 +308,10 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
             vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
                                                                            tokenizer=word_tokenize,
                                                                            min_counts_for_vocab=self.args.min_counts_for_vocab,
-                                                                           max_article_len=self.args.max_article_len)
+                                                                           max_article_len=self.args.max_article_len,
+                                                                           max_vocab_size=self.args.max_vocab_size)
+            self.art_idx2word_ids = news_as_word_ids
             self.vocab = vocab
-            self.art_index2word_ids = news_as_word_ids
 
         else:
             art_id2idx = {'0': 0}  # dictionary news indices

@@ -32,12 +32,17 @@ parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with 
 
 ## DPG
 parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
+parser.add_argument('--min_counts_for_vocab', type=int, default=2, help='Include word in vocabulary with this minimal occurrences')
+parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max number of words in the vocabulary')
+parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
+
 parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
 parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
 parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59", help='date for splitting train/test')
 
 parser.add_argument('--train_method', type=str, default='masked_interest', choices=['masked_interest', 'wu', 'pos_cut_off'])
-
+parser.add_argument('--n_articles', type=int, help="Number of articles in the dataset")
+parser.add_argument('--n_users', type=int, default=10000, help="Number of users in the dataset")
 
 
 parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
@@ -99,7 +104,7 @@ parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit o
 ################
 # Pretrained Embeddings
 ################
-parser.add_argument('--path_pt_we', type=str, default=None, help='Path to pretrained word embeddings')
+parser.add_argument('--pretrained_emb_path', type=str, default=None, help='Path to pretrained word embeddings')
 parser.add_argument('--dim_word_emb', type=int, default=300, help='Dimension of word embedding vectors')
 
 ################

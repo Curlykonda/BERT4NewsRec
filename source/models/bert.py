@@ -25,10 +25,11 @@ class BERTModel(BaseModel):
 
 
 class BERT4NewsRecModel(NewsRecBaseModel):
-    def __init__(self, vocab, art_id2word_id, args, pretrained_emb=None):
+    def __init__(self, args):
+        # load pretrained embeddings
 
         #Later: news_encoder = BERT(args, token_emb='new')
-        token_embedding = TokenEmbeddingWithMask(len(vocab), args.dim_word_emb, args.bert_hidden_units, pretrained_emb)
+        token_embedding = TokenEmbeddingWithMask(args.max_vocab_size, args.dim_word_emb, args.bert_hidden_units, args.pretrained_emb_path)
         news_encoder = KimCNN(args.bert_hidden_units, args.dim_word_emb)
         user_encoder = BERT(args, token_emb=None)
         interest_extractor = None
@@ -36,37 +37,50 @@ class BERT4NewsRecModel(NewsRecBaseModel):
 
         super().__init__(token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args)
 
+        self.encoded_art = None
+
     @classmethod
     def code(cls):
         return 'bert4news'
 
+    def forward(self, brows_hist_as_word_ids):
 
-    def encode_news(self, user_id, article_seq_as_art_idx):
+        encoded_arts = self.encode_news(brows_hist_as_word_ids)
+        self.encoded_art = encoded_arts
 
-        encoded_articles = []
+        bert_rep = self.user_encoder(encoded_arts) # create user representation
+
+        click_scores = self.click_predictor(bert_rep) # compute raw click score
+        self.click_scores = click_scores
+
+        return click_scores
+
+    def encode_news(self, article_seq_as_word_ids):
+
+        encoded_arts = []
 
         # build mask: perhaps by adding up the word ids? -> make efficient for batch
-        mask = (article_seq_as_art_idx > 0).unsqueeze(1).repeat(1, article_seq_as_art_idx.size(1), 1).unsqueeze(1)
+        mask = (article_seq_as_word_ids > 0).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
 
         # encode each browsed news article and concatenate
-        for art_pos in range(article_seq_as_art_idx.shape[1]):
+        for art_pos in range(article_seq_as_word_ids.shape[1]):
 
             # concatenate word IDs
-            article_one = article_seq_as_art_idx[:, art_pos, :, :].squeeze(1)  # shape = (batch_size, title_len, emb_dim)
+            article_one = article_seq_as_word_ids[:, art_pos, :, :].squeeze(1)  # shape = (batch_size, title_len, emb_dim)
             # embed word IDs
-            embedded_articles = self.art_id2word_embedding(article_one)
+            embedded_arts = self.art_id2word_embedding(article_one)
 
             # encode
-            encoded_articles.append(self.news_encoder(user_id, embedded_articles))
-            assert encoded_articles[-1].shape[1] == self.n_filters  # batch_size X n_cnn_filters
+            encoded_arts.append(self.news_encoder(embedded_arts))
+            assert encoded_arts[-1].shape[1] == self.n_filters  # batch_size X n_cnn_filters
 
-        encoded_articles = torch.stack(encoded_articles, axis=2) # batch_s X dim_news_rep X history_len
+        encoded_arts = torch.stack(encoded_arts, axis=2) # batch_s X dim_news_rep X history_len
 
         if mask is not None:
             # replace mask positions with mask embedding
-            encoded_articles = encoded_articles.masked_fill(mask == 0, self.token_embedding._mask_embedding)
+            encoded_arts = encoded_arts.masked_fill(mask == 0, self.token_embedding._mask_embedding)
 
-        return encoded_articles
+        return encoded_arts
 
     def art_id2word_embedding(self, art_id):
         # lookup art id -> [word ids]

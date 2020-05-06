@@ -23,16 +23,6 @@ class NewsRecBaseModel(BaseModel):
     def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args):
         super(NewsRecBaseModel, self).__init__(args)
 
-        # self.device = device
-        # self.vocab_len = vocab_len
-        # self.max_title_len = max_news_len
-        # self.max_hist_len = max_hist_len
-        #
-        # self.dim_news_rep = d_news_rep
-        # self.dim_user_rep = d_news_rep
-        # self.dim_emb_user_id = emb_dim_user_id
-        # self.dim_pref_q = emb_dim_pref_query
-
         #representations
         self.user_rep = None
         self.brows_hist_reps = None
@@ -45,73 +35,57 @@ class NewsRecBaseModel(BaseModel):
             if args.pretrained_emb is not None:
                 #assert pretrained_emb.shape == [vocab_len, emb_dim_words]
                 #print("Emb shape is {} and should {}".format(pretrained_emb.shape, (vocab_len, emb_dim_words)))
+
+                # TODO: load pretrained embeddings
+                pretrained_emb = None
+                raise NotImplementedError()
                 self.token_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_emb), freeze=False, padding_idx=0)      # word embeddings
             else:
-                self.token_embedding = nn.Embedding(vocab_len, args.dim_word_emb, padding_idx=0)
+                self.token_embedding = nn.Embedding(args.max_vocab_size, args.dim_word_emb, padding_idx=0)
 
-        self.user_id_embeddings = nn.Embedding(n_users, self.dim_emb_user_id)
+        self.news_encoder = news_encoder
+        self.interest_extractor = interest_extractor
+        self.user_encoder = user_encoder
 
-        self.news_encoder = (NewsEncoderWuCNN(n_filters=d_news_rep, word_emb_dim=emb_dim_words, dim_pref_q=emb_dim_pref_query, dropout_p=dropout_p)
-                             if news_encoder is None else news_encoder)
+        self.click_predictor = click_predictor
 
-        # preference queries
-        self.pref_q_word = PrefQueryWu(self.dim_pref_q, self.dim_emb_user_id)
-        self.pref_q_article = PrefQueryWu(self.dim_pref_q, self.dim_emb_user_id)
+    def forward(self, brows_hist_as_ids, candidates_as_ids):
 
-        self.interest_extractor = (None if interest_extractor is None
-                                   else interest_extractor) # GRU_interest(self.dim_news_rep, self.dim_user_rep, self.max_hist_len, self.device)
-
-        self.user_encoder = (PersonalisedAttentionWu(emb_dim_pref_query, self.dim_news_rep)
-                             if user_encoder is None else user_encoder)
-
-        self.click_predictor = (SimpleDot(self.dim_user_rep, self.dim_news_rep)
-                                if click_predictor is None else click_predictor)
-
-    def forward(self, user_id, brows_hist_as_ids, candidates_as_ids):
-
-        brows_hist_reps = self.encode_news(user_id, brows_hist_as_ids) # encode browsing history
+        brows_hist_reps = self.encode_news(brows_hist_as_ids) # encode browsing history
         self.brows_hist_reps = brows_hist_reps
 
-        candidate_reps = self.encode_news(user_id, candidates_as_ids) # encode candidate articles
+        candidate_reps = self.encode_news(candidates_as_ids) # encode candidate articles
         self.candidate_reps = candidate_reps
 
-        user_rep = self.create_user_rep(user_id, brows_hist_reps) # create user representation
+        user_rep = self.create_user_rep(brows_hist_reps) # create user representation
 
         click_scores = self.click_predictor(user_rep, candidate_reps) # compute raw click score
         self.click_scores = click_scores
 
-        #self.get_representation_shapes()
-
         return click_scores
 
 
-    def encode_news(self, user_id, news_articles_as_ids):
+    def encode_news(self, news_articles_as_ids):
 
         # (B x hist_len x art_len) -> (vocab_len x emb_dim_word)
         # => (B x hist_len x art_len x emb_dim_word)
         emb_news = self.token_embedding(news_articles_as_ids) # assert dtype == 'long'
-
-        pref_q_word = self.pref_q_word(self.user_id_embeddings(user_id))
-
-        encoded_articles = self.news_encoder(emb_news, pref_q_word)
+        encoded_articles = self.news_encoder(emb_news)
 
         return encoded_articles
 
     def create_user_rep(self, user_id, encoded_brows_hist):
-
-        pref_q_article = self.pref_q_article(self.user_id_embeddings(user_id))
-
         if self.interest_extractor is not None:
             in_shape = encoded_brows_hist.shape
             encoded_brows_hist = torch.stack(self.interest_extractor(encoded_brows_hist), dim=2)
 
-        self.user_rep = self.user_encoder(encoded_brows_hist, pref_q_article)
+        self.user_rep = self.user_encoder(encoded_brows_hist)
 
         return self.user_rep
 
     def get_representation_shapes(self):
         shapes = {}
-        shapes['user_rep'] = self.user_rep.shape if self.user_rep != None else None
+        shapes['user_rep'] = self.user_rep.shape if self.user_rep is not None else None
         shapes['brow_hist'] = self.brows_hist_reps.shape
         shapes['cands'] = self.candidate_reps.shape
         shapes['scores'] = self.click_scores.shape

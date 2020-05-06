@@ -29,8 +29,7 @@ class SinePositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + Variable(self.pe[:, :x.size(1)],
-                         requires_grad=False)
+        x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
         return self.dropout(x)
 
     def plot_sine_waves(self):
@@ -44,3 +43,16 @@ class SinePositionalEncoding(nn.Module):
         y = pe.forward(Variable(torch.zeros(1, 100, 20)))
         plt.plot(np.arange(100), y[0, :, 4:8].data.numpy())
         plt.legend(["dim %d" % p for p in [4, 5, 6, 7]])
+
+class NormalLinear(nn.Linear):
+    """
+    Linear layer (weight matrix + bias vector) initialised with 0-mean Gaussian
+
+    Use to create Temporal Embedding from 1D input (e.g. time stamp)
+    self.temp_embedding = NormalLinear(1, self.embedding_dim)
+    """
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.normal_(0, stdv)
+        if self.bias is not None:
+            self.bias.data.normal_(0, stdv)

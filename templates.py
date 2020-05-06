@@ -25,7 +25,7 @@ def set_template(args):
         args.test_negative_sample_size = 100
         args.test_negative_sampling_seed = 98765
 
-        args.trainer_code = 'bert'
+        args.trainer_code = 'bert4rec'
         args.device = 'cuda'
         args.num_gpu = 1
         args.device_idx = '0'
@@ -56,12 +56,13 @@ def set_template(args):
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
         args.min_hist_len = 6
 
+        args.use_article_content = True
         args.incl_time_stamp = False
         #args.split = 'time_threshold' # leave_one_out
 
-        local = False
+        local = True
 
-        args.dataloader_code = 'bert'
+        args.dataloader_code = 'bert_news'
         batch = 128 if not local else 10
         args.train_batch_size = batch
         args.val_batch_size = batch
@@ -88,7 +89,7 @@ def set_template(args):
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 
-        args.model_code = 'bert'
+        args.model_code = 'bert4news'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
         args.bert_dropout = 0.1
@@ -97,6 +98,8 @@ def set_template(args):
         args.bert_max_len = 100
         args.bert_num_blocks = 2
         args.bert_num_heads = 4
+
+        #assert args.bert_max_len == args.max_article_len
     
     elif args.template.startswith('train_dae'):
         args.mode = 'train'

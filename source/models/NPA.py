@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from source.models.base import NewsRecBaseModel
 from source.modules.click_predictor import SimpleDot
 from source.modules.news_encoder import NewsEncoderWuCNN
 from source.modules.attention import PersonalisedAttentionWu
@@ -9,22 +10,19 @@ from source.modules.interest_extractor import GRU as GRU_interest
 from source.modules.preference_query import PrefQueryWu
 
 
-class BaseModelNPA(nn.Module):
+class BaseModelNPA(NewsRecBaseModel):
 
-    def __init__(self, n_users, vocab_len, pretrained_emb, emb_dim_user_id=50, emb_dim_pref_query=200,
-                 emb_dim_words=300, max_news_len=30, max_hist_len=50, n_filters_cnn=400, dropout_p=0.2, device='cpu',
-                 news_encoder=None, user_encoder=None, interest_extractor=None, click_predictor=None):
-        super(BaseModelNPA, self).__init__()
+    def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args):
 
-        self.device = device
-        self.vocab_len = vocab_len
-        self.max_title_len = max_news_len
-        self.max_hist_len = max_hist_len
-
-        self.dim_news_rep = n_filters_cnn
-        self.dim_user_rep = n_filters_cnn
-        self.dim_emb_user_id = emb_dim_user_id
-        self.dim_pref_q = emb_dim_pref_query
+        # self.device = device
+        # self.vocab_len = vocab_len
+        # self.max_title_len = max_news_len
+        # self.max_hist_len = max_hist_len
+        #
+        # self.dim_news_rep = n_filters_cnn
+        # self.dim_user_rep = n_filters_cnn
+        # self.dim_emb_user_id = emb_dim_user_id
+        # self.dim_pref_q = emb_dim_pref_query
 
         #representations
         self.user_rep = None
@@ -56,6 +54,9 @@ class BaseModelNPA(nn.Module):
 
         self.click_predictor = (SimpleDot(self.dim_user_rep, self.dim_news_rep)
                                 if click_predictor is None else click_predictor)
+
+        super(BaseModelNPA, self).__init__(token_embedding, news_encoder, user_encoder,
+                                           interest_extractor, click_predictor, args)
 
     def forward(self, user_id, brows_hist_as_ids, candidates_as_ids):
 

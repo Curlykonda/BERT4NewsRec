@@ -403,7 +403,8 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
 
     # 3. encode news as sequence of word_ids
     print("encode news as word_ids ...")
-    news_as_word_ids = [[0] * max_article_len]  # encoded news title
+    news_as_word_ids = {'0': [0] * max_article_len}
+    #news_as_word_ids = [[0] * max_article_len]  # encoded news title
     art_id2idx = {'0': 0}  # dictionary news indices
 
     for art_id in article_data:
@@ -419,10 +420,11 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
                 word_ids.append(vocab[word])
 
         # pad & truncate sequence
-        news_as_word_ids.append(pad_sequence(word_ids, max_article_len))
+        news_as_word_ids[art_id] = pad_sequence(word_ids, max_article_len)
+        #news_as_word_ids.append(pad_sequence(word_ids, max_article_len))
 
     # reformat as array
-    news_as_word_ids = np.array(news_as_word_ids, dtype='int32')
+    # news_as_word_ids = np.array(news_as_word_ids, dtype='int32')
 
     return vocab, news_as_word_ids, art_id2idx
 
@@ -583,124 +585,6 @@ def init_weights(m):
         torch.nn.init.xavier_uniform_(m.weight)
         if m.bias is not None:
             torch.nn.init.zeros_(m.bias)
-
-
-def preprocess_user_file_wu(data_path='ClickData4.tsv', npratio=4):
-    '''
-    Original preprocessing function from Wu et al. (NPA, 2019)
-
-    :param file:
-    :param npratio:
-    :return:
-    '''
-
-    file_name = FILE_NAMES_NPA['click']
-
-    userid_dict = {}
-    with open(data_path + file_name) as f:
-        userdata = f.readlines()
-    for user in userdata:
-        line = user.strip().split('\t')
-        userid = line[0]
-        # map user_id to index
-        if userid not in userid_dict:
-            userid_dict[userid] = len(userid_dict)
-
-    all_train_id = []
-    all_train_pn = []
-    all_label = []
-
-    all_test_id = []
-    all_test_pn = []
-    all_test_label = []
-    all_test_index = []
-
-    all_user_pos = []
-    all_test_user_pos = []
-
-    for user in userdata:
-        line = user.strip().split('\t')
-        userid = line[0]
-        # split userdata in impressions
-        if len(line) == 4:
-            impre = [x.split('#TAB#') for x in line[2].split('#N#')]
-        if len(line) == 3:
-            impre = [x.split('#TAB#') for x in line[2].split('#N#')]
-
-        trainpos = [x[0].split() for x in impre]
-        trainneg = [x[1].split() for x in impre]
-
-        poslist = list(itertools.chain(*(trainpos)))
-        neglist = list(itertools.chain(*(trainneg)))
-
-        if len(line) == 4:
-            testimpre = [x.split('#TAB#') for x in line[3].split('#N#')]
-            testpos = [x[0].split() for x in testimpre]
-            testneg = [x[1].split() for x in testimpre]
-
-            for i in range(len(testpos)):
-                sess_index = []
-                sess_index.append(len(all_test_pn))
-                posset = list(set(poslist))
-                allpos = [int(p) for p in random.sample(posset, min(50, len(posset)))[:50]]
-                allpos += [0] * (50 - len(allpos))
-
-                for j in testpos[i]:
-                    all_test_pn.append(int(j))
-                    all_test_label.append(1)
-                    all_test_id.append(userid_dict[userid])
-                    all_test_user_pos.append(allpos)
-
-                for j in testneg[i]:
-                    all_test_pn.append(int(j))
-                    all_test_label.append(0)
-                    all_test_id.append(userid_dict[userid])
-                    all_test_user_pos.append(allpos)
-                sess_index.append(len(all_test_pn))
-                all_test_index.append(sess_index) # record the indices for one user session
-
-                '''
-                later, these test instances are used as follows: 
-                
-                for m in all_test_index:
-                    if np.sum(all_test_label[m[0]:m[1]])!=0 and m[1]<len(click_score):
-                        all_auc.append(roc_auc_score(all_test_label[m[0]:m[1]],click_score[m[0]:m[1],0]))
-                        all_mrr.append(mrr_score(all_test_label[m[0]:m[1]],click_score[m[0]:m[1],0]))
-                '''
-
-        for impre_id in range(len(trainpos)):
-            for pos_sample in trainpos[impre_id]:
-
-                pos_neg_sample = sample_n_from_elements(trainneg[impre_id], npratio)
-                pos_neg_sample.append(pos_sample)
-                temp_label = [0] * npratio + [1]
-                temp_id = list(range(npratio + 1))
-                random.shuffle(temp_id)
-
-                shuffle_sample = []
-                shuffle_label = []
-                for id in temp_id:
-                    shuffle_sample.append(int(pos_neg_sample[id]))
-                    shuffle_label.append(temp_label[id])
-
-                posset = list(set(poslist) - set([pos_sample]))
-                allpos = [int(p) for p in random.sample(posset, min(50, len(posset)))[:50]]
-                allpos += [0] * (50 - len(allpos))
-                all_train_pn.append(shuffle_sample)
-                all_label.append(shuffle_label)
-                all_train_id.append(userid_dict[userid])
-                all_user_pos.append(allpos)
-
-    all_train_pn = np.array(all_train_pn, dtype='int32')
-    all_label = np.array(all_label, dtype='int32')
-    all_train_id = np.array(all_train_id, dtype='int32')
-    all_test_pn = np.array(all_test_pn, dtype='int32')
-    all_test_label = np.array(all_test_label, dtype='int32')
-    all_test_id = np.array(all_test_id, dtype='int32')
-    all_user_pos = np.array(all_user_pos, dtype='int32')
-    all_test_user_pos = np.array(all_test_user_pos, dtype='int32')
-    return userid_dict, all_train_pn, all_label, all_train_id, all_test_pn, all_test_label, all_test_id, all_user_pos, all_test_user_pos, all_test_index
-
 
 def main(config):
 

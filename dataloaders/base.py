@@ -14,11 +14,21 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.test = dataset['test']
         self.umap = dataset['umap'] # mapping from u_id to index
         self.smap = dataset['smap'] # mapping from item_id to index
-        self.vocab = dataset['vocab']
-        self.art_idx2word_ids = dataset['art2words']
+
+
         self.user_count = len(self.umap)
         self.item_count = len(self.smap)
 
+        if args.n_users is not None:
+            assert args.n_users == self.user_count
+        else:
+            args.n_users = self.user_count
+
+
+        if args.n_articles is not None:
+            assert args.n_articles == self.item_count
+        else:
+            args.n_articles = self.item_count
 
     @classmethod
     @abstractmethod
