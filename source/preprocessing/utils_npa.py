@@ -377,7 +377,7 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
     else:
         raise NotImplementedError()
 
-    article_data = news_data['all']
+    article_ids = news_data['all']
 
     vocab = defaultdict(int)
     news_as_word_ids = []
@@ -387,10 +387,10 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
     print("construct raw vocabulary ...")
     vocab_raw = Counter({'PAD': 999999})
 
-    for art_id in article_data:
-        tokens = tokenizer(article_data[art_id]["snippet"].lower(), language='dutch')
+    for art_id in article_ids:
+        tokens = tokenizer(article_ids[art_id]["snippet"].lower(), language='dutch')
         vocab_raw.update(tokens)
-        article_data[art_id]['tokens'] = tokens
+        article_ids[art_id]['tokens'] = tokens
 
         if len(vocab_raw) % 1e4 == 0:
             print(len(vocab_raw))
@@ -403,17 +403,16 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
 
     # 3. encode news as sequence of word_ids
     print("encode news as word_ids ...")
-    news_as_word_ids = {'0': [0] * max_article_len}
-    #news_as_word_ids = [[0] * max_article_len]  # encoded news title
-    art_id2idx = {'0': 0}  # dictionary news indices
+    news_as_word_ids = {} # {'0': [0] * max_article_len}
+    art_id2idx = {}  # {'0': 0}
 
-    for art_id in article_data:
+    for art_id in article_ids:
         word_ids = []
 
         art_id2idx[art_id] = len(art_id2idx) # map article id to index
 
         # get word_ids from news title
-        for word in article_data[art_id]['tokens']:
+        for word in article_ids[art_id]['tokens']:
             # if word occurs in vocabulary, add the id
             # unknown words are omitted
             if word in vocab:
@@ -463,43 +462,6 @@ def generate_batch_data_test(all_test_pn, all_label, all_test_id, batch_size, al
             label = all_label[i]
 
             yield ([candidate] + browsed_news_split + [userid], label)
-
-def gen_batch_data(data, news_as_word_ids, batch_size=100, shuffle=True):
-
-    #TODO: implement nice and more general dataloader
-    n_batches = range(len(data) // batch_size + 1)
-
-    if shuffle:
-        random.shuffle(data)
-
-    batches = [(batch_size * i, min(len(data), batch_size * (i + 1))) for i in
-               n_batches]
-
-    for start, stop in batches:
-        # get data for this batch
-        users, hist, cands, labels = zip(*[(data_p['input'][0], news_as_word_ids[data_p['input'][1]],
-                                            news_as_word_ids[data_p['input'][2]], data_p['labels'])
-                                                for data_p in data[start:stop]]) #return multiple lists from list comprehension
-
-        # get candidates
-        candidates = np.array(cands) # shape: batch_size X n_candidates X title_len
-        candidates_split = [candidates[:, k, :] for k in range(candidates.shape[1])] # candidate_split[0].shape := (batch_size, max_title_len)
-
-        # get history
-        hist = np.array(hist)  # shape: batch_size X max_hist_len X max_title_len
-        history_split = [hist[:, k, :] for k in range(hist.shape[1])]  # shape := (batch_size, max_title_len)
-
-        # get user ids
-        user_ids = np.expand_dims(np.array(users), axis=1)
-
-        # get labels
-        labels = np.array(labels)
-
-
-        # aggregate to batch
-        batch = (candidates_split + history_split + [user_ids], labels)
-
-        yield batch
 
 def gen_batch_data_test(data, news_as_word_ids, batch_size=100, candidate_pos=0):
     n_batches = range(len(data) // batch_size + 1)

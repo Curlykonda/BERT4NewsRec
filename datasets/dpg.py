@@ -289,6 +289,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
                 hist = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
                             in sorted(user_data[u_id]["articles_read"], key=lambda tup: tup[1])]
+                if np.max(hist) >= len(art_id2idx):
+                    pass
                 u_data_prepped[u_id2idx[u_id]] = hist
 
             elif 'wu' == self.args.train_method:
@@ -314,7 +316,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
             self.vocab = vocab
 
         else:
-            art_id2idx = {'0': 0}  # dictionary news indices
+            art_id2idx = {}  # {'0': 0} dictionary news indices
             for art_id in news_data['all'].keys():
                 art_id2idx[art_id] = len(art_id2idx)  # map article ID -> index
 

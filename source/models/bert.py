@@ -38,6 +38,8 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         super().__init__(token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args)
 
         self.encoded_art = None
+        self.mask_token = args.bert_mask_token
+        self.mask_val_we = 0.0
 
     @classmethod
     def code(cls):
@@ -60,8 +62,15 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         encoded_arts = []
 
         # build mask: perhaps by adding up the word ids? -> make efficient for batch
-        mask = (article_seq_as_word_ids > 0).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
-
+        mask = (article_seq_as_word_ids != self.mask_token).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
+        """
+        mask = (article_seq_as_word_ids.len == 1) 
+        -> at masked position we only use the Mask token id 
+        while all other position are a seq of word ids
+        
+        given this mask, we then either apply the News Encoder or directly put the Mask Embedding
+        
+        """
         # encode each browsed news article and concatenate
         for art_pos in range(article_seq_as_word_ids.shape[1]):
 
@@ -69,6 +78,9 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             article_one = article_seq_as_word_ids[:, art_pos, :, :].squeeze(1)  # shape = (batch_size, title_len, emb_dim)
             # embed word IDs
             embedded_arts = self.art_id2word_embedding(article_one)
+
+            if mask is not None:
+                embedded_arts = embedded_arts.masked_fill(mask == 0, self.mask_val_we)
 
             # encode
             encoded_arts.append(self.news_encoder(embedded_arts))

@@ -120,6 +120,7 @@ parser.add_argument('--bert_num_blocks', type=int, default=None, help='Number of
 parser.add_argument('--bert_num_heads', type=int, default=None, help='Number of heads for multi-attention')
 parser.add_argument('--bert_dropout', type=float, default=None, help='Dropout probability to use throughout the model')
 parser.add_argument('--bert_mask_prob', type=float, default=None, help='Probability for masking items in the training sequence')
+parser.add_argument('--bert_mask_token', type=int, default=None, help='Token id for Mask')
 
 ################################################################
 # DAE #

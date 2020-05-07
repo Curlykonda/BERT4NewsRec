@@ -1,3 +1,5 @@
+import itertools
+
 from .base import AbstractDataloader
 from .negative_samplers import negative_sampler_factory
 
@@ -9,34 +11,31 @@ class BertDataloader(AbstractDataloader):
         super().__init__(args, dataset)
 
         args.num_items = len(self.smap)
-        self.max_len = args.bert_max_len
+        self.max_hist_len = args.bert_max_len
         self.mask_prob = args.bert_mask_prob
-        self.CLOZE_MASK_TOKEN = self.item_count + 1
+
+        self.mask_token = self.item_count + 1 ## item_count = len(self.smap)
+        args.bert_mask_token = self.mask_token
 
         self.split_method = args.split
         self.multiple_eval_items = args.split == "time_threshold"
+        self.valid_items = self.get_valid_items()
 
         # self.vocab = dataset['vocab']
         # self.art_idx2word_ids = dataset['art2words']
 
         ####################
         # Negative Sampling
-        code = args.train_negative_sampler_code
-        train_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-                                                          self.user_count, self.item_count,
-                                                          args.train_negative_sample_size,
-                                                          args.train_negative_sampling_seed,
-                                                          self.save_folder)
-        code = args.test_negative_sampler_code
-        test_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-                                                         self.user_count, self.item_count,
-                                                         args.test_negative_sample_size,
-                                                         args.test_negative_sampling_seed,
-                                                         self.save_folder)
 
-        self.train_negative_samples = train_negative_sampler.get_negative_samples()
-        self.test_negative_samples = test_negative_sampler.get_negative_samples()
+        self.train_negative_samples = self.create_neg_samples(args.train_negative_sampler_code,
+                                                                args.train_negative_sample_size,
+                                                                args.train_negative_sampling_seed,
+                                                                self.valid_items['train'])
 
+        self.test_negative_samples = self.create_neg_samples(args.test_negative_sampler_code,
+                                                                args.test_negative_sample_size,
+                                                                args.test_negative_sampling_seed,
+                                                                self.valid_items['test'])
     @classmethod
     def code(cls):
         return 'bert'
@@ -54,7 +53,7 @@ class BertDataloader(AbstractDataloader):
         return dataloader
 
     def _get_train_dataset(self):
-        dataset = BertTrainDataset(self.train, self.art_idx2word_ids, self.max_len, self.mask_prob, self.CLOZE_MASK_TOKEN, self.item_count, self.rng)
+        dataset = BertTrainDataset(self.train, self.art_idx2word_ids, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
         return dataset
 
     def _get_val_loader(self):
@@ -72,8 +71,42 @@ class BertDataloader(AbstractDataloader):
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDataset(self.train, targets, self.art_idx2word_ids, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples, self.multiple_eval_items)
+        dataset = BertEvalDataset(self.train, targets, self.art_idx2word_ids, self.max_hist_len, self.mask_token, self.test_negative_samples, self.multiple_eval_items)
         return dataset
+
+    def create_neg_samples(self, code, neg_sample_size, seed, item_set):
+        if self.split_method != "time_threshold":
+            # use item counts for simple neg sampling
+
+            negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
+                                                              self.user_count, item_set,
+                                                              neg_sample_size,
+                                                              seed,
+                                                              self.save_folder)
+        else:
+            # use distinguished set for neg sampling
+            raise NotImplementedError()
+            # negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
+            #                                                   self.user_count, self.item_count,
+            #                                                   neg_sample_size,
+            #                                                   seed,
+            #                                                   self.save_folder)
+
+
+        return negative_sampler.get_negative_samples()
+
+    def get_valid_items(self):
+        all_items = set(self.smap.values()) # train + test + val
+        if self.mask_token in all_items:
+            all_items.remove(self.mask_token)
+
+        if self.split_method != "time_threshold":
+            test = train = all_items
+        else:
+            train = set(itertools.chain.from_iterable(self.train.values()))
+            test = all_items
+
+        return {'train': list(train), 'test': list(test)}
 
 
 class BertDataloaderNews(BertDataloader):
@@ -83,43 +116,24 @@ class BertDataloaderNews(BertDataloader):
         dataset = dataset.load_dataset()
         self.vocab = dataset['vocab']
         self.art_index2word_ids = dataset['art2words'] # art ID -> [word IDs]
-        #smap:
+
+        #self.CLOZE_MASK_TOKEN = 0
 
         # create direct mapping art_id -> word_ids
         self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
         del self.art_index2word_ids
-
-        # map negative samples to word_ids
-
-        # ####################
-        # # Negative Sampling
-        # code = args.train_negative_sampler_code
-        # train_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-        #                                                   self.user_count, self.item_count,
-        #                                                   args.train_negative_sample_size,
-        #                                                   args.train_negative_sampling_seed,
-        #                                                   self.save_folder)
-        # code = args.test_negative_sampler_code
-        # test_negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-        #                                                  self.user_count, self.item_count,
-        #                                                  args.test_negative_sample_size,
-        #                                                  args.test_negative_sampling_seed,
-        #                                                  self.save_folder)
-        #
-        # self.train_negative_samples = train_negative_sampler.get_negative_samples()
-        # self.test_negative_samples = test_negative_sampler.get_negative_samples()
 
     @classmethod
     def code(cls):
         return 'bert_news'
 
     def _get_train_dataset(self):
-        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.max_len, self.mask_prob, self.CLOZE_MASK_TOKEN, self.item_count, self.rng)
+        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
         return dataset
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.max_len, self.CLOZE_MASK_TOKEN, self.test_negative_samples, self.multiple_eval_items)
+        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.max_hist_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
 def art_idx2word_ids(art_idx, mapping):
@@ -129,12 +143,13 @@ def art_idx2word_ids(art_idx, mapping):
         return art_idx
 
 class BertTrainDataset(data_utils.Dataset):
-    def __init__(self, u2seq, max_len, mask_prob, mask_token, num_items, rng):
+    def __init__(self, u2seq, max_len, mask_prob, mask_token, num_items, rng, pad_token=0,):
         self.u2seq = u2seq
         self.users = sorted(self.u2seq.keys())
         self.max_len = max_len
         self.mask_prob = mask_prob
         self.mask_token = mask_token
+        self.pad_token = pad_token
         self.num_items = num_items
         self.rng = rng
 
@@ -218,13 +233,14 @@ class BertTrainDatasetNews(BertTrainDataset):
 
 
 class BertEvalDataset(data_utils.Dataset):
-    def __init__(self, u2seq, u2answer, max_len, mask_token, negative_samples, multiple_eval_items=True):
+    def __init__(self, u2seq, u2answer, max_hist_len, mask_token, negative_samples, pad_token=0, multiple_eval_items=True):
         self.u2hist = u2seq
         self.u_sample_ids = sorted(self.u2hist.keys())
         self.u2targets = u2answer
         #self.art2words = art2words
-        self.max_len = max_len
+        self.max_hist_len = max_hist_len
         self.mask_token = mask_token
+        self.pad_token = pad_token
         self.negative_samples = negative_samples
 
         self.mul_eval_items = multiple_eval_items
@@ -280,9 +296,9 @@ class BertEvalDataset(data_utils.Dataset):
         labels = [1] * len(target) + [0] * len(negs)
 
         hist = hist + [self.mask_token]  # predict only the next/last token in seq
-        hist = hist[-self.max_len:]
-        padding_len = self.max_len - len(hist)
-        hist = [0] * padding_len + hist
+        hist = hist[-self.max_hist_len:]
+        padding_len = self.max_hist_len - len(hist)
+        hist = [self.pad_token] * padding_len + hist
 
         return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
 
@@ -292,19 +308,25 @@ class BertEvalDataset(data_utils.Dataset):
 
 class BertEvalDatasetNews(BertEvalDataset):
 
-    def __init__(self, u2seq, u2answer, art2words, max_len, mask_token, negative_samples, multiple_eval_items=True):
-        super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_len, mask_token, negative_samples, multiple_eval_items)
+    def __init__(self, u2seq, u2answer, art2words, max_hist_len, mask_token, negative_samples, multiple_eval_items=True):
+        super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, negative_samples, multiple_eval_items=multiple_eval_items)
 
         self.art2words = art2words
+        self.max_article_len = len(next(iter(art2words.values())))
 
     def gen_eval_instance(self, hist, target, negs):
         candidates = target + negs
         candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         labels = [1] * len(target) + [0] * len(negs)
 
-        hist = hist + [self.mask_token]  # predict only the next/last token in seq
-        hist = hist[-self.max_len:]
-        padding_len = self.max_len - len(hist) # apply left-side padding
-        hist = [0] * padding_len + hist # Padding token := 0
+        hist = [art_idx2word_ids(art, self.art2words) for art in hist[-(self.max_hist_len- 1):]]
+        hist = hist + [[self.mask_token] * self.max_article_len]  # predict only the next/last token in seq
+
+        ## apply padding (left-side)
+        padding_len = self.max_hist_len - len(hist)
+
+        hist = [[self.pad_token] * self.max_article_len] * padding_len + hist # Padding token := 0
+        #
+        assert len(hist) == self.max_hist_len
 
         return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)

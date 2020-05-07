@@ -3,6 +3,7 @@ from .base import AbstractNegativeSampler
 from tqdm import trange
 
 import numpy as np
+import random
 
 
 class RandomNegativeSampler(AbstractNegativeSampler):
@@ -13,6 +14,7 @@ class RandomNegativeSampler(AbstractNegativeSampler):
     def generate_negative_samples(self):
         assert self.seed is not None, 'Specify seed for random sampling'
         np.random.seed(self.seed)
+        #random.seed(self.seed)
         negative_samples = {}
         print('Sampling negative items')
         for user in trange(self.user_count):
@@ -30,9 +32,9 @@ class RandomNegativeSampler(AbstractNegativeSampler):
             # note: for 'time_split' need to separate into train and test intervals
             samples = []
             for _ in range(self.sample_size):
-                item = np.random.choice(self.item_count) + 1
+                item = random.choice(self.item_set)
                 while item in seen or item in samples:
-                    item = np.random.choice(self.item_count) + 1
+                    item = random.choice(self.item_set)
                 samples.append(item)
 
             negative_samples[user] = samples
