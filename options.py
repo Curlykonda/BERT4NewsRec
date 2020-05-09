@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
 parser.add_argument('--template', type=str, default='train_bert_dpg', choices=['train_bert', 'train_dae', 'train_bert_ml', 'train_bert_dpg'])
+parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
 # Test
@@ -42,7 +43,7 @@ parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59",
 
 parser.add_argument('--train_method', type=str, default='masked_interest', choices=['masked_interest', 'wu', 'pos_cut_off'])
 parser.add_argument('--n_articles', type=int, help="Number of articles in the dataset")
-parser.add_argument('--n_users', type=int, default=10000, help="Number of users in the dataset")
+parser.add_argument('--n_users', type=int, help="Number of users in the dataset")
 
 
 parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')

@@ -14,7 +14,7 @@ class BertDataloader(AbstractDataloader):
         self.max_hist_len = args.bert_max_len
         self.mask_prob = args.bert_mask_prob
 
-        self.mask_token = args.max_vocab_size + 1
+        self.mask_token = self.item_count + 1
         args.bert_mask_token = self.mask_token
 
         self.split_method = args.split
@@ -53,7 +53,7 @@ class BertDataloader(AbstractDataloader):
         return dataloader
 
     def _get_train_dataset(self):
-        dataset = BertTrainDataset(self.train, self.art_idx2word_ids, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
+        dataset = BertTrainDataset(self.train, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng) # , self.art_idx2word_ids
         return dataset
 
     def _get_val_loader(self):
@@ -71,7 +71,7 @@ class BertDataloader(AbstractDataloader):
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDataset(self.train, targets, self.art_idx2word_ids, self.max_hist_len, self.mask_token, self.test_negative_samples, self.multiple_eval_items)
+        dataset = BertEvalDataset(self.train, targets, self.max_hist_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
     def create_neg_samples(self, code, neg_sample_size, seed, item_set):
@@ -116,7 +116,8 @@ class BertDataloaderNews(BertDataloader):
         self.art_index2word_ids = dataset['art2words'] # art ID -> [word IDs]
         self.max_article_len = args.max_article_len
 
-        #self.CLOZE_MASK_TOKEN = 0
+        self.mask_token = args.max_vocab_size + 1
+        args.bert_mask_token = self.mask_token
 
         # create direct mapping art_id -> word_ids
         self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
@@ -259,6 +260,8 @@ class BertTrainDatasetNews(BertTrainDataset):
                 return [[pad_token] * max_article_len] * pad_len + seq
             else:
                 return [pad_token] * pad_len + seq
+        else:
+            return seq
 
 
 class BertEvalDataset(data_utils.Dataset):
@@ -318,8 +321,6 @@ class BertEvalDataset(data_utils.Dataset):
         padding_len = self.max_hist_len - len(hist)
         hist = [self.pad_token] * padding_len + hist
 
-        # TODO: return the full history + the mask
-
         return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
 
     def concat_ints(self, a, b):
@@ -336,8 +337,8 @@ class BertEvalDatasetNews(BertEvalDataset):
         self.eval_mask = [1] * (max_hist_len-1) + [0]
 
     def gen_eval_instance(self, hist, target, negs):
-        candidates = target + negs
-        candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
+        candidates = target + negs # candidates as article indices
+        #candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         labels = [1] * len(target) + [0] * len(negs)
 
         hist = [art_idx2word_ids(art, self.art2words) for art in hist[-(self.max_hist_len- 1):]]

@@ -133,6 +133,9 @@ class AbstractTrainer(metaclass=ABCMeta):
                 description = description.format(*(average_meter_set[k].avg for k in description_metrics))
                 tqdm_dataloader.set_description(description)
 
+                if self.args.local and batch_idx == 10:
+                    break
+
             log_data = {
                 'state_dict': (self._create_state_dict()),
                 'epoch': epoch+1,

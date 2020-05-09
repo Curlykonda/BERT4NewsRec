@@ -54,6 +54,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         interest_reps = self.create_hidden_interest_representations(encoded_arts, mask)
 
         click_scores = self.click_predictor(interest_reps) # compute raw click score
+        # (B x L_hist x n_items)
         self.click_scores = click_scores
 
         return click_scores
@@ -94,11 +95,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         art_emb = encoded_articles.transpose(1,2)
         if mask is not None:
             # replace mask positions with mask embedding
-            art_emb[mask] = self.token_embedding._mask_embedding
+            art_emb[mask] = self.token_embedding._mask_embedding.to(art_emb.device)
             #encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
         else:
             raise ValueError("Should apply mask before using BERT ;)")
-
+        # (B x L_hist x D_model) -> (B x L_hist x D_model)
         interest_reps = self.user_encoder(art_emb, mask)
 
         return interest_reps

@@ -12,8 +12,10 @@ def set_template(args):
         args.min_sc = 0
         args.split = 'leave_one_out'
 
+        local = True
+
         args.dataloader_code = 'bert'
-        batch = 128
+        batch = 128 if not local else 10
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
@@ -25,8 +27,8 @@ def set_template(args):
         args.test_negative_sample_size = 100
         args.test_negative_sampling_seed = 98765
 
-        args.trainer_code = 'bert4rec'
-        args.device = 'cuda'
+        args.trainer_code = 'bert'
+        args.device = 'cuda' if not local else 'cpu'
         args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
@@ -39,7 +41,7 @@ def set_template(args):
         args.metric_ks = [1, 5, 10, 20, 50, 100]
         args.best_metric = 'NDCG@10'
 
-        args.model_code = 'bert'
+        args.model_code = 'bert4rec'
         args.model_init_seed = 0
 
         args.bert_dropout = 0.1
@@ -56,14 +58,15 @@ def set_template(args):
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
         args.min_hist_len = 6
 
+        args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
         #args.split = 'time_threshold' # leave_one_out
 
-        local = True
+        args.local = True
 
         args.dataloader_code = 'bert_news'
-        batch = 128 if not local else 10
+        batch = 128 if not args.local else 10
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
@@ -76,7 +79,7 @@ def set_template(args):
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
         args.trainer_code = 'bert_news'
-        args.device = 'cuda' if not local else 'cpu'
+        args.device = 'cuda' # if not args.local else 'cpu'
         # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         args.num_gpu = 1

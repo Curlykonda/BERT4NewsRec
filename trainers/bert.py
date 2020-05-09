@@ -60,9 +60,11 @@ class BERT4NewsTrainer(BERTTrainer):
 
     def calculate_metrics(self, batch):
         seqs, mask, candidates, labels = batch
-        scores = self.model(seqs, mask)  # B x T x V
-        scores = scores[:, -1, :]  # B x V
-        scores = scores.gather(1, candidates)  # B x C
+        scores = self.model(seqs, mask)  # (B x L_hist x V)
+        scores = scores[:, -1, :]  # (B x V)
+
+        # select scores for the article indices of candidates
+        scores = scores.gather(1, candidates)  # (B x n_candidates)
 
         metrics = recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
