@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.functional as F
+
 
 from source.modules.attention import PersonalisedAttentionWu
 
@@ -48,9 +48,12 @@ def output_size(in_size, kernel_size, stride, padding):
 
 def mot_pooling(x):
   # Max-over-time pooling
-  # X is shape n,c,w
-  x = F.max_pool1d(x, kernel_size=x.shape[2])
-  return x
+  # X is conv output
+  # (B x n_filters x L_out)
+  # Note that L_out depends on kernel and L_in
+  #print(x.shape)
+  return nn.MaxPool1d(kernel_size=x.shape[2])(x)
+
 
 
 class KimCNN(torch.nn.Module):
@@ -66,15 +69,29 @@ class KimCNN(torch.nn.Module):
       for kernel in kernels
     ])
 
+    self.proj_out = nn.Sequential(
+        nn.Dropout(p=0.2),
+        nn.ReLU(),
+        nn.Linear(n_filters * len(kernels), n_filters))
+
+
+    #self.mot_pooling = torch.nn.MaxPool1d(kernel_size=n_filters)
+
   def forward(self, x):
     # Pass through each conv layer
     outs = [conv(x) for conv in self.convs]
 
     # Max over time pooling
-    outs_pooled = [mot_pooling(out) for out in outs]
+    outs_pooled = [mot_pooling(out.squeeze()) for out in outs]
     # Concatenate over channel dim
     out = torch.cat(outs_pooled, 1)
     # Flatten
+    # (B x (n_kernels * n_filters))
     out = out.view(out.size(0), -1)
+
+    # Dropout & Project
+    out = self.proj_out(out)
+    # (B x n_filters)
+    assert out.shape[1] == self.n_filters
 
     return out

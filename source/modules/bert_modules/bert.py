@@ -9,7 +9,7 @@ class BERT(nn.Module):
     def __init__(self, args, token_emb='new', pos_emb='lpe'):
         super().__init__()
 
-        fix_random_seed_as(args.model_init_seed)
+        #fix_random_seed_as(args.model_init_seed)
         # self.init_weights()
 
         max_len = args.bert_max_len
@@ -30,11 +30,20 @@ class BERT(nn.Module):
         self.transformer_blocks = nn.ModuleList(
             [TransformerBlock(self.hidden, heads, self.hidden * 4, dropout) for _ in range(n_layers)])
 
-    def forward(self, x):
-        mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
+    def forward(self, x, mask=None):
+
+        if mask is None:
+            mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
+        else:
+            # check dimesions of mask to match requirements for self-attention
+            # in case of News, input mask is of shape (B x L_hist)
+            # -> (B x 1 x L_hist x D_model)
+            mask = mask.unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
 
         # embedding the indexed sequence to sequence of vectors
+        # combine token & positional embeddings
         x = self.embedding(x)
+        #x = x_emb
 
         # running over multiple transformer blocks
         for transformer in self.transformer_blocks:

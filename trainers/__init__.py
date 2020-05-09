@@ -1,12 +1,13 @@
-from .bert import BERTTrainer
-from .dae import DAETrainer
-from .vae import VAETrainer
+from .bert import BERTTrainer, BERT4NewsTrainer
+# from .dae import DAETrainer
+# from .vae import VAETrainer
 
 
 TRAINERS = {
     BERTTrainer.code(): BERTTrainer,
-    DAETrainer.code(): DAETrainer,
-    VAETrainer.code(): VAETrainer
+    BERT4NewsTrainer.code(): BERT4NewsTrainer
+    # DAETrainer.code(): DAETrainer,
+    # VAETrainer.code(): VAETrainer
 }
 
 

@@ -28,10 +28,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
     def __init__(self, args):
         # load pretrained embeddings
 
+        vocab_size = args.max_vocab_size # account for all items including PAD token
         #Later: news_encoder = BERT(args, token_emb='new')
-        token_embedding = TokenEmbeddingWithMask(args.max_vocab_size, args.dim_word_emb, args.bert_hidden_units, args.pretrained_emb_path)
+        token_embedding = TokenEmbeddingWithMask(vocab_size, args.dim_word_emb, args.bert_hidden_units, args.pretrained_emb_path)
         news_encoder = KimCNN(args.bert_hidden_units, args.dim_word_emb)
-        user_encoder = BERT(args, token_emb=None)
+        user_encoder = BERT(args, token_emb=None) # new module: BERTasUserEncoder
         interest_extractor = None
         click_predictor = LinLayer(args.bert_hidden_units, args.num_items)
 
@@ -45,14 +46,14 @@ class BERT4NewsRecModel(NewsRecBaseModel):
     def code(cls):
         return 'bert4news'
 
-    def forward(self, brows_hist_as_word_ids):
+    def forward(self, brows_hist_as_word_ids, mask):
 
         encoded_arts = self.encode_news(brows_hist_as_word_ids)
         self.encoded_art = encoded_arts
 
-        bert_rep = self.user_encoder(encoded_arts) # create user representation
+        interest_reps = self.create_hidden_interest_representations(encoded_arts, mask)
 
-        click_scores = self.click_predictor(bert_rep) # compute raw click score
+        click_scores = self.click_predictor(interest_reps) # compute raw click score
         self.click_scores = click_scores
 
         return click_scores
@@ -61,44 +62,43 @@ class BERT4NewsRecModel(NewsRecBaseModel):
 
         encoded_arts = []
 
-        # build mask: perhaps by adding up the word ids? -> make efficient for batch
-        mask = (article_seq_as_word_ids != self.mask_token).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
-        """
-        mask = (article_seq_as_word_ids.len == 1) 
-        -> at masked position we only use the Mask token id 
-        while all other position are a seq of word ids
-        
-        given this mask, we then either apply the News Encoder or directly put the Mask Embedding
-        
-        """
-        # encode each browsed news article and concatenate
-        for art_pos in range(article_seq_as_word_ids.shape[1]):
+        # embedding the indexed sequence to sequence of vectors
+        # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
+        embedded_arts = self.token_embedding(article_seq_as_word_ids)
 
-            # concatenate word IDs
-            article_one = article_seq_as_word_ids[:, art_pos, :, :].squeeze(1)  # shape = (batch_size, title_len, emb_dim)
-            # embed word IDs
-            embedded_arts = self.art_id2word_embedding(article_one)
+        # encode word embeddings into article embedding
+        # (B x L_hist x L_article x D_word_emb) => (B x L_hist x D_article)
+        for n_news in range(embedded_arts.shape[1]):
 
-            if mask is not None:
-                embedded_arts = embedded_arts.masked_fill(mask == 0, self.mask_val_we)
+            # concatenate words
+            article_one = embedded_arts[:, n_news, :, :]
 
-            # encode
-            encoded_arts.append(self.news_encoder(embedded_arts))
-            assert encoded_arts[-1].shape[1] == self.n_filters  # batch_size X n_cnn_filters
+            context_art = self.news_encoder(article_one.unsqueeze(1))
+            encoded_arts.append(context_art)
 
-        encoded_arts = torch.stack(encoded_arts, axis=2) # batch_s X dim_news_rep X history_len
+        # -> (B x D_article x L_hist)
+        encoded_arts = torch.stack(encoded_arts, axis=2)
 
-        if mask is not None:
-            # replace mask positions with mask embedding
-            encoded_arts = encoded_arts.masked_fill(mask == 0, self.token_embedding._mask_embedding)
+        #encoded_arts = self.news_encoder(embedded_arts)
 
+
+        # (B x L_hist x D_article)
         return encoded_arts
 
-    def art_id2word_embedding(self, art_id):
-        # lookup art id -> [word ids]
+    def create_hidden_interest_representations(self, encoded_articles, mask):
+        # build mask: perhaps by adding up the word ids? -> make efficient for batch
+        # mask = (article_seq_as_word_ids != self.mask_token).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
+        # mask = (article_seq_as_word_ids[:, :, 0] == self.mask_token) # B x L_hist
 
-        # exception: for art id -> [0] * max_len
+        # (B x D_article x L_hist) -> (B x L_hist x D_article)
+        art_emb = encoded_articles.transpose(1,2)
+        if mask is not None:
+            # replace mask positions with mask embedding
+            art_emb[mask] = self.token_embedding._mask_embedding
+            #encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
+        else:
+            raise ValueError("Should apply mask before using BERT ;)")
 
-        embedded_articles = None
-        raise NotImplementedError()
-        return embedded_articles
+        interest_reps = self.user_encoder(art_emb, mask)
+
+        return interest_reps
