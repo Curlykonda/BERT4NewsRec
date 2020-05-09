@@ -75,8 +75,10 @@ def set_template(args):
         args.test_negative_sample_size = 100
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
-        args.trainer_code = 'bert'
-        args.device = 'cuda'
+        args.trainer_code = 'bert_news'
+        args.device = 'cuda' if not local else 'cpu'
+        # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
