@@ -14,7 +14,7 @@ class BertDataloader(AbstractDataloader):
         self.max_hist_len = args.bert_max_len
         self.mask_prob = args.bert_mask_prob
 
-        self.mask_token = self.item_count + 1 ## item_count = len(self.smap)
+        self.mask_token = args.max_vocab_size + 1
         args.bert_mask_token = self.mask_token
 
         self.split_method = args.split
@@ -97,8 +97,6 @@ class BertDataloader(AbstractDataloader):
 
     def get_valid_items(self):
         all_items = set(self.smap.values()) # train + test + val
-        if self.mask_token in all_items:
-            all_items.remove(self.mask_token)
 
         if self.split_method != "time_threshold":
             test = train = all_items
@@ -116,6 +114,7 @@ class BertDataloaderNews(BertDataloader):
         dataset = dataset.load_dataset()
         self.vocab = dataset['vocab']
         self.art_index2word_ids = dataset['art2words'] # art ID -> [word IDs]
+        self.max_article_len = args.max_article_len
 
         #self.CLOZE_MASK_TOKEN = 0
 
@@ -128,12 +127,13 @@ class BertDataloaderNews(BertDataloader):
         return 'bert_news'
 
     def _get_train_dataset(self):
-        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
+        # u2seq, art2words, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
+        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.max_hist_len, self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
         return dataset
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.max_hist_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
+        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.max_hist_len, self.max_article_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
 def art_idx2word_ids(art_idx, mapping):
@@ -143,10 +143,10 @@ def art_idx2word_ids(art_idx, mapping):
         return art_idx
 
 class BertTrainDataset(data_utils.Dataset):
-    def __init__(self, u2seq, max_len, mask_prob, mask_token, num_items, rng, pad_token=0,):
+    def __init__(self, u2seq, max_hist_len, mask_prob, mask_token, num_items, rng, pad_token=0, ):
         self.u2seq = u2seq
         self.users = sorted(self.u2seq.keys())
-        self.max_len = max_len
+        self.max_hist_len = max_hist_len
         self.mask_prob = mask_prob
         self.mask_token = mask_token
         self.pad_token = pad_token
@@ -162,24 +162,12 @@ class BertTrainDataset(data_utils.Dataset):
         user = self.users[index]
         seq = self._getseq(user)
 
-        tokens, labels = self.gen_masked_seq(seq)
-
-        tokens = tokens[-self.max_len:]
-        labels = labels[-self.max_len:]
-
-        mask_len = self.max_len - len(tokens)
-
-        # mask token are also append to the left if sequence needs padding
-        # Why not uses separate padding token? how does model know when to predict for an actual masked off item?
-        tokens = [0] * mask_len + tokens
-        labels = [0] * mask_len + labels
-
-        return torch.LongTensor(tokens), torch.LongTensor(labels)
+        return self.gen_train_instance(seq)
 
     def _getseq(self, user):
         return self.u2seq[user]
 
-    def gen_masked_seq(self, seq):
+    def gen_train_instance(self, seq):
         tokens = []
         labels = []
 
@@ -200,36 +188,77 @@ class BertTrainDataset(data_utils.Dataset):
                 tokens.append(s)
                 labels.append(0)
 
-        return tokens, labels
+        return torch.LongTensor(self.pad_seq(tokens)), torch.LongTensor(self.pad_seq(labels))
+
+    def pad_seq(self, seq):
+        seq = seq[-self.max_hist_len:]
+        pad_len = self.max_hist_len - len(seq)
+
+        if pad_len > 0:
+            return [self.pad_token] * pad_len + seq
 
 
 class BertTrainDatasetNews(BertTrainDataset):
-    def __init__(self, u2seq, art2words, max_len, mask_prob, mask_token, num_items, rng):
-        super(BertTrainDatasetNews, self).__init__(u2seq, max_len, mask_prob, mask_token, num_items, rng)
+    def __init__(self, u2seq, art2words, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
+        super(BertTrainDatasetNews, self).__init__(u2seq, max_hist_len, mask_prob, mask_token, num_items, rng)
 
         self.art2words = art2words
+        self.max_article_len = max_article_len
 
-    def gen_masked_seq(self, seq):
-        tokens = []
+    def gen_train_instance(self, seq):
+        hist = []
         labels = []
+        mask = []
+
         for s in seq:
             prob = self.rng.random()
             if prob < self.mask_prob:
                 prob /= self.mask_prob
 
                 if prob < 0.8:
-                    tokens.append(self.mask_token)
+                    # put original token but note mask position
+                    #tokens.append([self.mask_token] * self.max_article_len)
+                    tkn = s
+                    m_val = 0
                 elif prob < 0.9:
-                    tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
+                    # put random item
+                    tkn = self.rng.randint(1, self.num_items)
+                    #tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
+                    m_val = 1
                 else:
-                    tokens.append(art_idx2word_ids(s, self.art2words))
+                    # put original token but no masking
+                    tkn = s
+                    m_val = 1
 
+                hist.append(art_idx2word_ids(tkn, self.art2words))
                 labels.append(s)
+                mask.append(m_val)
             else:
-                tokens.append(art_idx2word_ids(s, self.art2words))
+                hist.append(art_idx2word_ids(s, self.art2words))
                 labels.append(0)
+                mask.append(1)
 
-        return tokens, labels
+        # truncate sequence & apply left-side padding
+        hist = self.pad_seq(hist, max_article_len=self.max_article_len)
+        labels = self.pad_seq(labels)
+        mask = self.pad_seq(mask, pad_token=1)
+
+        assert len(hist) == self.max_hist_len
+
+        return torch.LongTensor(hist), torch.LongTensor(mask), torch.LongTensor(labels)
+
+    def pad_seq(self, seq, pad_token=None, max_article_len=None):
+        seq = seq[-self.max_hist_len:]
+        pad_len = self.max_hist_len - len(seq)
+
+        if pad_token is None:
+            pad_token = self.pad_token
+
+        if pad_len > 0:
+            if max_article_len is not None:
+                return [[pad_token] * max_article_len] * pad_len + seq
+            else:
+                return [pad_token] * pad_len + seq
 
 
 class BertEvalDataset(data_utils.Dataset):
@@ -278,17 +307,6 @@ class BertEvalDataset(data_utils.Dataset):
                 negs = self.negative_samples[user] # get negative samples
             return self.gen_eval_instance(seq, target, negs)
 
-        # negs = self.negative_samples[user]
-        #
-        # candidates = target + negs
-        # labels = [1] * len(target) + [0] * len(negs)
-        #
-        # seq = seq + [self.mask_token] # model can only predict the next
-        # seq = seq[-self.max_len:]
-        # padding_len = self.max_len - len(seq)
-        # seq = [0] * padding_len + seq
-        #
-        # return torch.LongTensor(seq), torch.LongTensor(candidates), torch.LongTensor(labels)
 
     def gen_eval_instance(self, hist, target, negs):
         candidates = target + negs
@@ -300,6 +318,8 @@ class BertEvalDataset(data_utils.Dataset):
         padding_len = self.max_hist_len - len(hist)
         hist = [self.pad_token] * padding_len + hist
 
+        # TODO: return the full history + the mask
+
         return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
 
     def concat_ints(self, a, b):
@@ -308,11 +328,12 @@ class BertEvalDataset(data_utils.Dataset):
 
 class BertEvalDatasetNews(BertEvalDataset):
 
-    def __init__(self, u2seq, u2answer, art2words, max_hist_len, mask_token, negative_samples, multiple_eval_items=True):
+    def __init__(self, u2seq, u2answer, art2words, max_hist_len, max_article_len, mask_token, negative_samples, multiple_eval_items=True):
         super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, negative_samples, multiple_eval_items=multiple_eval_items)
 
         self.art2words = art2words
-        self.max_article_len = len(next(iter(art2words.values())))
+        self.max_article_len = max_article_len # len(next(iter(art2words.values())))
+        self.eval_mask = [1] * (max_hist_len-1) + [0]
 
     def gen_eval_instance(self, hist, target, negs):
         candidates = target + negs
@@ -320,13 +341,14 @@ class BertEvalDatasetNews(BertEvalDataset):
         labels = [1] * len(target) + [0] * len(negs)
 
         hist = [art_idx2word_ids(art, self.art2words) for art in hist[-(self.max_hist_len- 1):]]
-        hist = hist + [[self.mask_token] * self.max_article_len]  # predict only the next/last token in seq
+        # append a target to history which will be masked off
+        # alternatively we could put a random item. does not really matter because it's gonna be masked off anyways
+        hist = hist + [art_idx2word_ids(*target, self.art2words)]  # predict only the next/last token in seq
 
-        ## apply padding (left-side)
+        ## apply padding
         padding_len = self.max_hist_len - len(hist)
-
         hist = [[self.pad_token] * self.max_article_len] * padding_len + hist # Padding token := 0
         #
         assert len(hist) == self.max_hist_len
 
-        return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
+        return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), torch.LongTensor(candidates), torch.LongTensor(labels)
