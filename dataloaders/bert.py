@@ -1,7 +1,9 @@
 import itertools
 
-from .base import AbstractDataloader
-from .negative_samplers import negative_sampler_factory
+from dataloaders.base import AbstractDataloader
+#from dataloaders.news import BertTrainDatasetNews, BertEvalDatasetNews
+from dataloaders.negative_samplers import negative_sampler_factory
+from source.utils import check_all_equal
 
 import torch
 import torch.utils.data as data_utils
@@ -27,15 +29,22 @@ class BertDataloader(AbstractDataloader):
         ####################
         # Negative Sampling
 
-        self.train_negative_samples = self.create_neg_samples(args.train_negative_sampler_code,
-                                                                args.train_negative_sample_size,
-                                                                args.train_negative_sampling_seed,
-                                                                self.valid_items['train'])
+        self.train_neg_sampler = self.get_negative_sampler(args.train_negative_sampler_code,
+                                                           args.train_negative_sample_size,
+                                                           args.train_negative_sampling_seed,
+                                                           self.valid_items['train'],
+                                                           self.get_seq_lengths(self.train))
 
-        self.test_negative_samples = self.create_neg_samples(args.test_negative_sampler_code,
-                                                                args.test_negative_sample_size,
-                                                                args.test_negative_sampling_seed,
-                                                                self.valid_items['test'])
+        self.train_negative_samples = self.train_neg_sampler.get_negative_samples()
+
+        self.test_neg_sampler = self.get_negative_sampler(args.test_negative_sampler_code,
+                                                               args.test_negative_sample_size,
+                                                               args.test_negative_sampling_seed,
+                                                               self.valid_items['test'],
+                                                               self.get_seq_lengths(self.test))
+
+        self.test_negative_samples = self.test_neg_sampler.get_negative_samples()
+
     @classmethod
     def code(cls):
         return 'bert'
@@ -74,15 +83,17 @@ class BertDataloader(AbstractDataloader):
         dataset = BertEvalDataset(self.train, targets, self.max_hist_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
-    def create_neg_samples(self, code, neg_sample_size, seed, item_set):
+    def get_negative_sampler(self, code, neg_sample_size, seed, item_set, seq_lengths):
+        # sample negative instances for each user
         if self.split_method != "time_threshold":
             # use item counts for simple neg sampling
 
             negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-                                                              self.user_count, item_set,
-                                                              neg_sample_size,
-                                                              seed,
-                                                              self.save_folder)
+                                                            self.user_count, item_set,
+                                                            neg_sample_size,
+                                                            seed,
+                                                            seq_lengths,
+                                                            self.save_folder)
         else:
             # use distinguished set for neg sampling
             raise NotImplementedError()
@@ -93,7 +104,7 @@ class BertDataloader(AbstractDataloader):
             #                                                   self.save_folder)
 
 
-        return negative_sampler.get_negative_samples()
+        return negative_sampler
 
     def get_valid_items(self):
         all_items = set(self.smap.values()) # train + test + val
@@ -106,21 +117,36 @@ class BertDataloader(AbstractDataloader):
 
         return {'train': list(train), 'test': list(test)}
 
+    def get_seq_lengths(self, data_dict):
+        # determine sequence length for each entry
+        seq_lengths = list(map(len, data_dict.values()))
+        if check_all_equal:
+            return None
+        else:
+            return seq_lengths
+
+
 
 class BertDataloaderNews(BertDataloader):
     def __init__(self, args, dataset):
         super(BertDataloaderNews, self).__init__(args, dataset)
 
-        dataset = dataset.load_dataset()
-        self.vocab = dataset['vocab']
-        self.art_index2word_ids = dataset['art2words'] # art ID -> [word IDs]
+        data = dataset.load_dataset()
+        self.vocab = data['vocab']
+        self.art_index2word_ids = data['art2words'] # art ID -> [word IDs]
         self.max_article_len = args.max_article_len
+
+        if args.fix_pt_art_emb_fix:
+            args.rel_pc_art_emb_path = dataset._get_precomputed_art_emb_path()
 
         self.mask_token = args.max_vocab_size + 1
         args.bert_mask_token = self.mask_token
 
-        # create direct mapping art_id -> word_ids
-        self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
+        if self.args.fix_pt_art_emb_fix:
+            self.art_id2word_ids = None
+        else:
+            # create direct mapping art_id -> word_ids
+            self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
         del self.art_index2word_ids
 
     @classmethod
@@ -128,13 +154,13 @@ class BertDataloaderNews(BertDataloader):
         return 'bert_news'
 
     def _get_train_dataset(self):
-        # u2seq, art2words, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
-        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.max_hist_len, self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
+        # u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
+        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.train_negative_samples,  self.max_hist_len, self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
         return dataset
 
     def _get_eval_dataset(self, mode):
         targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.max_hist_len, self.max_article_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
+        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len, self.mask_token, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
 def art_idx2word_ids(art_idx, mapping):
@@ -197,72 +223,6 @@ class BertTrainDataset(data_utils.Dataset):
 
         if pad_len > 0:
             return [self.pad_token] * pad_len + seq
-
-
-class BertTrainDatasetNews(BertTrainDataset):
-    def __init__(self, u2seq, art2words, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
-        super(BertTrainDatasetNews, self).__init__(u2seq, max_hist_len, mask_prob, mask_token, num_items, rng)
-
-        self.art2words = art2words
-        self.max_article_len = max_article_len
-
-    def gen_train_instance(self, seq):
-        hist = []
-        labels = []
-        mask = []
-
-        for s in seq:
-            prob = self.rng.random()
-            if prob < self.mask_prob:
-                prob /= self.mask_prob
-
-                if prob < 0.8:
-                    # put original token but note mask position
-                    #tokens.append([self.mask_token] * self.max_article_len)
-                    tkn = s
-                    m_val = 0
-                elif prob < 0.9:
-                    # put random item
-                    tkn = self.rng.randint(1, self.num_items)
-                    #tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
-                    m_val = 1
-                else:
-                    # put original token but no masking
-                    tkn = s
-                    m_val = 1
-
-                hist.append(art_idx2word_ids(tkn, self.art2words))
-                labels.append(s)
-                mask.append(m_val)
-            else:
-                hist.append(art_idx2word_ids(s, self.art2words))
-                labels.append(0)
-                mask.append(1)
-
-        # truncate sequence & apply left-side padding
-        hist = self.pad_seq(hist, max_article_len=self.max_article_len)
-        labels = self.pad_seq(labels)
-        mask = self.pad_seq(mask, pad_token=1)
-
-        assert len(hist) == self.max_hist_len
-
-        return torch.LongTensor(hist), torch.LongTensor(mask), torch.LongTensor(labels)
-
-    def pad_seq(self, seq, pad_token=None, max_article_len=None):
-        seq = seq[-self.max_hist_len:]
-        pad_len = self.max_hist_len - len(seq)
-
-        if pad_token is None:
-            pad_token = self.pad_token
-
-        if pad_len > 0:
-            if max_article_len is not None:
-                return [[pad_token] * max_article_len] * pad_len + seq
-            else:
-                return [pad_token] * pad_len + seq
-        else:
-            return seq
-
 
 class BertEvalDataset(data_utils.Dataset):
     def __init__(self, u2seq, u2answer, max_hist_len, mask_token, negative_samples, pad_token=0, multiple_eval_items=True):
@@ -327,9 +287,117 @@ class BertEvalDataset(data_utils.Dataset):
         return str(f"{a}{b}")
 
 
+class BertTrainDatasetNews(BertTrainDataset):
+    def __init__(self, u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
+        super(BertTrainDatasetNews, self).__init__(u2seq, max_hist_len, mask_prob, mask_token, num_items, rng)
+
+        self.art2words = art2words
+        self.max_article_len = max_article_len
+        self.train_neg_samples = neg_samples
+
+    def __getitem__(self, index):
+
+        # generate masked item sequence on-the-fly
+        user = self.users[index]
+        seq = self._getseq(user)
+        neg_samples = self._get_neg_samples(user)
+
+        return self.gen_train_instance(seq, neg_samples)
+
+    def gen_train_instance(self, seq, neg_samples):
+        hist = []
+        labels = []
+        mask = []
+        candidates = [] # Note: we only candidates for the relevant mask positions
+        n_cands = len(neg_samples[0])
+
+        for idx, s in enumerate(seq):
+            prob = self.rng.random()
+            if prob < self.mask_prob:
+                prob /= self.mask_prob
+
+                if prob < 0.8:
+                    # Mask this position
+                    # Note: we put original token but record the Mask position
+                    # After the News Encoder this position will be replaced with Mask Embedding
+                    tkn = s
+                    m_val = 0
+                elif prob < 0.9:
+                    # put random item
+                    tkn = self.rng.randint(1, self.num_items)
+                    # tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
+                    m_val = 1
+                else:
+                    # put original token but no masking
+                    tkn = s
+                    m_val = 1
+
+                hist.append(art_idx2word_ids(tkn, self.art2words))
+                labels.append(s)
+                mask.append(m_val)
+
+                cands = neg_samples[idx] + [s]
+                self.rng.shuffle(cands) # shuffle candidates so model cannot trivially guess target position
+                candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
+
+            else:
+                hist.append(art_idx2word_ids(s, self.art2words))
+                labels.append(0)
+                mask.append(1)
+
+                cands = neg_samples[idx] + [s]
+                candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
+
+
+        # truncate sequence & apply left-side padding
+        ##############################################
+        # if art2word mapping is applied, hist is shape (max_article_len x max_hist_len), i.e. sequences of word IDs
+        # else, hist is shape (max_hist_len), i.e. sequence of article indices
+        hist = self.pad_seq(hist, max_article_len=(self.max_article_len if self.art2words is not None else None))
+        candidates = self.pad_seq(candidates, max_article_len=(self.max_article_len if self.art2words is not None else None),
+                                  n=n_cands+1)
+        labels = self.pad_seq(labels)
+        mask = self.pad_seq(mask, pad_token=1)
+
+        assert len(hist) == self.max_hist_len
+        #if len(candidates) != len([lbl for lbl in labels if lbl > 0]):
+        #    pass
+        # candidate shape := (L_m x N_candidates)
+        # L_m : number of mask positions (that need prediction)
+
+
+        return torch.LongTensor(hist), torch.LongTensor(mask), torch.LongTensor(candidates), torch.LongTensor(labels)
+        # return dictionary
+        # return {'input': [torch.LongTensor(hist), torch.LongTensor(mask)],
+        #         'cands': torch.LongTensor(candidates),
+        #         'lbls': torch.LongTensor(labels)}
+
+    def pad_seq(self, seq, pad_token=None, max_article_len=None, n=None):
+        seq = seq[-self.max_hist_len:]
+        pad_len = self.max_hist_len - len(seq)
+
+        if pad_token is None:
+            pad_token = self.pad_token
+
+        if pad_len > 0:
+            if max_article_len is not None and n is None:
+                return [[pad_token] * max_article_len] * pad_len + seq
+            elif max_article_len is not None and n is not None:
+                return [[[pad_token] * max_article_len] * n] * pad_len + seq
+            elif max_article_len is None and n is not None:
+                return [[pad_token] * n] * pad_len + seq
+            else:
+                return [pad_token] * pad_len + seq
+        else:
+            return seq
+
+    def _get_neg_samples(self, user):
+        return self.train_neg_samples[user]
+
+
 class BertEvalDatasetNews(BertEvalDataset):
 
-    def __init__(self, u2seq, u2answer, art2words, max_hist_len, max_article_len, mask_token, negative_samples, multiple_eval_items=True):
+    def __init__(self, u2seq, u2answer, art2words, negative_samples, max_hist_len, max_article_len, mask_token, multiple_eval_items=True):
         super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, negative_samples, multiple_eval_items=multiple_eval_items)
 
         self.art2words = art2words
@@ -348,8 +416,15 @@ class BertEvalDatasetNews(BertEvalDataset):
 
         ## apply padding
         padding_len = self.max_hist_len - len(hist)
-        hist = [[self.pad_token] * self.max_article_len] * padding_len + hist # Padding token := 0
+        if self.art2words is not None:
+            hist = [[self.pad_token] * self.max_article_len] * padding_len + hist # Padding token := 0
+        else:
+            hist = [self.pad_token] * padding_len + hist
         #
         assert len(hist) == self.max_hist_len
 
-        return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), torch.LongTensor(candidates), torch.LongTensor(labels)
+        #print(target)
+        # return dictionary
+        return {'input': [torch.LongTensor(hist), torch.LongTensor(self.eval_mask)],
+                'cands': torch.LongTensor(candidates),
+                'lbls': torch.LongTensor(labels)}

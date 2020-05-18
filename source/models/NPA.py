@@ -12,7 +12,7 @@ from source.modules.preference_query import PrefQueryWu
 
 class BaseModelNPA(NewsRecBaseModel):
 
-    def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args):
+    def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, prediction_layer, args):
 
         # self.device = device
         # self.vocab_len = vocab_len
@@ -52,11 +52,11 @@ class BaseModelNPA(NewsRecBaseModel):
         self.user_encoder = (PersonalisedAttentionWu(emb_dim_pref_query, self.dim_news_rep)
                              if user_encoder is None else user_encoder)
 
-        self.click_predictor = (SimpleDot(self.dim_user_rep, self.dim_news_rep)
-                                if click_predictor is None else click_predictor)
+        self.prediction_layer = (SimpleDot(self.dim_user_rep, self.dim_news_rep)
+                                if prediction_layer is None else prediction_layer)
 
         super(BaseModelNPA, self).__init__(token_embedding, news_encoder, user_encoder,
-                                           interest_extractor, click_predictor, args)
+                                           interest_extractor, prediction_layer, args)
 
     def forward(self, user_id, brows_hist_as_ids, candidates_as_ids):
 
@@ -68,12 +68,12 @@ class BaseModelNPA(NewsRecBaseModel):
 
         user_rep = self.create_user_rep(user_id, brows_hist_reps) # create user representation
 
-        click_scores = self.click_predictor(user_rep, candidate_reps) # compute raw click score
-        self.click_scores = click_scores
+        scores = self.prediction_layer(user_rep, candidate_reps) # compute raw click score
+        self.click_scores = scores
 
         #self.get_representation_shapes()
 
-        return click_scores
+        return scores
 
 
     def encode_news(self, user_id, news_articles_as_ids):
@@ -149,11 +149,9 @@ class VanillaNPA(BaseModelNPA):
         self.pref_q_word = PrefQueryWu(self.dim_pref_q, self.dim_emb_user_id)
         self.pref_q_article = PrefQueryWu(self.dim_pref_q, self.dim_emb_user_id)
 
-        self.interest_extractor = None
-
         self.user_encoder = PersonalisedAttentionWu(emb_dim_pref_query, self.dim_news_rep)
 
-        self.click_predictor = SimpleDot(self.dim_user_rep, self.dim_news_rep)
+        self.prediction_layer = SimpleDot(self.dim_user_rep, self.dim_news_rep)
 
     @classmethod
     def code(cls):

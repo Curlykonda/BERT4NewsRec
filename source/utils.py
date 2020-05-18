@@ -13,6 +13,10 @@ from torch.backends import cudnn
 sys.path.append("..")
 
 
+def check_all_equal(iterator):
+    # check if all elements have the same value
+    return len(set(iterator)) <= 1
+
 def pad_sequence(seq, max_len, pad_value=0, pad='post', trunc='last'):
     if len(seq) < max_len:
         if pad == 'post':

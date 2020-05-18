@@ -8,7 +8,7 @@ POS_EMBS = [
     None
 ]
 
-TOKEN_EMBS = [TokenEmbedding.code(), 'pt', None]
+#TOKEN_EMBS = [TokenEmbedding.code(), 'pt', None]
 
 class BERTEmbedding(nn.Module):
     """
@@ -46,11 +46,11 @@ class BERTEmbedding(nn.Module):
         return self.dropout(tkn + pos)
 
     def _get_token_emb(self):
-        if self.token_code not in TOKEN_EMBS:
-            raise KeyError("Unknown Token Embedding")
+        # if self.token_code not in TOKEN_EMBS:
+        #     raise KeyError("Unknown Token Embedding")
 
         if 'new' == self.token_code:
-            return TokenEmbedding(vocab_size=self.vocab_size, embed_size=self.embed_size)
+            return TokenEmbedding(vocab_size=self.vocab_size, token_embed_size=self.embed_size)
         elif 'pt' == self.token_code:
             # TODO: load pretrained embeddings
             return None

@@ -1,8 +1,50 @@
 import torch
 import torch.nn as nn
-
+import transformers
 
 from source.modules.attention import PersonalisedAttentionWu
+
+
+class BERTje(transformers.BertModel):
+
+    @classmethod
+    def code(cls):
+        return "bertje"
+
+class RandomEmbedding(nn.Module):
+
+    def __init__(self, dim_art_emb):
+        super(RandomEmbedding, self).__init__()
+
+        self.emb_dim = dim_art_emb
+
+    @classmethod
+    def code(cls):
+        return "rnd"
+
+    def forward(self, tokens):
+        return torch.randn(self.emb_dim)
+
+    def _get_emb(self):
+        return torch.randn(self.emb_dim)
+
+class PrecomputedFixedEmbeddings(nn.Module):
+    """
+    precomputed_art_embs : embedding matrix containing the pre-computed article embedding
+    """
+    def __init__(self, precomputed_art_embs, freeze=True):
+
+        super(PrecomputedFixedEmbeddings, self).__init__()
+        self.freeze = freeze
+        if precomputed_art_embs is not None:
+            self.article_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(precomputed_art_embs), freeze=freeze)
+        else:
+            raise ValueError("Need to pass valid article embeddings!")
+
+    def forward(self, article_indices):
+        # lookup embedding
+        return self.article_embeddings(article_indices)
+
 
 class NewsEncoderWuCNN(nn.Module):
 
@@ -40,6 +82,10 @@ class NewsEncoderWuCNN(nn.Module):
             assert contextual_rep[-1].shape[1] == self.n_filters # batch_size X n_cnn_filters
 
         return torch.stack(contextual_rep, axis=2) # batch_s X dim_news_rep X history_len
+
+    @classmethod
+    def code(cls):
+        return "npa_cnn"
 
 # Utility function to calc output size
 def output_size(in_size, kernel_size, stride, padding):
@@ -95,3 +141,7 @@ class KimCNN(torch.nn.Module):
     assert out.shape[1] == self.n_filters
 
     return out
+
+  @classmethod
+  def code(cls):
+      return "kim_cnn"

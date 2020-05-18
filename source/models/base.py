@@ -20,7 +20,7 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         pass
 
 class NewsRecBaseModel(BaseModel):
-    def __init__(self, token_embedding, news_encoder, user_encoder, interest_extractor, click_predictor, args):
+    def __init__(self, token_embedding, news_encoder, user_encoder, prediction_layer, args):
         super(NewsRecBaseModel, self).__init__(args)
 
         #representations
@@ -29,25 +29,10 @@ class NewsRecBaseModel(BaseModel):
         self.candidate_reps = None
         self.click_scores = None
 
-        if token_embedding is not None:
-            self.token_embedding = token_embedding
-        else:
-            if args.pretrained_emb is not None:
-                #assert pretrained_emb.shape == [vocab_len, emb_dim_words]
-                #print("Emb shape is {} and should {}".format(pretrained_emb.shape, (vocab_len, emb_dim_words)))
-
-                # TODO: load pretrained embeddings
-                pretrained_emb = None
-                raise NotImplementedError()
-                self.token_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_emb), freeze=False, padding_idx=0)      # word embeddings
-            else:
-                self.token_embedding = nn.Embedding(args.max_vocab_size, args.dim_word_emb, padding_idx=0)
-
+        self.token_embedding = token_embedding
         self.news_encoder = news_encoder
-        self.interest_extractor = interest_extractor
         self.user_encoder = user_encoder
-
-        self.click_predictor = click_predictor
+        self.prediction_layer = prediction_layer
 
     def forward(self, brows_hist_as_ids, candidates_as_ids):
 
@@ -59,10 +44,10 @@ class NewsRecBaseModel(BaseModel):
 
         user_rep = self.create_user_rep(brows_hist_reps) # create user representation
 
-        click_scores = self.click_predictor(user_rep, candidate_reps) # compute raw click score
-        self.click_scores = click_scores
+        scores = self.prediction_layer(user_rep, candidate_reps) # compute raw click score
+        self.click_scores = scores
 
-        return click_scores
+        return scores
 
 
     def encode_news(self, news_articles_as_ids):
@@ -75,12 +60,7 @@ class NewsRecBaseModel(BaseModel):
         return encoded_articles
 
     def create_user_rep(self, user_id, encoded_brows_hist):
-        if self.interest_extractor is not None:
-            in_shape = encoded_brows_hist.shape
-            encoded_brows_hist = torch.stack(self.interest_extractor(encoded_brows_hist), dim=2)
-
         self.user_rep = self.user_encoder(encoded_brows_hist)
-
         return self.user_rep
 
     def get_representation_shapes(self):

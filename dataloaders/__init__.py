@@ -1,5 +1,5 @@
 from datasets import dataset_factory
-from .bert import *
+from .bert import BertDataloader, BertDataloaderNews
 #from .ae import AEDataloader
 
 

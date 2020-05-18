@@ -2,6 +2,7 @@ from templates import set_template
 from datasets import DATASETS
 from dataloaders import DATALOADERS
 from source.models import MODELS
+from source.modules import NEWS_ENCODER
 from trainers import TRAINERS
 
 import argparse
@@ -13,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='train_bert_dpg', choices=['train_bert', 'train_dae', 'train_bert_ml', 'train_bert_dpg'])
+parser.add_argument('--template', type=str, default='train_bert_nie', choices=['train_bert_ccs', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'train_bert_dpg'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -38,6 +39,8 @@ parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max numbe
 parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
 
 parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
+parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")
+
 parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
 parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59", help='date for splitting train/test')
 
@@ -105,14 +108,29 @@ parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit o
 ################
 # Pretrained Embeddings
 ################
-parser.add_argument('--pretrained_emb_path', type=str, default=None, help='Path to pretrained word embeddings')
+parser.add_argument('--pt_word_emb_path', type=str, default=None, help='Path to pretrained word embeddings')
 parser.add_argument('--dim_word_emb', type=int, default=300, help='Dimension of word embedding vectors')
+
+parser.add_argument('--pt_art_emb_path', type=str, default=None, help='Path to pretrained article embeddings')
+parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of word embedding vectors')
+
+parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
+
 
 ################
 # Model
 ################
 parser.add_argument('--model_code', type=str, default='bert', choices=MODELS.keys())
 parser.add_argument('--model_init_seed', type=int, default=None)
+
+# News Encoder #
+parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje", "WuCNN"], help='Model to use as News Encoder')
+parser.add_argument('--fix_pt_art_emb', type=bool, default=None, help='fix pre-computed article embeddings')
+parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined vocabulary')
+parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
+
+###########################################
+
 # BERT #
 parser.add_argument('--bert_max_len', type=int, default=None, help='Length of sequence for bert')
 parser.add_argument('--bert_num_items', type=int, default=None, help='Number of total items')

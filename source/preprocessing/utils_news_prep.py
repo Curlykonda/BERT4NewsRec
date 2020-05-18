@@ -6,15 +6,17 @@ import random
 import nltk
 from nltk.tokenize import word_tokenize
 #nltk.download('punkt')
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, OrderedDict
 import numpy as np
 import pickle
+
 import torch
 import torch.nn as nn
 
 import fasttext
 
 from source.utils import get_art_id_from_dpg_history, build_vocab_from_word_counts, pad_sequence, reverse_mapping_dict
+from source.modules import NEWS_ENCODER
 from sklearn.model_selection import train_test_split
 
 
@@ -116,7 +118,6 @@ def generate_candidates_train(target, cand_article_ids, art_id2idx, neg_sample_r
         raise NotImplementedError()
 
     return candidates, lbls
-
 
 def add_instance_to_data(data, u_id, hist, cands, lbls):
     data.append({'input': (np.array(u_id, dtype='int32'), np.array(hist, dtype='int32'), np.array(cands, dtype='int32')),
@@ -427,7 +428,7 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
 
     return vocab, news_as_word_ids, art_id2idx
 
-def get_embeddings_from_pretrained(vocab, emb_path, emb_dim=300):
+def get_word_embs_from_pretrained_ft(vocab, emb_path, emb_dim=300):
     try:
         ft = fasttext.load_model(emb_path) # load pretrained vectors
 
@@ -548,6 +549,73 @@ def init_weights(m):
         if m.bias is not None:
             torch.nn.init.zeros_(m.bias)
 
+def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_len: int, art_emb_dim: int, pd_vocab=False):
+
+    if isinstance(news_data, str):
+        with open(news_data, 'rb') as f:
+            news_data = pickle.load(f)
+    elif isinstance(news_data, dict):
+        news_data = news_data
+    else:
+        raise NotImplementedError()
+
+    all_articles = news_data['all']
+    art_id2idx = OrderedDict()
+    art_id2emb = OrderedDict()
+
+    # initialise News Encoder
+    if news_encoder_code not in NEWS_ENCODER:
+        raise ValueError()
+
+    news_encoder = NEWS_ENCODER[news_encoder_code]
+    if 'rnd' == news_encoder_code:
+        news_encoder = news_encoder(art_emb_dim)
+    elif 'BERTje':
+        # in case of BERTje
+        # initialise BERT-tokeniser: add [UNK], [PAD], [SEP]
+        # tokenise sequence
+        # truncate
+        # encode
+        # extract features
+        # map ID to idx
+        # store embedding
+        raise NotImplementedError()
+    else:
+        raise NotImplementedError()
+
+
+    # 2. construct working vocab
+    # check for existing, pre-defined vocab
+    if pd_vocab:
+        #vocab = news_encoder.vocabulary
+        pass
+    else:
+        print("construct working vocabulary ...")
+        raise NotImplementedError()
+        #vocab = build_vocab_from_word_counts(vocab_raw, max_vocab_size, min_counts_for_vocab)
+        #print("Vocab: {}  Raw: {}".format(len(vocab), len(vocab_raw)))
+        #del(vocab_raw)
+
+    # 3.
+    print("encode news articles ...")
+    art_embs = []
+    for art_id in all_articles:
+
+        art_id2idx[art_id] = len(art_id2idx) # map article id to index
+        tokens = None
+
+        art_embs.append(news_encoder(tokens))
+
+    # reformat as matrix
+    # (n_items x dim_art_emb)
+    art_emb_matrix = torch.stack(art_embs, dim=0)
+
+    return art_id2idx, art_emb_matrix
+
+
+
+
+
 def main(config):
 
     if config.data_type not in DATA_TYPES:
@@ -571,8 +639,6 @@ def main(config):
         #idx2art_id = reverse_mapping_dict(art_id2idx)
 
         train_data, test_data = train_test_split(data, test_size=0.2, shuffle=True, random_state=42)
-
-        batch = gen_batch_data(train_data, news_as_word_ids, batch_size=100)
 
 
     elif config.data_type == "Adressa":

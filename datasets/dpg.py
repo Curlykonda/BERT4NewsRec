@@ -7,7 +7,7 @@ from collections import defaultdict
 from abc import *
 
 from .base import AbstractDataset
-from source.preprocessing.utils_npa import *
+from source.preprocessing.utils_news_prep import *
 
 
 
@@ -18,9 +18,11 @@ class AbstractDatasetDPG(AbstractDataset):
         self.args = args
         self.min_hist_len = self.args.min_hist_len
         self.use_content = args.use_article_content
+        self.pt_news_encoder = args.pt_news_encoder
 
         self.vocab = None
         self.art_idx2word_ids = None
+        self.art_embs = None
 
     @classmethod
     def sample_method(self):
@@ -30,10 +32,13 @@ class AbstractDatasetDPG(AbstractDataset):
     def all_raw_file_names(cls):
         pass
 
+    def _get_all_precomputed_art_emb_path(self):
+        return Path(self.args.pt_art_emb_path)
+
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
-        folder_name = '{}-min_len{}-split{}-content{}' \
-            .format(self.code(), self.min_hist_len, self.split, self.use_content)
+        folder_name = '{}-min_len{}-split{}-news_enc_{}' \
+            .format(self.code(), self.min_hist_len, self.split, self.pt_news_encoder)
         return preprocessed_root.joinpath(folder_name)
 
     def load_dataset(self):
@@ -41,6 +46,13 @@ class AbstractDatasetDPG(AbstractDataset):
         dataset_path = self._get_preprocessed_dataset_path()
         dataset = pickle.load(dataset_path.open('rb'))
         return dataset
+
+    def load_pc_art_embs(self):
+        pt_art_emb_path = self._get_precomputed_art_emb_path()
+        with pt_art_emb_path.open('rb') as fin:
+            art_embs = pickle.load(fin) # matrix containing article embeddings
+
+        return art_embs
 
     def preprocess(self):
         dataset_path = self._get_preprocessed_dataset_path()
@@ -50,10 +62,14 @@ class AbstractDatasetDPG(AbstractDataset):
         if not dataset_path.parent.is_dir():
             dataset_path.parent.mkdir(parents=True)
 
-        """
-        dataset = dict() 
-        dataset['train'] = {u_id: [(art_id_1, time_stamp_1), ... (art_id_N, time_stamp_N)]}
-        """
+        pt_art_emb_path = self._get_precomputed_art_emb_path()
+        if pt_art_emb_path.is_file():
+            print("Found pre-computed article embeddings for this setting. Skip re-computing")
+            with pt_art_emb_path.open('rb') as fin:
+                self.art_embs = pickle.load(fin) # matrix containing article embeddings
+
+        ###################
+        # Preprocess data
         news_data, art_id2idx = self.prep_dpg_news_data()
 
         user_data, u_id2idx = self.prep_dpg_user_data(news_data, art_id2idx)
@@ -66,10 +82,15 @@ class AbstractDatasetDPG(AbstractDataset):
                    'umap': u_id2idx,
                    'smap': art_id2idx,
                    'vocab': self.vocab,
-                   'art2words': self.art_idx2word_ids}
+                   'art2words': self.art_idx2word_ids,
+                   'art_emb': self.art_embs} # article emb matrix
 
-        with dataset_path.open('wb') as f:
-            pickle.dump(dataset, f)
+        # save
+        with dataset_path.open('wb') as fout:
+            pickle.dump(dataset, fout)
+
+        with pt_art_emb_path.open('wb') as fout:
+            pickle.dump(self.art_embs, fout)
 
 
     def split_data(self, user_data, user_count):
@@ -156,6 +177,10 @@ class AbstractDatasetDPG(AbstractDataset):
         news_data = pickle.load(file_path.open('rb'))  # dict
 
         return news_data
+
+    def _get_precomputed_art_emb_path(self):
+        folder = self._get_preprocessed_folder_path()
+        return folder.joinpath('pt_art_embs.pkl')
 
     @abstractmethod
     def prep_dpg_user_data(self):
@@ -247,8 +272,6 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         super(DPG_Nov19Dataset, self).__init__(args)
 
         self.sampledata_folder_path = "./Data/DPG_nov19/medium_time_split_wu"
-        self.vocab = None
-        self.art_index2word_ids = None
 
     @classmethod
     def code(cls):
@@ -307,13 +330,30 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         news_data = self.load_raw_news_data()
         if self.use_content:
             # use article content to create contextualised representations
-            vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
-                                                                           tokenizer=word_tokenize,
-                                                                           min_counts_for_vocab=self.args.min_counts_for_vocab,
-                                                                           max_article_len=self.args.max_article_len,
-                                                                           max_vocab_size=self.args.max_vocab_size)
-            self.art_idx2word_ids = news_as_word_ids
-            self.vocab = vocab
+
+            # TODO: given code for News Encoder, load or compute article embeddings
+            # create dataloader to feed batches of content into Encoder
+            # no shuffle, in order
+
+            # 
+            #
+            if self.args.pt_news_encoder is None:
+                vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
+                                                                               tokenizer=word_tokenize,
+                                                                               min_counts_for_vocab=self.args.min_counts_for_vocab,
+                                                                               max_article_len=self.args.max_article_len,
+                                                                               max_vocab_size=self.args.max_vocab_size)
+                self.art_idx2word_ids = news_as_word_ids
+                self.vocab = vocab
+
+            else:
+                art_id2idx, art_embs = precompute_dpg_art_emb(news_data=news_data,
+                                                                news_encoder_code=self.args.pt_news_encoder,
+                                                                max_article_len=self.args.max_article_len,
+                                                                art_emb_dim=self.args.dim_art_emb,
+                                                                pd_vocab=self.args.pd_vocab)
+
+                self.art_embs = art_embs
 
         else:
             art_id2idx = {}  # {'0': 0} dictionary news indices

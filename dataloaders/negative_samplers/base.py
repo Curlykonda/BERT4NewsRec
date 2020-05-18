@@ -1,17 +1,22 @@
 from abc import *
 from pathlib import Path
 import pickle
+import random
 
 
 class AbstractNegativeSampler(metaclass=ABCMeta):
-    def __init__(self, train, val, test, user_count, item_set, sample_size, seed, save_folder):
+    def __init__(self, train, val, test, user_count, item_set, sample_size, seed, seq_lengths, save_folder):
         self.train = train
         self.val = val
         self.test = test
         self.user_count = user_count
         self.item_set = item_set
         self.sample_size = sample_size
+        self.seq_lengths = seq_lengths # indicates the sequence length for each user
         self.seed = seed
+        assert self.seed is not None, 'Specify seed for random sampling'
+        random.seed(self.seed)
+
         self.save_folder = save_folder
 
     @classmethod
@@ -39,3 +44,7 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
         folder = Path(self.save_folder)
         filename = '{}-sample_size{}-seed{}.pkl'.format(self.code(), self.sample_size, self.seed)
         return folder.joinpath(filename)
+
+    @abstractmethod
+    def get_naive_random_samples(self, sample_size, item_set):
+        pass

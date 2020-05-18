@@ -120,7 +120,18 @@ class AbstractTrainer(metaclass=ABCMeta):
         with torch.no_grad():
             tqdm_dataloader = tqdm(self.val_loader)
             for batch_idx, batch in enumerate(tqdm_dataloader):
-                batch = [x.to(self.device) for x in batch]
+                if isinstance(batch, dict):
+                    device_dict = {}
+                    for key, val in batch.items():
+                        if not isinstance(val, list):
+                            device_dict[key] = val.to(self.device)
+                        else:
+                            device_dict[key] = [elem.to(self.device) for elem in val]
+
+                    batch = device_dict
+                    #batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
+                else:
+                    batch = [x.to(self.device) for x in batch]
 
                 metrics = self.calculate_metrics(batch)
 
