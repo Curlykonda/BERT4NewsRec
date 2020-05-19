@@ -4,7 +4,7 @@ from .bert import *
 
 TRAINERS = {
     BERTTrainer.code(): BERTTrainer,
-    BERT4NewsTrainer.code(): BERT4NewsTrainer,
+    BERT4NewsCategoricalTrainer.code(): BERT4NewsCategoricalTrainer,
     Bert4NewsDistanceTrainer.code(): Bert4NewsDistanceTrainer
 }
 

@@ -41,7 +41,7 @@ class BERTTrainer(AbstractTrainer):
         metrics = recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
 
-class BERT4NewsTrainer(BERTTrainer):
+class BERT4NewsCategoricalTrainer(BERTTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
@@ -51,21 +51,27 @@ class BERT4NewsTrainer(BERTTrainer):
         return 'bert_news_ce'
 
     def calculate_loss(self, batch):
-        seqs, mask, labels = batch
-        logits = self.model(seqs, mask)  # B x T x V
+        seqs, mask, cands, labels = batch
+        logits = self.model(seqs, mask, cands)  # (B*T) x N_c
 
-        logits = logits.view(-1, logits.size(-1))  # (B*T) x V
-        labels = labels.view(-1)  # B*T
-        loss = self.ce(logits, labels)
+        # labels have to indicate which candidate is the correct one
+        # convert target item index to categorical label C = [0, N_c]
+        lbls = labels[labels > 0]
+        c = cands[labels > 0]
+        categorical_lbls = (c == lbls.unsqueeze(1).repeat(1, c.size(1))).nonzero()[:, -1]
+
+        rel_logits = logits[labels.view(-1) > 0]
+
+        loss = self.ce(rel_logits, categorical_lbls)
         return loss
 
     def calculate_metrics(self, batch):
-        seqs, mask, candidates, labels = batch
-        scores = self.model(seqs, mask)  # (B x L_hist x V)
-        scores = scores[:, -1, :]  # (B x V)
+        seqs, mask, cands, labels = batch
+        scores = self.model(seqs, mask, cands)  # (B x N_c)
+        #scores = scores[:, -1, :]  # (B x N_c)
 
         # select scores for the article indices of candidates
-        scores = scores.gather(1, candidates)  # (B x n_candidates)
+        #scores = scores.gather(1, cands)  # (B x n_candidates)
 
         metrics = recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
@@ -161,9 +167,10 @@ class Bert4NewsDistanceTrainer(BERTTrainer):
         return loss
 
     def calculate_metrics(self, batch):
-        seqs, mask = batch['input']  # (B x T)
-        cands = batch['cands']  # (B x N_cands)
-        labels = batch['lbls']  # (B x T)
+        seqs, mask, cands, labels = batch
+        # seqs, mask = batch['input']  # (B x T)
+        # cands = batch['cands']  # (B x N_cands)
+        # labels = batch['lbls']  # (B x T)
         n_cands = cands.shape[1]
 
         # forward pass

@@ -51,7 +51,7 @@ def set_template(args):
         args.bert_num_blocks = 2
         args.bert_num_heads = 4
 
-    elif args.template.startswith('train_bert_ccs'):
+    elif args.template.startswith('train_bert_pcp'):
         # categorical candidate selection
         args.mode = 'train'
         args.local = True
@@ -67,12 +67,12 @@ def set_template(args):
         args.incl_time_stamp = False
         args.pt_news_encoder = 'rnd'
         args.fix_pt_art_emb_fix = True
+        args.pd_vocab = True
         args.max_article_len = 128
         args.dim_art_emb = 256
 
         # split strategy
         #args.split = 'time_threshold' # leave_one_out
-
 
         # dataloader
         args.dataloader_code = 'bert_news'
@@ -83,15 +83,15 @@ def set_template(args):
 
         # negative sampling
         args.train_negative_sampler_code = 'random'
-        args.train_negative_sample_size = 0
+        args.train_negative_sample_size = 5
         args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
         args.test_negative_sampler_code = 'random'
         args.test_negative_sample_size = 100
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
-        args.trainer_code = 'bert_news'
-        args.device = 'cuda' # if not args.local else 'cpu'
-        # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # training
+        args.trainer_code = 'bert_news_ce'
+        args.device = 'cuda' if not args.local else 'cpu'
 
         args.num_gpu = 1
         args.device_idx = '0'
@@ -105,7 +105,7 @@ def set_template(args):
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 
-        args.model_code = 'bert4news'
+        args.model_code = 'bert4nie'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
         args.bert_dropout = 0.1

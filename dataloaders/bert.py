@@ -103,7 +103,6 @@ class BertDataloader(AbstractDataloader):
             #                                                   seed,
             #                                                   self.save_folder)
 
-
         return negative_sampler
 
     def get_valid_items(self):
@@ -120,7 +119,7 @@ class BertDataloader(AbstractDataloader):
     def get_seq_lengths(self, data_dict):
         # determine sequence length for each entry
         seq_lengths = list(map(len, data_dict.values()))
-        if check_all_equal:
+        if check_all_equal(seq_lengths):
             return None
         else:
             return seq_lengths
@@ -425,6 +424,10 @@ class BertEvalDatasetNews(BertEvalDataset):
 
         #print(target)
         # return dictionary
-        return {'input': [torch.LongTensor(hist), torch.LongTensor(self.eval_mask)],
-                'cands': torch.LongTensor(candidates),
-                'lbls': torch.LongTensor(labels)}
+        # return {'input': [torch.LongTensor(hist), torch.LongTensor(self.eval_mask)],
+        #         'cands': torch.LongTensor(candidates),
+        #         'lbls': torch.LongTensor(labels)}
+
+        # return tensors - note that these could be of different sizes
+        return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
+               torch.LongTensor(candidates), torch.LongTensor(labels)

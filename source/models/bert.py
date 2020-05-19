@@ -66,7 +66,7 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
 
         # output layer: return the predicted and candidate embeddings
         # Trainer will compute similarities between prediction & candidates
-        prediction_layer = None
+        prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
 
         super().__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
 
@@ -103,9 +103,25 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         # create next-item embeddings from interest representations
         self.predicted_embs = self.nie_layer(interest_reps)  # (B x L_hist x D_article)
 
-        #scores = self.prediction_layer(self.predicted_embs, encoded_cands)  # (B x L_hist x n_candidates)
+        if self.prediction_layer is not None:
+            if len(self.predicted_embs.shape) < len(encoded_cands.shape):
+                # (B x L x D_a) x (B x L x N_c x D_a) -> (B x L x N_c)
+                # flatten inputs to compute scores
+                scores = self.prediction_layer(self.predicted_embs.view(-1, self.predicted_embs.shape[-1]),
+                                               encoded_cands.view(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
+                # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
+            elif len(self.predicted_embs.shape) == len(encoded_cands.shape):
+                # test case where we only have candidates for the last position
+                # hence, we only need the relevant embedding at the last position
 
-        return self.predicted_embs, encoded_cands
+                pred_embs = self.predicted_embs[:, -1, :] # (B x D_a)
+                cands = encoded_cands.transpose(1, 2)
+                scores = self.prediction_layer(pred_embs, cands) # (B x N_c)
+            else:
+                raise NotImplementedError()
+            return scores
+        else:
+            return self.predicted_embs, encoded_cands
 
     def encode_news_w_token(self, article_seq):
         encoded_arts = []
