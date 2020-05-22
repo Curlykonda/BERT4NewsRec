@@ -65,14 +65,16 @@ def set_template(args):
         args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
-        args.pt_news_encoder = 'rnd'
+        args.pt_news_encoder = 'BERTje'
+        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+
         args.fix_pt_art_emb_fix = True
         args.pd_vocab = True
         args.max_article_len = 128
         args.dim_art_emb = 256
 
         # split strategy
-        #args.split = 'time_threshold' # leave_one_out
+        args.split = 'time_threshold'
 
         # dataloader
         args.dataloader_code = 'bert_news'
@@ -139,8 +141,7 @@ def set_template(args):
         args.dim_art_emb = 256
 
         # split strategy
-        #args.split = 'time_threshold' # leave_one_out
-
+        args.split = 'time_threshold'
 
         # dataloader
         args.dataloader_code = 'bert_news'
@@ -148,6 +149,7 @@ def set_template(args):
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
+        args.eval_method = 'last_as_target'
 
         # negative sampling
         args.train_negative_sampler_code = 'random'
@@ -157,9 +159,11 @@ def set_template(args):
         args.test_negative_sample_size = 99
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
+        # training
         args.trainer_code = 'bert_news_dist'
         args.device = 'cuda' if not args.local else 'cpu'
         # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        args.train_method = 'masked_item'
 
         args.num_gpu = 1
         args.device_idx = '0'
@@ -173,6 +177,7 @@ def set_template(args):
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 
+        # model
         args.model_code = 'bert4nie'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 

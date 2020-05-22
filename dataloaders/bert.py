@@ -41,7 +41,7 @@ class BertDataloader(AbstractDataloader):
                                                                args.test_negative_sample_size,
                                                                args.test_negative_sampling_seed,
                                                                self.valid_items['test'],
-                                                               self.get_seq_lengths(self.test))
+                                                               None)
 
         self.test_negative_samples = self.test_neg_sampler.get_negative_samples()
 
@@ -62,7 +62,7 @@ class BertDataloader(AbstractDataloader):
         return dataloader
 
     def _get_train_dataset(self):
-        dataset = BertTrainDataset(self.train, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rng) # , self.art_idx2word_ids
+        dataset = BertTrainDataset(self.train, self.max_hist_len, self.mask_prob, self.mask_token, self.item_count, self.rnd) # , self.art_idx2word_ids
         return dataset
 
     def _get_val_loader(self):
@@ -85,24 +85,18 @@ class BertDataloader(AbstractDataloader):
 
     def get_negative_sampler(self, code, neg_sample_size, seed, item_set, seq_lengths):
         # sample negative instances for each user
-        if self.split_method != "time_threshold":
-            # use item counts for simple neg sampling
 
-            negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-                                                            self.user_count, item_set,
-                                                            neg_sample_size,
-                                                            seed,
-                                                            seq_lengths,
-                                                            self.save_folder)
-        else:
-            # use distinguished set for neg sampling
+        if False:
+            # use time-sensitive set for neg sampling
             raise NotImplementedError()
-            # negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
-            #                                                   self.user_count, self.item_count,
-            #                                                   neg_sample_size,
-            #                                                   seed,
-            #                                                   self.save_folder)
-
+        else:
+            # use item set for simple neg sampling
+            negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
+                                                        self.user_count, item_set,
+                                                        neg_sample_size,
+                                                        seed,
+                                                        seq_lengths,
+                                                        self.save_folder)
         return negative_sampler
 
     def get_valid_items(self):
@@ -134,6 +128,7 @@ class BertDataloaderNews(BertDataloader):
         self.vocab = data['vocab']
         self.art_index2word_ids = data['art2words'] # art ID -> [word IDs]
         self.max_article_len = args.max_article_len
+        self.w_time_stamps = args.incl_time_stamp
 
         if args.fix_pt_art_emb_fix:
             args.rel_pc_art_emb_path = dataset._get_precomputed_art_emb_path()
@@ -154,12 +149,25 @@ class BertDataloaderNews(BertDataloader):
 
     def _get_train_dataset(self):
         # u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
-        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.train_negative_samples,  self.max_hist_len, self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rng)
+        dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.train_negative_samples, self.max_hist_len, self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rnd)
         return dataset
 
     def _get_eval_dataset(self, mode):
-        targets = self.val if mode == 'val' else self.test
-        dataset = BertEvalDatasetNews(self.train, targets, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len, self.mask_token, multiple_eval_items=self.multiple_eval_items)
+        if 'val' == mode:
+            test_items = {}
+            u2hist = {}
+            # filter out user without validation instance
+            for u_idx, items in self.val.items():
+                if len(items) >= 1:
+                    test_items[u_idx] = items
+                    u2hist[u_idx] = self.train[u_idx]
+        else:
+            test_items = self.test
+            u2hist = self.train
+
+        # for now, we just assume to always use 'last_as_target'
+        dataset = BertEvalDatasetNews(u2hist, test_items, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len,
+                                      self.mask_token, self.w_time_stamps)
         return dataset
 
 def art_idx2word_ids(art_idx, mapping):
@@ -224,7 +232,7 @@ class BertTrainDataset(data_utils.Dataset):
             return [self.pad_token] * pad_len + seq
 
 class BertEvalDataset(data_utils.Dataset):
-    def __init__(self, u2seq, u2answer, max_hist_len, mask_token, negative_samples, pad_token=0, multiple_eval_items=True):
+    def __init__(self, u2seq, u2answer, max_hist_len, mask_token, negative_samples, pad_token=0):
         self.u2hist = u2seq
         self.u_sample_ids = sorted(self.u2hist.keys())
         self.u2targets = u2answer
@@ -234,40 +242,40 @@ class BertEvalDataset(data_utils.Dataset):
         self.pad_token = pad_token
         self.negative_samples = negative_samples
 
-        self.mul_eval_items = multiple_eval_items
+        #self.mul_eval_items = multiple_eval_items
 
-        if self.mul_eval_items:
-            u2hist_ext = {}
-            u2targets_ext = {}
-            for u in self.u_sample_ids:
-                hist = self.u2hist[u]
-                for i, item in enumerate(self.u2targets[u]):
-                    u_ext = self.concat_ints(u, i) # extend user id with item enumerator
-                    target = item
-                    u2hist_ext[u_ext] = hist
-                    u2targets_ext[u_ext] = target
-                    hist.append(item)
-
-            self.u_sample_ids = list(u2hist_ext.keys())
-            self.u2hist = u2hist_ext
-            self.u2targets = u2targets_ext
+        # if self.mul_eval_items:
+        #     u2hist_ext = {}
+        #     u2targets_ext = {}
+        #     for u in self.u_sample_ids:
+        #         hist = self.u2hist[u]
+        #         for i, item in enumerate(self.u2targets[u]):
+        #             u_ext = self.concat_ints(u, i) # extend user id with item enumerator
+        #             target = item
+        #             u2hist_ext[u_ext] = hist
+        #             u2targets_ext[u_ext] = target
+        #             hist.append(item)
+        #
+        #     self.u_sample_ids = list(u2hist_ext.keys())
+        #     self.u2hist = u2hist_ext
+        #     self.u2targets = u2targets_ext
 
     def __len__(self):
         return len(self.u_sample_ids)
 
     def __getitem__(self, index):
         user = self.u_sample_ids[index]
-        seq = self.u2hist[user]
-        target = self.u2targets[user]
+        hist = self.u2hist[user]
+        test_items = self.u2targets[user]
 
-        if target == []:
-            return
+        if test_items == []:
+            pass
         else:
             if isinstance(user, str):
                 negs = self.negative_samples[int(user[:-1])]
             else:
                 negs = self.negative_samples[user] # get negative samples
-            return self.gen_eval_instance(seq, target, negs)
+            return self.gen_eval_instance(hist, test_items, negs)
 
 
     def gen_eval_instance(self, hist, target, negs):
@@ -396,18 +404,34 @@ class BertTrainDatasetNews(BertTrainDataset):
 
 class BertEvalDatasetNews(BertEvalDataset):
 
-    def __init__(self, u2seq, u2answer, art2words, negative_samples, max_hist_len, max_article_len, mask_token, multiple_eval_items=True):
-        super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, negative_samples, multiple_eval_items=multiple_eval_items)
+    def __init__(self, u2seq, u2answer, art2words, negative_samples, max_hist_len, max_article_len, mask_token, w_time_stamps=False):
+        super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, negative_samples)
 
         self.art2words = art2words
         self.max_article_len = max_article_len # len(next(iter(art2words.values())))
-        self.eval_mask = [1] * (max_hist_len-1) + [0]
+        self.eval_mask = [1] * (max_hist_len-1) + [0]  # insert mask token at the end
+        self.w_time_stamps = w_time_stamps
 
-    def gen_eval_instance(self, hist, target, negs):
+    def gen_eval_instance(self, hist, test_items, negs):
+        # hist = train + test[:-1]
+        if self.w_time_stamps:
+            hist, time_stamps = (zip(*hist))
+            test_items, test_time_stamps = (zip(*test_items))
+            time_stamps = (time_stamps + test_time_stamps)[-self.max_hist_len:]
+            # padding
+            padding_len = self.max_hist_len - len(time_stamps)
+            time_stamps = [self.pad_token] * padding_len + time_stamps
+        else:
+            time_stamps = None
+            test_time_stamps = None
+
+        target = [test_items[-1]]
         candidates = target + negs # candidates as article indices
         #candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         labels = [1] * len(target) + [0] * len(negs)
 
+        # extend train history with new test interactions
+        hist = hist + test_items[:-1]
         hist = [art_idx2word_ids(art, self.art2words) for art in hist[-(self.max_hist_len- 1):]]
         # append a target to history which will be masked off
         # alternatively we could put a random item. does not really matter because it's gonna be masked off anyways
@@ -428,6 +452,10 @@ class BertEvalDatasetNews(BertEvalDataset):
         #         'cands': torch.LongTensor(candidates),
         #         'lbls': torch.LongTensor(labels)}
 
-        # return tensors - note that these could be of different sizes
-        return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
-               torch.LongTensor(candidates), torch.LongTensor(labels)
+        if self.w_time_stamps:
+            return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
+                   torch.LongTensor(candidates), torch.LongTensor(labels), \
+                   torch.LongTensor(time_stamps)
+        else:
+            return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
+                   torch.LongTensor(candidates), torch.LongTensor(labels)

@@ -31,6 +31,10 @@ parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DAT
 parser.add_argument('--min_rating', type=int, default=4, help='Only keep ratings greater than equal to this value')
 parser.add_argument('--min_uc', type=int, default=5, help='Only keep users with more than min_uc ratings')
 parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with more than min_sc ratings')
+parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
+parser.add_argument('--dataset_split_seed', type=int, default=98765)
+parser.add_argument('--eval_set_size', type=int, default=500,
+                    help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
 
 ## DPG
 parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
@@ -42,17 +46,14 @@ parser.add_argument('--use_article_content', type=bool, default=False, help="Ind
 parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")
 
 parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
-parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59", help='date for splitting train/test')
+parser.add_argument('--time_threshold', type=str, default="23-11-2019 23:59:59", help='date for splitting train/test. format: "DD-MM-YYYY HH:mm:ss"')
 
-parser.add_argument('--train_method', type=str, default='masked_interest', choices=['masked_interest', 'wu', 'pos_cut_off'])
+parser.add_argument('--train_method', type=str, default='masked_item', choices=['masked_interest', 'wu', 'pos_cut_off'])
 parser.add_argument('--n_articles', type=int, help="Number of articles in the dataset")
 parser.add_argument('--n_users', type=int, help="Number of users in the dataset")
 
-
-parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
-parser.add_argument('--dataset_split_seed', type=int, default=98765)
-parser.add_argument('--eval_set_size', type=int, default=500, 
-                    help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
+parser.add_argument('--validation_portion', type=float, default=0.1, help="Portion of test data used for validation")
+parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
 
 
 ################
@@ -63,6 +64,8 @@ parser.add_argument('--dataloader_random_seed', type=float, default=0.0)
 parser.add_argument('--train_batch_size', type=int, default=64)
 parser.add_argument('--val_batch_size', type=int, default=64)
 parser.add_argument('--test_batch_size', type=int, default=64)
+parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'random_as_target'])
+
 
 ################
 # NegativeSampler
@@ -116,6 +119,8 @@ parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of w
 
 parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
 
+parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', None), help='Method for BERT-based article embs')
+
 
 ################
 # Model
@@ -128,6 +133,7 @@ parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTj
 parser.add_argument('--fix_pt_art_emb', type=bool, default=None, help='fix pre-computed article embeddings')
 parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined vocabulary')
 parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
+parser.add_argument('--path_pt_news_enc', type=str, default=None, help="Path to pre-trained News Encoder")
 
 ###########################################
 

@@ -3,10 +3,12 @@ import json
 import csv
 import itertools
 import random
+import os
 import nltk
 from nltk.tokenize import word_tokenize
 #nltk.download('punkt')
 from collections import defaultdict, Counter, OrderedDict
+from pathlib import Path
 import numpy as np
 import pickle
 
@@ -15,6 +17,7 @@ import torch.nn as nn
 
 import fasttext
 
+from source.preprocessing.bert_feature_extractor import BertFeatureExtractor
 from source.utils import get_art_id_from_dpg_history, build_vocab_from_word_counts, pad_sequence, reverse_mapping_dict
 from source.modules import NEWS_ENCODER
 from sklearn.model_selection import train_test_split
@@ -549,7 +552,8 @@ def init_weights(m):
         if m.bias is not None:
             torch.nn.init.zeros_(m.bias)
 
-def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_len: int, art_emb_dim: int, pd_vocab=False):
+def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_len: int, art_emb_dim: int,
+                               lower_case=True, pd_vocab=False, path_to_pt_model=None, feature_method=None):
 
     if isinstance(news_data, str):
         with open(news_data, 'rb') as f:
@@ -564,44 +568,83 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
     art_id2emb = OrderedDict()
 
     # initialise News Encoder
-    if news_encoder_code not in NEWS_ENCODER:
-        raise ValueError()
-
-    news_encoder = NEWS_ENCODER[news_encoder_code]
+    # if news_encoder_code not in NEWS_ENCODER:
+    #     raise ValueError()
+    #
+    # news_encoder = NEWS_ENCODER[news_encoder_code]
     if 'rnd' == news_encoder_code:
-        news_encoder = news_encoder(art_emb_dim)
-    elif 'BERTje':
-        # in case of BERTje
-        # initialise BERT-tokeniser: add [UNK], [PAD], [SEP]
-        # tokenise sequence
-        # truncate
-        # encode
-        # extract features
-        # map ID to idx
-        # store embedding
-        raise NotImplementedError()
+        news_encoder = NEWS_ENCODER[news_encoder_code](art_emb_dim)
+    elif 'BERTje' == news_encoder_code:
+
+        bert_feat_extractor = BertFeatureExtractor(path_to_pt_model)
+        print("encode news articles ...")
+
+        methods = [('last_cls', None), ('sum_last_n', 4)]
+        if feature_method is None:
+            print('No BERTje method specified, using default "last_cls"')
+            methods = [('last_cls', None), ('sum_last_n', 4)]
+            feature_method = methods[1]
+        else:
+            if not isinstance(feature_method, tuple):
+                raise ValueError("Feature method should be tuple (method, N). If 'N' does not apply, pass None")
+            methods = [feature_method]
+            #raise ValueError('specify method to extract BERTje features!')
+
+        if feature_method not in methods:
+            methods.append(feature_method)
+
+        #subset = {k: all_articles[k] for k in list(all_articles.keys())[:100]}
+        bert_embeddings = bert_feat_extractor.encode_text_to_features_batches(
+                                            all_articles, methods,
+                                            10, max_article_len,
+                                            lower_case=lower_case)
+
+        bert_export_path = Path("/".join(['.', 'pc_article_embeddings', news_encoder_code]))
+        if not bert_export_path.is_dir():
+            os.makedirs(bert_export_path)
+
+        # save pre computed bert embeddings
+        for i, (m, n) in enumerate(methods):
+            n = 0 if n is None else n
+            method_name = "_".join([m, "n%i" % n, "max-len%i" % max_article_len,
+                                    'lower%i' % int(lower_case)])
+
+            with bert_export_path.joinpath(method_name + ".pkl").open('wb') as fout:
+                pickle.dump(bert_embeddings[i], fout)
+
+        # select only relevant ones for embedding matrix
+        art_embs = []
+        for art_id in all_articles:
+            art_id2idx[art_id] = len(art_id2idx)
+            # work with index to avoid dictionary with identical keys
+            art_embs.append(bert_embeddings[methods.index(feature_method)][art_id])
+
+        # reformat as matrix
+        # (n_items x dim_art_emb)
+        art_emb_matrix = torch.stack(art_embs, dim=0)
+
+        return art_id2idx, art_emb_matrix
+
     else:
         raise NotImplementedError()
-
 
     # 2. construct working vocab
     # check for existing, pre-defined vocab
     if pd_vocab:
-        #vocab = news_encoder.vocabulary
+        # vocab = news_encoder.vocabulary
         pass
     else:
         print("construct working vocabulary ...")
         raise NotImplementedError()
-        #vocab = build_vocab_from_word_counts(vocab_raw, max_vocab_size, min_counts_for_vocab)
-        #print("Vocab: {}  Raw: {}".format(len(vocab), len(vocab_raw)))
-        #del(vocab_raw)
+        # vocab = build_vocab_from_word_counts(vocab_raw, max_vocab_size, min_counts_for_vocab)
+        # print("Vocab: {}  Raw: {}".format(len(vocab), len(vocab_raw)))
+        # del(vocab_raw)
 
     # 3.
     print("encode news articles ...")
     art_embs = []
     for art_id in all_articles:
-
-        art_id2idx[art_id] = len(art_id2idx) # map article id to index
+        art_id2idx[art_id] = len(art_id2idx)  # map article id to index
         tokens = None
 
         art_embs.append(news_encoder(tokens))
@@ -611,10 +654,6 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
     art_emb_matrix = torch.stack(art_embs, dim=0)
 
     return art_id2idx, art_emb_matrix
-
-
-
-
 
 def main(config):
 
@@ -647,7 +686,7 @@ def main(config):
 
     elif config.data_type == "NPA":
         config.data_path = "../datasets/NPA/"
-        preprocess_user_file_wu(config.data_path)
+        raise NotImplementedError()
 
 
 if __name__ == "__main__":

@@ -93,7 +93,7 @@ def update_logging_dates(articles_read, logging_dates):
     return (first, last)
 
 
-def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=None, remove_unk_arts=True, test_time_thresh=None):
+def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=None, min_test_len=1, remove_unk_arts=True, test_time_thresh=None):
 
     if isinstance(article_data, dict):
         # use a given item sub sample
@@ -117,7 +117,7 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
     logging_dates = (None, None) # first & last reading date
 
     if max_hist_len is None:
-        max_hist_len = int(1e10)
+        max_hist_len = 1000
 
     for i, user in tqdm(enumerate(data_stream_generator(data_dir + "users"))):
         # quick preliminary eval
@@ -159,7 +159,9 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
                 user['articles_read'] = history
 
             # evaluate length reading history
-            if len(user['articles_read']) >= min_hist_len and len(user['articles_read']) <= max_hist_len:
+            if len(user['articles_read']) >= min_hist_len \
+                    and len(user['articles_read']) <= max_hist_len\
+                    and len(user['articles_test']) >= min_test_len:
                 # add valid user that fulfills condition
                 # exclude very high frequency users (potentially bots) and very low ones (too little interaction for proper modelling)
                 # item.keys() = dict_keys(['user_id', 'articles_read', 'opened_pushes', 'articles_pushed'])
@@ -279,7 +281,8 @@ def save_data_to_dir(save_path, sample_name, news_data, user_data, logging_dates
             json.dump(logging_dates, fout)
 
 
-def get_data_common_interactions(data_dir, n_news, n_users, news_len=30, min_hist_len=5, max_hist_len=None, sample_name=None, save_path=None, test_time_thresh=None, overwrite_existing=False):
+def get_data_common_interactions(data_dir, n_news, n_users, news_len=30, min_hist_len=5, max_hist_len=None, min_test_len=1,
+                                 sample_name=None, save_path=None, test_time_thresh=None, overwrite_existing=False):
     try:
         os.listdir(data_dir)
     except:
@@ -325,6 +328,7 @@ def get_data_common_interactions(data_dir, n_news, n_users, news_len=30, min_his
     print("Sample users ...")
     user_data, news_data, logging_dates = subsample_users(n_users, news_data, data_dir, min_hist_len,
                                                max_hist_len=max_hist_len,
+                                               min_test_len=min_test_len,
                                                test_time_thresh=test_time_thresh)
 
     logging_dates = {'start': logging_dates[0], 'end': logging_dates[1]}
@@ -360,7 +364,7 @@ def get_all_item_ids(data_dir):
     return item_ids
 
 
-def get_data_wu_sampling(data_dir, n_users, news_len, min_hist_len, max_hist_len, save_path, sample_name,
+def get_data_n_rnd_users(data_dir, n_users, news_len, min_hist_len, max_hist_len, min_test_len, save_path, sample_name,
                          test_time_thresh, overwrite_existing):
     try:
         os.listdir(data_dir)
@@ -394,6 +398,7 @@ def get_data_wu_sampling(data_dir, n_users, news_len, min_hist_len, max_hist_len
     user_data, news_data, logging_dates = subsample_users(n_users, all_item_ids, data_dir,
                                                min_hist_len=min_hist_len,
                                                max_hist_len=max_hist_len,
+                                               min_test_len=min_test_len,
                                                test_time_thresh=test_time_thresh)
 
     #specify logging dates
@@ -420,12 +425,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_dir', type=str, default='../datasets/DPG_nov19/', help='data path')
-    parser.add_argument('--save_path', type=str, default='../datasets/DPG_nov19/', help='path to save data')
+    parser.add_argument('--data_dir', type=str, default='../../Data/DPG_nov19/', help='data path')
+    parser.add_argument('--save_path', type=str, default='../../Data/DPG_nov19/', help='path to save data')
     #parser.add_argument('--sample_name', type=str, default='', help='name for directory')
     parser.add_argument('--overwrite_existing', type=bool, default=True)
 
-    parser.add_argument('--item_sample_method', type=str, default='most_common', choices=['random', 'most_common', 'wu'], help='')
+    parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
     parser.add_argument('--size', type=str, default='medium', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
     parser.add_argument('--n_users', type=int, default=2000, help='number of users')
@@ -437,8 +442,9 @@ if __name__ == "__main__":
                         help="Specify the format for the time threshold if it defiates from ISO 8601, e.g. >> 2013-09-30T15:34:00.000-07:00 <<")
 
     parser.add_argument('--news_len', type=int, default=30, help='number of words from news body')
-    parser.add_argument('--min_hist_len', type=int, default=6, help='minimum number of articles in reading history')
+    parser.add_argument('--min_hist_len', type=int, default=8, help='minimum number of articles in reading history')
     parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
+    parser.add_argument('--min_test_len', type=int, default=1, help='minimum number of articles in test interval')
 
 
     config = parser.parse_args()
@@ -462,11 +468,12 @@ if __name__ == "__main__":
 
     #threshold_date = int(datetime.datetime.strptime(config.time_threshold, '%d-%m-%Y-%H-%M-%S').strftime("%s")) #1577228399
 
-    if "wu" == config.item_sample_method:
-        news_data, user_data, logging_dates = get_data_wu_sampling(config.data_dir, n_users,
+    if "n_rnd_users" == config.item_sample_method:
+        news_data, user_data, logging_dates = get_data_n_rnd_users(config.data_dir, n_users,
                                                                    news_len=config.news_len,
                                                                    min_hist_len=config.min_hist_len,
                                                                    max_hist_len=config.max_hist_len,
+                                                                   min_test_len=config.min_test_len,
                                                                    save_path=config.save_path, sample_name=sample_name,
                                                                    test_time_thresh=threshold_time,
                                                                    overwrite_existing=config.overwrite_existing)

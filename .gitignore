@@ -192,3 +192,5 @@ pip-selfcheck.json
 Data/
 experiments/
 /slurm_outs/
+/BertModelsPT/
+/pc_article_embeddings/*

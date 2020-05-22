@@ -18,7 +18,7 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         print('Sampling negative items')
         for user in trange(self.user_count):
             # determine the items already seen by the user
-            if isinstance(self.train[user][1], tuple):
+            if isinstance(self.train[user][0], tuple):
                 seen = set(x[0] for x in self.train[user])
                 seen.update(x[0] for x in self.val[user])
                 seen.update(x[0] for x in self.test[user])
