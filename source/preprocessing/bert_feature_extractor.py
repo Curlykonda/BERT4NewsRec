@@ -279,7 +279,7 @@ class BertFeatureExtractor():
             print("converted bytes")
             sents = self.sent_tokenizer(text)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("{} is not handled".format(type(text)))
         tokens = []
 
         added_tokens = 0
