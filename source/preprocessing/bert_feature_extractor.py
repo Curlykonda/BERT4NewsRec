@@ -236,7 +236,7 @@ class BertFeatureExtractor():
                     seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :]
 
             if start_idx > 0 and batch_size*10 % start_idx == 0:
-                print(start_idx)
+                print("batch {}".format(start_idx/batch_size))
 
             start_idx += batch_size
             stop_idx += batch_size
@@ -282,9 +282,9 @@ class BertFeatureExtractor():
             text = text.encode('utf-8')
             print("converted bytes")
             sents = self.sent_tokenizer(text)
-        elif isinstance(text, None):
+        elif text is None:
             self.no_text_counter += 1
-            print(self.no_text_counter)
+            print("No text {}".format(self.no_text_counter))
             sents = [' ']
         else:
             raise NotImplementedError("{} is not handled".format(type(text)))
