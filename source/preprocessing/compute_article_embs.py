@@ -83,4 +83,4 @@ if __name__ == '__main__':
 
     #BERTje
     compute_bert_embeddings(args.data_dir, args.model_path, None, args.max_article_len,
-                                batch_size=args.batch_size, lower_case=args.lower_case, pkl_protocol=args.pkl_protocol)
+                                batch_size=args.batch_size, lower_case=args.lower_case)
