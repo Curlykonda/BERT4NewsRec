@@ -1,5 +1,5 @@
 from .base import AbstractTrainer
-from .utils import recalls_and_ndcgs_for_ks
+from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
 import torch
 import torch.nn as nn
@@ -38,7 +38,7 @@ class BERTTrainer(AbstractTrainer):
         scores = scores[:, -1, :]  # B x V
         scores = scores.gather(1, candidates)  # B x C
 
-        metrics = recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
 
 class BERT4NewsCategoricalTrainer(BERTTrainer):
@@ -80,8 +80,10 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
 
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)
+        # labels: (B x N_c)
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
+        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(scores, labels)
 
-        metrics = recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
 
 
@@ -203,5 +205,6 @@ class Bert4NewsDistanceTrainer(BERTTrainer):
             dist_scores = self.dist_func(pred_embs, cand_embs)
 
         # Note: inside this function, scores are inverted. check if aligns with distance function
-        metrics = recalls_and_ndcgs_for_ks(dist_scores.view(-1, n_cands), labels.view(-1, n_cands), self.metric_ks)
+        metrics = calc_recalls_and_ndcgs_for_ks(dist_scores.view(-1, n_cands), labels.view(-1, n_cands), self.metric_ks)
+        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(dist_scores.view(-1, n_cands), labels.view(-1, n_cands))
         return metrics

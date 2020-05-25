@@ -65,7 +65,7 @@ def set_template(args):
         args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
-        args.pt_news_encoder = 'BERTje'
+        args.pt_news_encoder = 'rnd'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
 
         args.fix_pt_art_emb_fix = True
