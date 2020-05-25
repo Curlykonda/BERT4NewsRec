@@ -269,10 +269,15 @@ class BertFeatureExtractor():
         """
         print(type(text))
         print(text)
+        text.encode('utf-8')
         if isinstance(text, str):
             sents = self.sent_tokenizer(text)
         elif isinstance(text, list):
             sents = text
+        elif isinstance(text, bytes):
+            text = text.encode('utf-8')
+            print("converted bytes")
+            sents = self.sent_tokenizer(text)
         else:
             raise NotImplementedError()
         tokens = []

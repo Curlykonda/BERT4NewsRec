@@ -490,6 +490,7 @@ if __name__ == "__main__":
 
     print("Done")
     print("User: {} \t Articles: {}".format(len(user_data), len(news_data['all'])))
+    print("Pickle protocol {}".format(pickle.HIGHEST_PROTOCOL))
     print("Logging dates: ")
     for key, val in logging_dates.items():
         print("{} {}".format(key, arrow.get(val).format()))

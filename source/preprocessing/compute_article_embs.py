@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import string
 
 from collections import defaultdict, Counter, OrderedDict
 from pathlib import Path
@@ -11,11 +12,11 @@ sys.path.append("..")
 
 
 def compute_bert_embeddings(data_path, path_to_pt_model, feature_method: tuple, max_article_len: int,
-                            batch_size: int, lower_case=True, store=True):
+                            batch_size: int, lower_case=True, store=True, pkl_protocol=4):
 
     if isinstance(data_path, str):
         with open(data_path, 'rb') as f:
-            news_data = pickle.load(f)
+            news_data = pickle.load(f) # encoding='utf-8'
     elif isinstance(data_path, dict):
         news_data = data_path
     else:
@@ -69,9 +70,10 @@ if __name__ == '__main__':
     parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
     parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
     parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--pkl_protocol', type=int, default=4, help="Pickle protocol with which data has been stored")
 
     args = parser.parse_args()
 
     #BERTje
     compute_bert_embeddings(args.data_dir, args.model_path, None, args.max_article_len,
-                                batch_size=args.batch_size, lower_case=args.lower_case)
+                                batch_size=args.batch_size, lower_case=args.lower_case, pkl_protocol=args.pkl_protocol)
