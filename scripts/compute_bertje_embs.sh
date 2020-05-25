@@ -19,7 +19,7 @@ data=("./Data/DPG_nov19/medium_time_split_n_rnd_users/news_data.pkl")
 pt_model="./BertModelsPT/bert-base-dutch-cased"
 max_len=30
 lower_case=0
-pkl_protocol=4
+
 
 #embeddings="../embeddings/cc.nl.300.bin"
 #SEEDS=(42 113)
