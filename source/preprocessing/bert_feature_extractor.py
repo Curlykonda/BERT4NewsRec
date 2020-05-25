@@ -235,7 +235,7 @@ class BertFeatureExtractor():
                 for idx in slice_idx:
                     seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :]
 
-            if batch_size*10 % start_idx == 0:
+            if start_idx > 0 and batch_size*10 % start_idx == 0:
                 print(start_idx)
 
             start_idx += batch_size
