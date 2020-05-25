@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_embs
 #SBATCH -n 8
-#SBATCH -t 06:00:00
+#SBATCH -t 01:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 

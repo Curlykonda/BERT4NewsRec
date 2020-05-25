@@ -151,6 +151,16 @@ class BertFeatureExtractor():
 
     def encode_text_to_features_batches(self, content: dict, methods: list, batch_size: int, max_seq_len: int,
                                         add_special_tokens=True, lower_case=True):
+        """
+        input:
+            - content: {art_ID: {'text', 'pub_date', 'first_pub_date', 'author', 'snippet', 'n_words'}}
+            dictionary containing the article data sorted by article IDs
+            - methods: [(method, N), ...]
+            list of tuple specifying the feature extraction method for BERTje, e.g. ("last_cls", None)
+
+        output: (dict(dict)) seq_embeddings {method: {article ID -> embedding vector}}
+
+        """
         self.max_seq_len = max_seq_len
         seq_embeddings = defaultdict(dict) # {method: {article ID -> embedding vector}}
 
@@ -161,6 +171,9 @@ class BertFeatureExtractor():
         #idx2key = {i: key for i, key in enumerate(content.keys())}
         item_keys = list(content.keys())
         slice_idx = list(range(0, batch_size))
+
+        # debug with prints wuhu!
+        print(content[item_keys[0]].keys())
 
         #
         while (start_idx < n_items):
@@ -254,9 +267,14 @@ class BertFeatureExtractor():
             tokens: list of token IDs
             n_words: number of words in full sequence (before truncating)
         """
-        print(text)
         print(type(text))
-        sents = self.sent_tokenizer(text)
+        print(text)
+        if isinstance(text, str):
+            sents = self.sent_tokenizer(text)
+        elif isinstance(text, list):
+            sents = text
+        else:
+            raise NotImplementedError()
         tokens = []
 
         added_tokens = 0
