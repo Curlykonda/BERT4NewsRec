@@ -64,8 +64,8 @@ if __name__ == '__main__':
     #parse arguments
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_dir', type=str, default='../Data/DPG_nov19/medium_time_split_n_rnd_users/news_data.pkl', help='data path')
-    parser.add_argument('--model_path', type=str, default='../BertModelsPT/bert-base-dutch-cased', help='model path')
+    parser.add_argument('--data_dir', type=str, default='../../Data/DPG_nov19/medium_time_split_n_rnd_users/news_data.pkl', help='data path')
+    parser.add_argument('--model_path', type=str, default='../../BertModelsPT/bert-base-dutch-cased', help='model path')
     parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
     parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
     parser.add_argument('--batch_size', type=int, default=128)

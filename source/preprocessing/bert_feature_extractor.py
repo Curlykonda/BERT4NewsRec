@@ -254,6 +254,8 @@ class BertFeatureExtractor():
             tokens: list of token IDs
             n_words: number of words in full sequence (before truncating)
         """
+        print(text)
+        print(type(text))
         sents = self.sent_tokenizer(text)
         tokens = []
 
