@@ -61,10 +61,12 @@ def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_art
         for i, (m, n) in enumerate(methods):
             n = 0 if n is None else n
             method_name = "_".join([m, "n%i" % n, "max-len%i" % max_article_len,
-                                    'lower%i' % int(lower_case)])
+                                    'lower%i' % lower_case])
 
             with bert_export_path.joinpath(method_name + ".pkl").open('wb') as fout:
                 pickle.dump(bert_embeddings[i], fout)
+
+        print("Saved embeddings to {}".format(bert_export_path))
     else:
         return bert_embeddings
 
@@ -83,4 +85,4 @@ if __name__ == '__main__':
 
     #BERTje
     compute_bert_embeddings(args.data_dir, args.model_path, None, args.max_article_len,
-                                batch_size=args.batch_size, lower_case=args.lower_case)
+                                batch_size=args.batch_size, lower_case=bool(args.lower_case))
