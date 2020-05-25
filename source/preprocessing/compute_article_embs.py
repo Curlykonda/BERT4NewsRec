@@ -11,8 +11,15 @@ import sys
 sys.path.append("..")
 
 
-def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_article_len: int,
-                            batch_size: int, lower_case=True, store=True):
+def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_article_len,
+                            batch_size, lower_case=True, store=True):
+    """
+
+    feature_method: tuple
+    max_article_len: int
+    batch_size: int
+
+    """
 
     if isinstance(data_path, str):
         with open(data_path, 'rb') as f:
