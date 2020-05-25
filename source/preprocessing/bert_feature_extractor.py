@@ -268,8 +268,8 @@ class BertFeatureExtractor():
             n_words: number of words in full sequence (before truncating)
         """
         print(type(text))
-        print(text)
-        text.encode('utf-8')
+        #print(text)
+        #text.encode('utf-8')
         if isinstance(text, str):
             sents = self.sent_tokenizer(text)
         elif isinstance(text, list):
