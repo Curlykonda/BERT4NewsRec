@@ -161,6 +161,7 @@ class BertFeatureExtractor():
         output: (dict(dict)) seq_embeddings {method: {article ID -> embedding vector}}
 
         """
+        self.no_text_counter = 0
         self.max_seq_len = max_seq_len
         seq_embeddings = defaultdict(dict) # {method: {article ID -> embedding vector}}
 
@@ -234,6 +235,9 @@ class BertFeatureExtractor():
                 for idx in slice_idx:
                     seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :]
 
+            if batch_size*10 % start_idx == 0:
+                print(start_idx)
+
             start_idx += batch_size
             stop_idx += batch_size
 
@@ -278,6 +282,10 @@ class BertFeatureExtractor():
             text = text.encode('utf-8')
             print("converted bytes")
             sents = self.sent_tokenizer(text)
+        elif isinstance(text, None):
+            self.no_text_counter += 1
+            print(self.no_text_counter)
+            sents = [' ']
         else:
             raise NotImplementedError("{} is not handled".format(type(text)))
         tokens = []

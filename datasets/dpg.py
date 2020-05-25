@@ -222,10 +222,12 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                     # check if data has already been separated into train & test
                     if 'articles_train' in user_data[u_id].keys():
                         train_items = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
-                                       in sorted(user_data[u_id]['articles_train'], key=lambda tup: tup[1])]
+                                       in sorted(user_data[u_id]['articles_train'], key=lambda tup: tup[1])
+                                       if art_id in art_id2idx]
 
                         test_items = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
-                                      in sorted(user_data[u_id]['articles_test'], key=lambda tup: tup[1])]
+                                      in sorted(user_data[u_id]['articles_test'], key=lambda tup: tup[1])
+                                      if art_id in art_id2idx]
 
 
                         if len(test_items) < 1 or len(train_items) < 2:

@@ -226,6 +226,7 @@ def count_article_interactions(data_dir, n_users=None):
 def subsample_items_from_id(data_dir: str, valid_ids: set, news_len: int, n_news: int, add_items=False, keys_to_exclude = ["short_id", "url"], test_time_thresh=None):
     article_dict = OrderedDict()
     article_dict['all'] = {}
+    removed_article = set()
 
     if add_items:
         additional_items = n_news - (len(valid_ids) if valid_ids is not None else 0)
@@ -238,6 +239,10 @@ def subsample_items_from_id(data_dir: str, valid_ids: set, news_len: int, n_news
 
             if news_len is not None:
                 item['snippet'] = get_text_snippet(item['text'], news_len)
+
+            if item['text'] is None:
+                removed_article.add(item['short_id'])
+                continue
 
             item['n_words'] = get_n_words(item['text'])
             val_dict = {key: val for (key, val) in item.items() if key not in keys_to_exclude}
@@ -416,7 +421,10 @@ def get_data_n_rnd_users(data_dir, n_users, news_len, min_hist_len, max_hist_len
                                         test_time_thresh=test_time_thresh)
     news_data['all'] = article_data['all']
 
-    assert len(news_data['all']) == len(valid_article_ids), "Article mismatch"
+    if len(news_data['all']) != len(valid_article_ids):
+        print("Article mismatch. Filter in subsequent preprocessing step")
+    # Mismatch can occur when a read article has no content. In this case, the article will be removed from user interactions
+    #
     assert len(user_data) == n_users, "Not enough users sampled"
 
     return news_data, user_data, logging_dates
