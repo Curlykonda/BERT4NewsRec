@@ -267,7 +267,7 @@ class BertFeatureExtractor():
             tokens: list of token IDs
             n_words: number of words in full sequence (before truncating)
         """
-        print(type(text))
+        #print(type(text))
         #print(text)
         #text.encode('utf-8')
         if isinstance(text, str):
