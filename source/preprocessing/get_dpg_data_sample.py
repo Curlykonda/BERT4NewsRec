@@ -362,7 +362,8 @@ def get_all_item_ids(data_dir):
 
     for i, item in enumerate(data_stream_generator(data_dir + "items")):
         # item.keys() = dict_keys(['text', 'pub_date', 'author', 'url', 'short_id'])
-        item_ids.add(item['short_id'])
+        if item['text'] is not None:
+            item_ids.add(item['short_id'])
         if i % 1e5 == 0 and i > 0:
             print("{} items scanned ..".format(i))
 

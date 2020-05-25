@@ -233,10 +233,10 @@ class BertFeatureExtractor():
 
                 # add features to dictionary
                 for idx in slice_idx:
-                    seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :]
+                    seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :].cpu()
 
             if start_idx > 0 and batch_size*10 % start_idx == 0:
-                print("batch {}".format(start_idx/batch_size))
+                print("batch {}".format(start_idx//batch_size))
 
             start_idx += batch_size
             stop_idx += batch_size
@@ -283,6 +283,7 @@ class BertFeatureExtractor():
             print("converted bytes")
             sents = self.sent_tokenizer(text)
         elif text is None:
+            # with correct data sampling, this should not happen :D
             self.no_text_counter += 1
             print("No text {}".format(self.no_text_counter))
             sents = [' ']

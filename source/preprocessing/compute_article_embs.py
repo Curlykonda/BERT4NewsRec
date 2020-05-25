@@ -76,8 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='../../BertModelsPT/bert-base-dutch-cased', help='model path')
     parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
     parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
-    parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--pkl_protocol', type=int, default=4, help="Pickle protocol with which data has been stored")
+    parser.add_argument('--batch_size', type=int, default=64)
+    #parser.add_argument('--pkl_protocol', type=int, default=4, help="Pickle protocol with which data has been stored")
 
     args = parser.parse_args()
 
