@@ -17,7 +17,7 @@ python --version
 #data=("../Data/DPG_nov19/medium_time_split_most_common/")
 #embeddings="../embeddings/cc.nl.300.bin"
 pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
-art_len=30
+art_len=128
 SEEDS=(42)
 POS_EMBS=("tpe" "lpe")
 
@@ -29,7 +29,7 @@ do
   for POS in "${POS_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc $pt_news_enc \
-  --pos_embs $POS --max_article_len $art_len
+  --pos_embs $POS --max_article_len $art_len --lower_case 0
   done
 done
 

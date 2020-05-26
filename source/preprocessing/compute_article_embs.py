@@ -6,13 +6,14 @@ import string
 from collections import defaultdict, Counter, OrderedDict
 from pathlib import Path
 from source.preprocessing.bert_feature_extractor import BertFeatureExtractor
+from source.preprocessing.utils_news_prep import get_emb_file_name
 
 import sys
 sys.path.append("..")
 
 
 def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_article_len: int,
-                            batch_size: int, lower_case=True, store=True):
+                            batch_size: int, lower_case=False, store=True):
     """
 
     feature_method: tuple or list of tuples of format (method, N), e.g. ("sum_last_n", 4)
@@ -60,8 +61,8 @@ def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_art
         # save pre computed bert embeddings
         for i, (m, n) in enumerate(methods):
             n = 0 if n is None else n
-            method_name = "_".join([m, "n%i" % n, "max-len%i" % max_article_len,
-                                    'lower%i' % lower_case])
+            method_name = get_emb_file_name(m, n, max_article_len, lower_case)
+            print(method_name)
 
             with bert_export_path.joinpath(method_name + ".pkl").open('wb') as fout:
                 pickle.dump(bert_embeddings[i], fout)

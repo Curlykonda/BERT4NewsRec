@@ -553,7 +553,7 @@ def init_weights(m):
             torch.nn.init.zeros_(m.bias)
 
 def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_len: int, art_emb_dim: int,
-                               lower_case=True, pd_vocab=False, path_to_pt_model=None, feature_method=None):
+                               lower_case=False, pd_vocab=False, path_to_pt_model=None, feature_method=None):
 
     if isinstance(news_data, str):
         with open(news_data, 'rb') as f:
@@ -578,7 +578,6 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         bert_export_path = Path("/".join(['.', 'pc_article_embeddings', news_encoder_code]))
         if not bert_export_path.is_dir():
             os.makedirs(bert_export_path)
-
 
         bert_feat_extractor = BertFeatureExtractor(path_to_pt_model)
 

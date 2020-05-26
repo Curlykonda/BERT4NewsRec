@@ -131,24 +131,6 @@ class BertFeatureExtractor():
         # print(x_out.shape)
         return x_out
 
-    def test_feature_extraction(self, n_items, methods, batch_size, emb_dim, seq_len, **kwargs):
-
-        self.dev_mode = True
-        #save default properties
-
-
-
-        dummy_content = [0] * n_items
-        self.embedding_dim_cur = emb_dim
-        self.batch_size_cur = batch_size
-
-        encoded_text, n_words = self.encode_text_to_features_batches(dummy_content, methods, max_seq_len=seq_len)
-
-        #restore default properties
-        self.dev_mode = False
-
-        return encoded_text
-
     def encode_text_to_features_batches(self, content: dict, methods: list, batch_size: int, max_seq_len: int,
                                         add_special_tokens=True, lower_case=True):
         """
