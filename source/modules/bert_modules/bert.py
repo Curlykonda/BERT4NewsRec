@@ -24,7 +24,7 @@ class BERT(nn.Module):
         self.token_embedding = token_emb
         self.pos_embedding = pos_emb
 
-        self.embedding = BERTEmbedding(token_emb, pos_emb, vocab_size=vocab_size, embed_size=self.hidden, max_len=max_len, dropout=dropout)
+        self.embedding = BERTEmbedding(args, token_emb, pos_emb, vocab_size=vocab_size, embed_size=self.hidden, max_len=max_len, dropout=dropout)
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(

@@ -36,20 +36,24 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         # load pretrained embeddings
 
 
-        if args.fix_pt_art_emb is not None:
-            ## load vocab
+        if args.fix_pt_art_emb:
+            # fix pre-computed article embs - no need for Word Embs or vocab
+            token_embedding = None
+        else:
+            # compute article embs end-to-end using vocab + Word Embs + News Encoder
+            # load vocab
             with Path(args.vocab_path).open('rb') as fin:
                 data = pickle.load(fin)
                 vocab = data['vocab']
 
+            # load pre-trained Word Embs, if exist
             pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
+            # intialise Token (Word) Embs either with pre-trained or random
             token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
-
-        else:
-            token_embedding = None
 
         # article embeddings
         if args.rel_pc_art_emb_path is not None:
+            # load pre-computed article embs
             with Path(args.rel_pc_art_emb_path).open('rb') as fin:
                 precomputed_art_embs = pickle.load(fin)
 
@@ -59,24 +63,47 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
             news_encoder = PrecomputedFixedEmbeddings(precomputed_art_embs)
         else:
             # get news_encoder from code
-            raise NotImplementedError("Selected invalid News Encoder!")
+            if "wucnn" == args.news_encoder:
+                news_encoder = NewsEncoderWuCNN(n_filters=args.dim_art_emb)
+            else:
+                raise NotImplementedError("Selected invalid News Encoder!")
 
-        # Later: news_encoder = BERT(args, token_emb='new')
-        user_encoder = BERT(args, token_emb=None)  # new module: BERTasUserEncoder
+        # select positional or temporal emb
+        pos_emb = None
+        if args.pos_embs is not None:
+            pos_emb = args.pos_embs
+        elif args.temp_embs is not None:
+            pos_emb = args.temp_embs
+        elif args.pos_embs is not None and args.temp_embs is not None:
+            raise ValueError("Can't use positional and temporal embedding! Use one or none")
+
+        # initialise BERT user encoder
+        user_encoder = BERT(args, token_emb=None, pos_emb=pos_emb)
 
         # output layer: return the predicted and candidate embeddings
-        # Trainer will compute similarities between prediction & candidates
-        prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
+        if args.pred_layer is None:
+            prediction_layer = None
+        elif 'l2' == args.pred_layer:
+            # L2 distance
+            # compute similarities between prediction & candidates
+            prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
+        elif 'cos' == args.pred_layer:
+            # cosine distance
+            raise NotImplementedError()
 
         super().__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
 
-        # project hidden interest representation to next-item embedding
-        self.nie_layer = nn.Linear(args.bert_hidden_units, args.dim_art_emb)
+        if args.nie_layer is not None:
+            # project hidden interest representation to next-item embedding
+            self.nie_layer = nn.Linear(args.bert_hidden_units, args.dim_art_emb)
+        else:
+            self.nie_layer = None
+
         # trainable mask embedding
         self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True)
-
-        self.encoded_art = None
         self.mask_token = args.bert_mask_token
+        self.encoded_art = None
+
 
     @classmethod
     def code(cls):
@@ -100,28 +127,31 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         interest_reps = self.create_hidden_interest_representations(encoded_arts, mask)
         # (B x L_hist x D_bert)
 
-        # create next-item embeddings from interest representations
-        self.predicted_embs = self.nie_layer(interest_reps)  # (B x L_hist x D_article)
+        # embedding projection
+        if self.nie_layer is not None:
+            # create next-item embeddings from interest representations
+            interest_reps = self.nie_layer(interest_reps)  # (B x L_hist x D_article)
 
+        # score prediction
         if self.prediction_layer is not None:
-            if len(self.predicted_embs.shape) < len(encoded_cands.shape):
+            if len(interest_reps.shape) < len(encoded_cands.shape):
                 # (B x L x D_a) x (B x L x N_c x D_a) -> (B x L x N_c)
                 # flatten inputs to compute scores
-                scores = self.prediction_layer(self.predicted_embs.view(-1, self.predicted_embs.shape[-1]),
+                scores = self.prediction_layer(interest_reps.view(-1, interest_reps.shape[-1]),
                                                encoded_cands.view(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
                 # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
-            elif len(self.predicted_embs.shape) == len(encoded_cands.shape):
+            elif len(interest_reps.shape) == len(encoded_cands.shape):
                 # test case where we only have candidates for the last position
                 # hence, we only need the relevant embedding at the last position
 
-                pred_embs = self.predicted_embs[:, -1, :] # (B x D_a)
+                pred_embs = interest_reps[:, -1, :] # (B x D_a)
                 cands = encoded_cands.transpose(1, 2)
                 scores = self.prediction_layer(pred_embs, cands) # (B x N_c)
             else:
                 raise NotImplementedError()
             return scores
         else:
-            return self.predicted_embs, encoded_cands
+            return interest_reps, encoded_cands
 
     def encode_news_w_token(self, article_seq):
         encoded_arts = []
@@ -154,8 +184,6 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
 
         # (B x L_hist x D_article)
         return encoded_arts
-
-
 
     def create_hidden_interest_representations(self, encoded_articles, mask):
         # build mask: perhaps by adding up the word ids? -> make efficient for batch

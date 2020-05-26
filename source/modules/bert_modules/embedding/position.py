@@ -44,11 +44,16 @@ class TrigonometricPositionEmbedding(nn.Module):
 
     @staticmethod
     def code():
+        # trigonometric positional embedding
         return 'tpe'
 
     def forward(self, x):
-        #TODO: check if the forward pass add this to the WordEmb or if we should rather return only the PosEmb and sum them later
-
         # x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
         # return self.dropout(x)
         return Variable(self.pe[:, :x.size(1)], requires_grad=False)
+
+
+POS_EMBS = {
+    LearnablePositionEmbedding.code(): LearnablePositionEmbedding,
+    TrigonometricPositionEmbedding.code(): TrigonometricPositionEmbedding
+}

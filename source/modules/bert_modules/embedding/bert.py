@@ -1,6 +1,8 @@
 import torch.nn as nn
 from .token import *
 from .position import *
+from source.modules.temporal_embedding import *
+
 
 POS_EMBS = [
     TrigonometricPositionEmbedding.code(),
@@ -19,7 +21,7 @@ class BERTEmbedding(nn.Module):
         sum of all these features are output of BERTEmbedding
     """
 
-    def __init__(self, token_code, pos_code, vocab_size, embed_size, max_len, dropout=0.1, pretrained_tokens=None):
+    def __init__(self, args, token_code, pos_code, vocab_size, embed_size, max_len, dropout=0.1, pretrained_tokens=None):
         """
         :param vocab_size: total vocab size
         :param embed_size: embedding size of token embedding
@@ -29,6 +31,10 @@ class BERTEmbedding(nn.Module):
         self.vocab_size = vocab_size
         self.max_seq_len = max_len
         self.embed_size = embed_size
+
+        self.temp_embs_hidden_units = args.temp_embs_hidden_units
+        self.temp_embs_act_func = args.temp_embs_act_func
+
 
         self.token_code = token_code
         self.pos_code = pos_code
@@ -52,22 +58,30 @@ class BERTEmbedding(nn.Module):
         if 'new' == self.token_code:
             return TokenEmbedding(vocab_size=self.vocab_size, token_embed_size=self.embed_size)
         elif 'pt' == self.token_code:
-            # TODO: load pretrained embeddings
+            # load pretrained embeddings
             return None
         else:
             return None
 
     def _get_pos_emb(self):
-        if self.pos_code not in POS_EMBS:
-            raise KeyError("Unknown Positional Embedding")
+        if self.pos_code is not None \
+            and self.pos_code not in POS_EMBS and self.pos_code not in TEMP_EMBS:
+                raise KeyError("{} is unknown Positional/Temporal Embedding".format(self.pos_code))
 
+        self.pos_code = self.pos_code.lower()
+
+        # pos embs
         if 'tpe' == self.pos_code:
             return TrigonometricPositionEmbedding(d_model=self.embed_size, max_len=self.max_seq_len)
         elif 'lpe' == self.pos_code:
             return LearnablePositionEmbedding(self.embed_size, self.max_seq_len)
-        elif 'ate' == self.pos_code:
-            # Absolute Temporal Embedding
-            raise NotImplementedError()
+        # temp embs
+        elif 'lte' == self.pos_code:
+            temp_emb = TEMP_EMBS[self.pos_code](1, self.embed_size)
+            return temp_emb.reset_parameters()
+        elif 'nte' == self.pos_code:
+            temp_emb = TEMP_EMBS[self.pos_code]
+            return temp_emb(self.embed_size, self.args.temp_embs_hidden_units, self.args.temp_embs_act_func)
         else:
             return None
 

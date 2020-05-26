@@ -52,26 +52,27 @@ def set_template(args):
         args.bert_num_heads = 4
 
     elif args.template.startswith('train_bert_pcp'):
-        # categorical candidate selection
+        # pseudo categorical prediction
         args.mode = 'train'
-        args.local = True
+        #args.local = True
 
         # dataset
         #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-        args.min_hist_len = 6
+        args.min_hist_len = 8
 
         # preprosessing
         args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
-        args.pt_news_encoder = 'rnd'
-        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        args.pt_news_encoder = 'BERTje'
+        #args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
 
-        args.fix_pt_art_emb_fix = True
+        args.fix_pt_art_emb = True
         args.pd_vocab = True
-        args.max_article_len = 128
-        args.dim_art_emb = 256
+        #args.max_article_len = 30
+        args.dim_art_emb = 768
+        #args.lower_case = False
 
         # split strategy
         args.split = 'time_threshold'
@@ -88,7 +89,7 @@ def set_template(args):
         args.train_negative_sample_size = 5
         args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
         args.test_negative_sampler_code = 'random'
-        args.test_negative_sample_size = 100
+        args.test_negative_sample_size = 99
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
         # training
@@ -102,22 +103,25 @@ def set_template(args):
         args.enable_lr_schedule = True
         args.decay_step = 25
         args.gamma = 1.0
-        # num_epochs = 100
         args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+        # evaluation
         args.metric_ks = [5, 10, 50]
         args.best_metric = 'NDCG@10'
 
+        # model
         args.model_code = 'bert4nie'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
-
+        # bert
         args.bert_dropout = 0.1
-        args.bert_hidden_units = 256
+        args.bert_hidden_units = args.dim_art_emb
         args.bert_mask_prob = 0.15
         args.bert_max_len = 100
         args.bert_num_blocks = 2
         args.bert_num_heads = 4
 
-        #assert args.bert_max_len == args.max_article_len
+        #args.pos_embs = 'tpe' # embeddings
+        args.pred_layer = 'l2' # prediction layer
+        args.nie_layer = None
 
     elif args.template.startswith('train_bert_nie'):
         # Bert4News with the Next-Item Embedding objective

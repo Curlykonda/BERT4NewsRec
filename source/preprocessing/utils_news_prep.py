@@ -564,8 +564,7 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         raise NotImplementedError()
 
     all_articles = news_data['all']
-    art_id2idx = OrderedDict()
-    art_id2emb = OrderedDict()
+
 
     # initialise News Encoder
     # if news_encoder_code not in NEWS_ENCODER:
@@ -576,8 +575,12 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         news_encoder = NEWS_ENCODER[news_encoder_code](art_emb_dim)
     elif 'BERTje' == news_encoder_code:
 
+        bert_export_path = Path("/".join(['.', 'pc_article_embeddings', news_encoder_code]))
+        if not bert_export_path.is_dir():
+            os.makedirs(bert_export_path)
+
+
         bert_feat_extractor = BertFeatureExtractor(path_to_pt_model)
-        print("encode news articles ...")
 
         methods = [('last_cls', None), ('sum_last_n', 4)]
         if feature_method is None:
@@ -593,35 +596,33 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         if feature_method not in methods:
             methods.append(feature_method)
 
+        ## check for existing
+        m, n = feature_method
+        file_name = get_emb_file_name(m, n, max_article_len, lower_case)
+        if bert_export_path.joinpath(file_name + ".pkl").is_file():
+            with bert_export_path.joinpath(file_name + ".pkl").open('rb') as fin:
+                bert_embeddings = pickle.load(fin)
+
+            print("Found pre-computed embeddings and will use these!")
+            art_id2idx, art_emb_matrix = select_rel_embs_and_stack(all_articles, bert_embeddings)
+
+            return art_id2idx, art_emb_matrix
+
+        print("encode news articles ...")
         #subset = {k: all_articles[k] for k in list(all_articles.keys())[:100]}
         bert_embeddings = bert_feat_extractor.encode_text_to_features_batches(
                                             all_articles, methods,
                                             10, max_article_len,
                                             lower_case=lower_case)
 
-        bert_export_path = Path("/".join(['.', 'pc_article_embeddings', news_encoder_code]))
-        if not bert_export_path.is_dir():
-            os.makedirs(bert_export_path)
-
         # save pre computed bert embeddings
         for i, (m, n) in enumerate(methods):
-            n = 0 if n is None else n
-            method_name = "_".join([m, "n%i" % n, "max-len%i" % max_article_len,
-                                    'lower%i' % int(lower_case)])
+            file_name = get_emb_file_name(m, n, max_article_len, lower_case)
 
-            with bert_export_path.joinpath(method_name + ".pkl").open('wb') as fout:
+            with bert_export_path.joinpath(file_name + ".pkl").open('wb') as fout:
                 pickle.dump(bert_embeddings[i], fout)
 
-        # select only relevant ones for embedding matrix
-        art_embs = []
-        for art_id in all_articles:
-            art_id2idx[art_id] = len(art_id2idx)
-            # work with index to avoid dictionary with identical keys
-            art_embs.append(bert_embeddings[methods.index(feature_method)][art_id])
-
-        # reformat as matrix
-        # (n_items x dim_art_emb)
-        art_emb_matrix = torch.stack(art_embs, dim=0)
+        art_id2idx, art_emb_matrix = select_rel_embs_and_stack(all_articles, bert_embeddings[methods.index(feature_method)])
 
         return art_id2idx, art_emb_matrix
 
@@ -642,6 +643,7 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
 
     # 3.
     print("encode news articles ...")
+    art_id2idx = OrderedDict()
     art_embs = []
     for art_id in all_articles:
         art_id2idx[art_id] = len(art_id2idx)  # map article id to index
@@ -654,6 +656,26 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
     art_emb_matrix = torch.stack(art_embs, dim=0)
 
     return art_id2idx, art_emb_matrix
+
+
+def select_rel_embs_and_stack(articles, embedding_dict):
+    # select only relevant ones for embedding matrix
+    art_embs = []
+    art_id2idx = OrderedDict()
+    for art_id in articles:
+        art_id2idx[art_id] = len(art_id2idx)
+        art_embs.append(embedding_dict[art_id])
+
+    # reformat as matrix
+    # (n_items x dim_art_emb)
+    art_emb_matrix = torch.stack(art_embs, dim=0)
+    return art_id2idx, art_emb_matrix
+
+
+def get_emb_file_name(method: str, n, max_len: int, lower_case: bool):
+    n = 0 if n is None else n
+    return "_".join([method, "n%i" % n, "max-len%i" % max_len,
+                            'lower%i' % int(lower_case)])
 
 def main(config):
 

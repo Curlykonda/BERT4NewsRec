@@ -37,10 +37,12 @@ parser.add_argument('--eval_set_size', type=int, default=500,
                     help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
 
 ## DPG
-parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
+parser.add_argument('--min_hist_len', type=int, default=8, help='Only keep users with reading histories longer than this value')
 parser.add_argument('--min_counts_for_vocab', type=int, default=2, help='Include word in vocabulary with this minimal occurrences')
 parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max number of words in the vocabulary')
 parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
+parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
+parser.add_argument('--min_test_len', type=int, default=1, help='minimum number of articles in test interval')
 
 parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
 parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")
@@ -128,12 +130,30 @@ parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', No
 parser.add_argument('--model_code', type=str, default='bert', choices=MODELS.keys())
 parser.add_argument('--model_init_seed', type=int, default=None)
 
-# News Encoder #
-parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje", "WuCNN"], help='Model to use as News Encoder')
+## News Encoder #
+
+# pre-trained stuff
+parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje", "WuCNN"], help='Pretrained model to use as News Encoder')
+parser.add_argument('--path_pt_news_enc', type=str, default=None, help="Path to pre-trained News Encoder")
 parser.add_argument('--fix_pt_art_emb', type=bool, default=None, help='fix pre-computed article embeddings')
 parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined vocabulary')
 parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
-parser.add_argument('--path_pt_news_enc', type=str, default=None, help="Path to pre-trained News Encoder")
+
+# end-to-end
+parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn"], help='Model to use as News Encoder')
+
+
+# Positional Embeddings #
+parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe'], help='Type of positional embedding')
+
+# Temporal Embeddings #
+parser.add_argument('--temp_embs', type=str, default=None, choices=['lte', 'nte', 'tte'], help='Type of temporal embedding')
+parser.add_argument('--temp_embs_hidden_units', type=int, default=[128, 256], help='Hidden units for neural temporal embedding')
+parser.add_argument('--temp_embs_act_func', type=str, default=None, choices=['relu', 'gelu', 'tanh'], help='Activation function for neural temporal embedding')
+
+# Prediction Layer #
+parser.add_argument('--pred_layer', type=str, default=None, choices=['l2', 'cos'], help='Type of prediction layer')
+parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help='Type of next-item embedding layer')
 
 ###########################################
 

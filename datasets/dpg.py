@@ -307,6 +307,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                 raise NotImplementedError()
 
             if self.args.pt_news_encoder is None:
+                # prepare news articles to create article embeddings end-to-end
                 vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
                                                                                tokenizer=word_tokenize,
                                                                                min_counts_for_vocab=self.args.min_counts_for_vocab,
@@ -316,6 +317,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                 self.vocab = vocab
 
             else:
+                # use pre-trained news encoder to get article embeddings
                 art_id2idx, art_embs = precompute_dpg_art_emb(news_data=news_data,
                                                                 news_encoder_code=self.args.pt_news_encoder,
                                                                 max_article_len=self.args.max_article_len,

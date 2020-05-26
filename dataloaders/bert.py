@@ -130,13 +130,13 @@ class BertDataloaderNews(BertDataloader):
         self.max_article_len = args.max_article_len
         self.w_time_stamps = args.incl_time_stamp
 
-        if args.fix_pt_art_emb_fix:
+        if args.fix_pt_art_emb:
             args.rel_pc_art_emb_path = dataset._get_precomputed_art_emb_path()
 
         self.mask_token = args.max_vocab_size + 1
         args.bert_mask_token = self.mask_token
 
-        if self.args.fix_pt_art_emb_fix:
+        if self.args.fix_pt_art_emb:
             self.art_id2word_ids = None
         else:
             # create direct mapping art_id -> word_ids

@@ -110,6 +110,9 @@ class AbstractTrainer(metaclass=ABCMeta):
                 self.log_extra_train_info(log_data)
                 self.logger_service.log_train(log_data)
 
+            if self.args.local and batch_idx == 20:
+                break
+
         return accum_iter
 
     def validate(self, epoch, accum_iter):

@@ -36,7 +36,7 @@ def mrr_score(scores, labels):
     hits = labels.gather(1, rank)
     recpr_rank = hits / (torch.arange(hits.size(1)) + 1)
     mrr = torch.sum(recpr_rank) / torch.sum(hits)
-    return mrr
+    return mrr.item()
 
     # np variant:
     # order = np.argsort(y_score)[::-1] #Returns the indices that would sort an array
