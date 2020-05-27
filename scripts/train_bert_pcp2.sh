@@ -29,8 +29,8 @@ do
   echo "$SEED"
   for POS in "${POS_EMBS[@]}"
   do
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc $pt_news_enc \
-  --pos_embs $POS --max_article_len $art_len --bert_feature_method=$method
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
+  --pos_embs=$POS --max_article_len=$art_len --bert_feature_method=$method
   done
 done
 

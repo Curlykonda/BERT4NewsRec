@@ -6,10 +6,12 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from abc import *
+from sklearn.preprocessing import StandardScaler
 
 from .base import AbstractDataset
 from source.preprocessing.utils_news_prep import precompute_dpg_art_emb, preprocess_dpg_news_file, prep_dpg_user_file
 from source.preprocessing.get_dpg_data_sample import get_data_n_rnd_users
+from source.utils import map_time_stamp_to_vector
 
 
 
@@ -207,7 +209,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         #     return train, val, test
 
         train, val, test = defaultdict(list), defaultdict(list), defaultdict(list)
-
+        all_ts = defaultdict(list)
+        print("> Prepping user data ..")
         for u_id in user_data.keys():
 
             if 'masked_item' == self.args.train_method:
@@ -223,11 +226,11 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
                     # check if data has already been separated into train & test
                     if 'articles_train' in user_data[u_id].keys():
-                        train_items = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
+                        train_items = [(art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
                                        in sorted(user_data[u_id]['articles_train'], key=lambda tup: tup[1])
                                        if art_id in art_id2idx]
 
-                        test_items = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
+                        test_items = [(art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
                                       in sorted(user_data[u_id]['articles_test'], key=lambda tup: tup[1])
                                       if art_id in art_id2idx]
 
@@ -236,19 +239,22 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                             continue
 
                         # confirm time intervals
-                        if train_items[-1][1] <= threshold_date and test_items[0][1] >= threshold_date:
-                            pass
-                        else:
-                            raise ValueError("Split into time intervals incorrect. check preprocessing!")
+                        # if train_items[-1][1] <= threshold_date and test_items[0][1] >= threshold_date:
+                        #     pass
+                        # else:
+                        #     raise ValueError("Split into time intervals incorrect. check preprocessing!")
 
                         u_id2idx[u_id] = u_idx = len(u_id2idx)  # create mapping from u_id to index
 
                         if self.w_time_stamp:
                             train[u_idx] = train_items
                             test[u_idx] = test_items
+                            all_ts['train'].extend([*list(zip(*train_items))[1]]) # ts: [DD, HH, mm, ss]
+                            all_ts['test'].extend([*list(zip(*test_items))[1]])
                         else:
                             train[u_idx] = [*list(zip(*train_items))[0]]
                             test[u_idx] = [*list(zip(*test_items))[0]]
+
 
                         # add to validation sample
                         val[u_idx] = self.select_rnd_item_for_validation(test[u_idx])
@@ -258,12 +264,12 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                         full_hist = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
                                       in sorted(user_data[u_id]['articles_read'], key=lambda tup: tup[1])]
                         tmp_test = []
-                        for i, (item, time_stamp) in enumerate(full_hist):
-                            if time_stamp < threshold_date:
-                                train[u_idx].append((item, time_stamp) if self.w_time_stamp else item)
+                        for i, (item, ts) in enumerate(full_hist):
+                            if ts < threshold_date:
+                                train[u_idx].append((item, map_time_stamp_to_vector(ts)) if self.w_time_stamp else item)
                             else:
                                 if self.w_time_stamp:
-                                    tmp_test = full_hist[i:]
+                                    tmp_test = [(item, map_time_stamp_to_vector(ts)) for item, ts in full_hist[i:]]
                                 else:
                                     tmp_test = [*list(zip(*full_hist[i:]))[0]]
                                 break
@@ -286,6 +292,34 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                 raise NotImplementedError()
             else:
                 raise NotImplementedError()
+
+        if self.w_time_stamp:
+            ## map & transform all time stamps
+
+            if self.args.normalise_time_stamps is not None:
+                # fit scaler
+                if 'standard' == self.args.normalise_time_stamps:
+
+                    scaler = StandardScaler()
+                    print("> Fitting scaler ..")
+                    scaler.fit(np.array(all_ts['train']))
+                else:
+                    raise NotImplementedError()
+
+                # transform data
+                print("> Scaling time stamps ..")
+                for u_id, seq in train.items():
+                    articles, ts = zip(*seq)
+                    train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
+
+                for u_id, seq in test.items():
+                    articles, ts = zip(*seq)
+                    train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
+
+                for u_id, seq in val.items():
+                    if len(seq) > 0:
+                        articles, ts = zip(*seq)
+                        train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
 
         return train, val, test, u_id2idx
 

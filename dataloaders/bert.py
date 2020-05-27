@@ -416,7 +416,7 @@ class BertTrainDatasetNews(BertTrainDataset):
         assert len(hist) == self.max_hist_len
 
         if self.w_time_stamps:
-            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
+#            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
             #args.len_time_vec
             len_time_vec = len(time_stamps[0])
             time_stamps = pad_seq(time_stamps, pad_token=0,
@@ -454,7 +454,7 @@ class BertEvalDatasetNews(BertEvalDataset):
             test_items, test_time_stamps = zip(*test_items)
             time_stamps = list(time_stamps + test_time_stamps)[-self.max_hist_len:]
             # time vectors
-            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
+            #time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
             #args.len_time_vec
             len_time_vec = len(time_stamps[0])
             # padding

@@ -45,9 +45,9 @@ class BERT(nn.Module):
 
         # embedding the indexed sequence to sequence of vectors
         # combine token & positional embeddings
-        print(x[0].norm(2))
+        #print(x[0].norm(2))
         x = self.embedding(x)
-        print(x.norm(2))
+        #print(x.norm(2))
         #x = x_emb
 
         # running over multiple transformer blocks
@@ -55,5 +55,5 @@ class BERT(nn.Module):
             x = transformer.forward(x, mask)
 
         # (B x seq_len x d_bert)
-        print(x.norm(2))
+        #print(x.norm(2))
         return x

@@ -146,6 +146,7 @@ parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn"],
 parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe'], help='Type of positional embedding')
 
 # Temporal Embeddings #
+parser.add_argument('--normalise_time_stamps', type=str, default='standard', help="specify scaler for time stamps")
 parser.add_argument('--len_time_vec', type=int, default=4, help='Which information to include from UNIX timestamp')
 parser.add_argument('--temp_embs', type=str, default=None, choices=['lte', 'nte', 'tte'], help='Type of temporal embedding')
 parser.add_argument('--temp_embs_hidden_units', type=int, default=[256, 768], help='Hidden units for neural temporal embedding')

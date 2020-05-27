@@ -139,7 +139,7 @@ def set_template(args):
         args.temp_embs_act_func = "relu"
 
         args.incl_time_stamp = True
-        args.lower_case = True
+        args.lower_case = False
 
 
     # elif args.template.startswith('train_dae'):
