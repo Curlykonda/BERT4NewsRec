@@ -34,6 +34,7 @@ class BERTEmbedding(nn.Module):
 
         self.temp_embs_hidden_units = args.temp_embs_hidden_units
         self.temp_embs_act_func = args.temp_embs_act_func
+        self.len_time_vec = args.len_time_vec
 
 
         self.token_code = token_code
@@ -88,10 +89,10 @@ class BERTEmbedding(nn.Module):
         # temp embs
         elif 'lte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.embed_size)
+            return temp_emb(self.len_time_vec, self.embed_size)
         elif 'nte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.embed_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
+            return temp_emb(self.len_time_vec, self.embed_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
         else:
             return None
 

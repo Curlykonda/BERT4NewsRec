@@ -23,12 +23,13 @@ class LinearProject(nn.Module):
     Use to create Temporal Embedding from 0D input (e.g. time stamp)
     (B x L_hist) -> (B x L_hist x D_e)
     """
-    def __init__(self, d_model=768):
+    def __init__(self, d_in=1, d_model=768):
         super(LinearProject, self).__init__()
 
         #self.lin = NormalLinear(1, d_model)
-        self.lin = nn.Linear(1, d_model)
+        self.lin = nn.Linear(d_in, d_model)
         self.d_model = d_model
+        self.d_in = d_in
         #self.lin.reset_parameters()
 
     @staticmethod
@@ -44,16 +45,16 @@ class LinearProject(nn.Module):
         return t_out / math.sqrt(self.d_model)
 
 class NeuralFunc(nn.Module):
-    def __init__(self, embed_dim, hidden_units=[256, 768], act_func="relu"):
+    def __init__(self, d_in, d_model, hidden_units=[256, 768], act_func="relu"):
         super(NeuralFunc, self).__init__()
 
-        assert embed_dim == hidden_units[-1], "Last layer with {} units must match embedding dimension {}".format(hidden_units[-1], embed_dim)
+        assert d_model == hidden_units[-1], "Last layer with {} units must match embedding dimension {}".format(hidden_units[-1], d_model)
 
         self.lin_layers = nn.ModuleList()
 
         for i, hidden in enumerate(hidden_units):
             if 0 == i:
-                self.lin_layers.append(nn.Linear(1, hidden))
+                self.lin_layers.append(nn.Linear(d_in, hidden))
             else:
                 self.lin_layers.append(nn.Linear(hidden_units[i-1], hidden))
 
@@ -75,14 +76,14 @@ class NeuralFunc(nn.Module):
 
     def forward(self, x_in):
         x = x_in.unsqueeze(2).float()
-        # input x: time stamp in UNIX format, i.e. single int value
+        # input x: time stamp in vector format, e.g. [DD, HH, mm, ss]
         for i, lin in enumerate(self.lin_layers):
             if i < len(self.lin_layers)-1:
                 x = self.activation(lin(x))
             else:
                 x_out = lin(x)
-
-        return x_out
+        # (B x L x D_model)
+        return x_out.squeeze(2)
 
 TEMP_EMBS = {
     LinearProject.code(): LinearProject,

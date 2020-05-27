@@ -3,7 +3,8 @@ import itertools
 from dataloaders.base import AbstractDataloader
 #from dataloaders.news import BertTrainDatasetNews, BertEvalDatasetNews
 from dataloaders.negative_samplers import negative_sampler_factory
-from source.utils import check_all_equal
+from source.utils import check_all_equal, map_time_stamp_to_vector
+
 
 import torch
 import torch.utils.data as data_utils
@@ -194,6 +195,31 @@ def art_idx2word_ids(art_idx, mapping):
     else:
         return art_idx
 
+def pad_seq(seq, pad_token, max_hist_len, max_article_len=None, n=None):
+    """
+    seq (list): sequence(s) of token (int)
+    pad_token (int): padding token to fill gaps
+    max_article_len (int): article length; padding has to fit this length, e.g.
+        if an article is mapped to sequence of L words, then padded items are also sequences of L * pad_token
+    n (int): number of candidates; for each position we could have N candidates
+
+    """
+    seq = seq[-max_hist_len:]
+    pad_len = max_hist_len - len(seq)
+
+    if pad_len > 0:
+        if max_article_len is not None and n is None:
+            return [[pad_token] * max_article_len] * pad_len + seq
+        elif max_article_len is not None and n is not None:
+            return [[[pad_token] * max_article_len] * n] * pad_len + seq
+        elif max_article_len is None and n is not None:
+            return [[pad_token] * n] * pad_len + seq
+        else:
+            return [pad_token] * pad_len + seq
+    else:
+        return seq
+
+
 class BertTrainDataset(data_utils.Dataset):
     def __init__(self, u2seq, max_hist_len, mask_prob, mask_token, num_items, rng, pad_token=0, ):
         self.u2seq = u2seq
@@ -240,14 +266,9 @@ class BertTrainDataset(data_utils.Dataset):
                 tokens.append(s)
                 labels.append(0)
 
-        return torch.LongTensor(self.pad_seq(tokens)), torch.LongTensor(self.pad_seq(labels))
+        return torch.LongTensor(pad_seq(tokens, self.max_hist_len, pad_token=self.pad_token)), \
+               torch.LongTensor(pad_seq(labels, self.max_hist_len, pad_token=self.pad_token))
 
-    def pad_seq(self, seq):
-        seq = seq[-self.max_hist_len:]
-        pad_len = self.max_hist_len - len(seq)
-
-        if pad_len > 0:
-            return [self.pad_token] * pad_len + seq
 
 class BertEvalDataset(data_utils.Dataset):
     def __init__(self, u2seq, u2answer, max_hist_len, mask_token, negative_samples, pad_token=0):
@@ -302,14 +323,13 @@ class BertEvalDataset(data_utils.Dataset):
         labels = [1] * len(target) + [0] * len(negs)
 
         hist = hist + [self.mask_token]  # predict only the next/last token in seq
-        hist = hist[-self.max_hist_len:]
-        padding_len = self.max_hist_len - len(hist)
-        hist = [self.pad_token] * padding_len + hist
+        hist = pad_seq(hist, self.pad_token, self.max_hist_len)
 
         return torch.LongTensor(hist), torch.LongTensor(candidates), torch.LongTensor(labels)
 
     def concat_ints(self, a, b):
         return str(f"{a}{b}")
+
 
 
 class BertTrainDatasetNews(BertTrainDataset):
@@ -386,16 +406,21 @@ class BertTrainDatasetNews(BertTrainDataset):
         ##############################################
         # if art2word mapping is applied, hist is shape (max_article_len x max_hist_len), i.e. sequences of word IDs
         # else, hist is shape (max_hist_len), i.e. sequence of article indices
-        hist = self.pad_seq(hist, max_article_len=(self.max_article_len if self.art2words is not None else None))
-        candidates = self.pad_seq(candidates, max_article_len=(self.max_article_len if self.art2words is not None else None),
-                                  n=n_cands+1)
-        labels = self.pad_seq(labels)
-        mask = self.pad_seq(mask, pad_token=1)
+        hist = pad_seq(hist, self.pad_token, self.max_hist_len, max_article_len=(self.max_article_len if self.art2words is not None else None))
+        candidates = pad_seq(candidates, self.pad_token, self.max_hist_len,
+                             max_article_len=(self.max_article_len if self.art2words is not None else None),
+                             n=n_cands+1)
+        labels = pad_seq(labels, pad_token=0, max_hist_len=self.max_hist_len,)
+        mask = pad_seq(mask, pad_token=1, max_hist_len=self.max_hist_len,)
 
         assert len(hist) == self.max_hist_len
 
         if self.w_time_stamps:
-            time_stamps = self.pad_seq(time_stamps, pad_token=0)
+            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
+            #args.len_time_vec
+            len_time_vec = len(time_stamps[0])
+            time_stamps = pad_seq(time_stamps, pad_token=0,
+                                  max_hist_len=self.max_hist_len, n=len_time_vec)
 
             return torch.LongTensor(hist), torch.LongTensor(mask), \
                    torch.LongTensor(candidates), torch.LongTensor(labels), \
@@ -407,33 +432,6 @@ class BertTrainDatasetNews(BertTrainDataset):
         # return {'input': [torch.LongTensor(hist), torch.LongTensor(mask)],
         #         'cands': torch.LongTensor(candidates),
         #         'lbls': torch.LongTensor(labels)}
-
-    def pad_seq(self, seq, pad_token=None, max_article_len=None, n=None):
-        """
-        seq (list): sequence(s) of token (int)
-        pad_token (int): padding token to fill gaps
-        max_article_len (int): article length; padding has to fit this length, e.g.
-            if an article is mapped to sequence of L words, then padded items are also sequences of L * pad_token
-        n (int): number of candidates; for each position we could have N candidates
-
-        """
-        seq = seq[-self.max_hist_len:]
-        pad_len = self.max_hist_len - len(seq)
-
-        if pad_token is None:
-            pad_token = self.pad_token
-
-        if pad_len > 0:
-            if max_article_len is not None and n is None:
-                return [[pad_token] * max_article_len] * pad_len + seq
-            elif max_article_len is not None and n is not None:
-                return [[[pad_token] * max_article_len] * n] * pad_len + seq
-            elif max_article_len is None and n is not None:
-                return [[pad_token] * n] * pad_len + seq
-            else:
-                return [pad_token] * pad_len + seq
-        else:
-            return seq
 
     def _get_neg_samples(self, user):
         return self.train_neg_samples[user]
@@ -455,9 +453,13 @@ class BertEvalDatasetNews(BertEvalDataset):
             hist, time_stamps = zip(*hist)
             test_items, test_time_stamps = zip(*test_items)
             time_stamps = list(time_stamps + test_time_stamps)[-self.max_hist_len:]
+            # time vectors
+            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
+            #args.len_time_vec
+            len_time_vec = len(time_stamps[0])
             # padding
-            padding_len = self.max_hist_len - len(time_stamps)
-            time_stamps = [self.pad_token] * padding_len + time_stamps
+            time_stamps = pad_seq(time_stamps, pad_token=0,
+                                  max_hist_len=self.max_hist_len, n=len_time_vec)
         else:
             time_stamps = None
             test_time_stamps = None
@@ -475,11 +477,9 @@ class BertEvalDatasetNews(BertEvalDataset):
         hist = hist + [art_idx2word_ids(*target, self.art2words)]  # predict only the next/last token in seq
 
         ## apply padding
-        padding_len = self.max_hist_len - len(hist)
-        if self.art2words is not None:
-            hist = [[self.pad_token] * self.max_article_len] * padding_len + hist # Padding token := 0
-        else:
-            hist = [self.pad_token] * padding_len + hist
+        hist = pad_seq(hist, self.pad_token, self.max_hist_len,
+                       max_article_len=(self.max_article_len
+                                        if self.art2words is not None else None))
         #
         assert len(hist) == self.max_hist_len
 

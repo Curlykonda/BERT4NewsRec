@@ -21,12 +21,13 @@ from source.preprocessing.bert_feature_extractor import BertFeatureExtractor
 from source.utils import get_art_id_from_dpg_history, build_vocab_from_word_counts, pad_sequence, reverse_mapping_dict
 from source.modules import NEWS_ENCODER
 from sklearn.model_selection import train_test_split
-
+import arrow
 
 
 DATA_TYPES = ["NPA", "DPG", "Adressa"]
 
 FILE_NAMES_NPA = {"click": "ClickData_sample.tsv", "news": "DocMeta_sample.tsv"}
+
 
 
 def sample_n_from_elements(elements, ratio):
@@ -40,7 +41,6 @@ def sample_n_from_elements(elements, ratio):
         return random.sample(elements * (ratio // len(elements) + 1), ratio) # expand sequence with duplicates so that we can sample enough elems
     else:
         return random.sample(elements, ratio)
-
 
 def determine_n_samples(hist_len, n_max=20, max_hist_len=50, scale=0.08):
 
@@ -659,69 +659,3 @@ def get_emb_file_name(method: str, n, max_len: int, lower_case: bool):
     n = 0 if n is None else n
     return "_".join([method, "n%i" % n, "max-len%i" % max_len,
                             'lower%i' % int(lower_case)])
-
-def main(config):
-
-    if config.data_type not in DATA_TYPES:
-        raise KeyError("{} is not a known data format".format(config.data_type))
-
-    if config.data_type == "DPG":
-        # use DPG data
-
-        # load & prep news data
-        vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=config.article_data,
-                                                                       tokenizer=word_tokenize,
-                                                                       min_counts_for_vocab=2,
-                                                                       max_article_len=30)
-
-        with open(config.data_path + "news_prepped.pkl", 'wb') as fout:
-            pickle.dump((vocab, news_as_word_ids, art_id2idx), fout)
-
-        u_id2idx, data = prep_dpg_user_file(config.user_data, set(art_id2idx.keys()), art_id2idx, neg_sample_ratio=config.neg_sample_ratio, max_hist_len=config.max_hist_len)
-
-        #idx2u_id = reverse_mapping_dict(u_id2idx)
-        #idx2art_id = reverse_mapping_dict(art_id2idx)
-
-        train_data, test_data = train_test_split(data, test_size=0.2, shuffle=True, random_state=42)
-
-
-    elif config.data_type == "Adressa":
-        # use Adressa data
-        raise NotImplementedError()
-
-    elif config.data_type == "NPA":
-        config.data_path = "../datasets/NPA/"
-        raise NotImplementedError()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    # input data
-    parser.add_argument('--data_type', type=str, default='NPA',
-                        help='options for data format: DPG, NPA or Adressa ')
-    parser.add_argument('--data_path', type=str, default='../datasets/dpg/i10k_u5k_s30/',
-                        help='path to data directory') #dpg/i10k_u5k_s30/
-
-    parser.add_argument('--article_ids', type=str, default='../datasets/dpg/i10k_u5k_s30/item_ids.pkl',
-                        help='path to directory with item id pickle file')
-    parser.add_argument('--article_data', type=str, default='../datasets/dpg/i10k_u5k_s30/news_data.pkl',
-                        help='path to article data pickle file')
-    parser.add_argument('--user_data', type=str, default='../datasets/dpg/i10k_u5k_s30/user_data.pkl',
-                        help='path to user data pickle file')
-
-    parser.add_argument('--word_emb_path', type=str, default='../embeddings/glove_eng.840B.300d.txt',
-                        help='path to directory with word embeddings')
-
-    parser.add_argument('--pkl_path', type=str, default='../datasets/books-pickle/', help='path to save pickle files')
-
-    # preprocessing
-    parser.add_argument('--max_hist_len', type=int, default=50,
-                        help='maximum length of user reading history, shorter ones are padded; should be in accordance with the input datasets')
-
-    parser.add_argument('--neg_sample_ratio', type=int, default=4,
-                        help='Negative sample ratio N: for each positive impression generate N negative samples')
-
-    config = parser.parse_args()
-
-    main(config)
