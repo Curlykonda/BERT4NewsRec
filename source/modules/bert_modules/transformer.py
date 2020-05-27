@@ -27,5 +27,8 @@ class TransformerBlock(nn.Module):
 
     def forward(self, x, mask):
         x = self.input_sublayer(x, lambda _x: self.attention.forward(_x, _x, _x, mask=mask))
+        # (B x L_hist x d_model) -> (B x L_hist x d_model)
+
         x = self.output_sublayer(x, self.feed_forward)
+        # (B x L_hist x d_model) -> (B x L_hist x d_model)
         return self.dropout(x)

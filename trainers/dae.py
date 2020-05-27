@@ -1,5 +1,5 @@
 from .base import AbstractTrainer
-from .utils import recalls_and_ndcgs_for_ks
+from .utils_metrics import calc_recalls_and_ndcgs_for_ks
 
 import torch
 import torch.nn as nn
@@ -33,5 +33,5 @@ class DAETrainer(AbstractTrainer):
         inputs, labels = batch
         logits = self.model(inputs)
         logits[inputs!=0] = -float("Inf") # IMPORTANT: remove items that were in the input
-        metrics = recalls_and_ndcgs_for_ks(logits, labels, self.metric_ks)
+        metrics = calc_recalls_and_ndcgs_for_ks(logits, labels, self.metric_ks)
         return metrics

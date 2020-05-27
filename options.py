@@ -1,7 +1,8 @@
 from templates import set_template
 from datasets import DATASETS
 from dataloaders import DATALOADERS
-from models import MODELS
+from source.models import MODELS
+from source.modules import NEWS_ENCODER
 from trainers import TRAINERS
 
 import argparse
@@ -13,7 +14,8 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='train_bert_dpg', choices=['train_bert', 'train_dae', 'train_bert_ml', 'train_bert_dpg'])
+parser.add_argument('--template', type=str, default='local_bert_pcp', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp'])
+parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
 # Test
@@ -29,21 +31,31 @@ parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DAT
 parser.add_argument('--min_rating', type=int, default=4, help='Only keep ratings greater than equal to this value')
 parser.add_argument('--min_uc', type=int, default=5, help='Only keep users with more than min_uc ratings')
 parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with more than min_sc ratings')
-
-## DPG
-parser.add_argument('--min_hist_len', type=int, default=6, help='Only keep users with reading histories longer than this value')
-parser.add_argument('--use_content_emb', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
-parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
-parser.add_argument('--time_threshold', type=str, default="24-11-2019-23-59-59", help='date for splitting train/test')
-
-parser.add_argument('--train_method', type=str, default='masked_interest', choices=['masked_interest', 'wu', 'pos_cut_off'])
-
-
-
 parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
 parser.add_argument('--dataset_split_seed', type=int, default=98765)
-parser.add_argument('--eval_set_size', type=int, default=500, 
+parser.add_argument('--eval_set_size', type=int, default=500,
                     help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
+
+## DPG
+parser.add_argument('--min_hist_len', type=int, default=8, help='Only keep users with reading histories longer than this value')
+parser.add_argument('--min_counts_for_vocab', type=int, default=2, help='Include word in vocabulary with this minimal occurrences')
+parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max number of words in the vocabulary')
+parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
+parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
+parser.add_argument('--min_test_len', type=int, default=1, help='minimum number of articles in test interval')
+
+parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
+parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")
+
+parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
+parser.add_argument('--time_threshold', type=str, default="23-11-2019 23:59:59", help='date for splitting train/test. format: "DD-MM-YYYY HH:mm:ss"')
+
+parser.add_argument('--train_method', type=str, default='masked_item', choices=['masked_interest', 'wu', 'pos_cut_off'])
+parser.add_argument('--n_articles', type=int, help="Number of articles in the dataset")
+parser.add_argument('--n_users', type=int, help="Number of users in the dataset")
+
+parser.add_argument('--validation_portion', type=float, default=0.1, help="Portion of test data used for validation")
+parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
 
 
 ################
@@ -54,6 +66,8 @@ parser.add_argument('--dataloader_random_seed', type=float, default=0.0)
 parser.add_argument('--train_batch_size', type=int, default=64)
 parser.add_argument('--val_batch_size', type=int, default=64)
 parser.add_argument('--test_batch_size', type=int, default=64)
+parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'random_as_target'])
+
 
 ################
 # NegativeSampler
@@ -97,10 +111,51 @@ parser.add_argument('--total_anneal_steps', type=int, default=2000, help='The st
 parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit of increasing beta. Set this as the best beta found')
 
 ################
+# Pretrained Embeddings
+################
+parser.add_argument('--pt_word_emb_path', type=str, default=None, help='Path to pretrained word embeddings')
+parser.add_argument('--dim_word_emb', type=int, default=300, help='Dimension of word embedding vectors')
+
+parser.add_argument('--pt_art_emb_path', type=str, default=None, help='Path to pretrained article embeddings')
+parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of word embedding vectors')
+
+parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
+parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', 0), help='Method for BERT-based article embs')
+
+
+################
 # Model
 ################
 parser.add_argument('--model_code', type=str, default='bert', choices=MODELS.keys())
 parser.add_argument('--model_init_seed', type=int, default=None)
+
+## News Encoder #
+
+# pre-trained stuff
+parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje", "WuCNN"], help='Pretrained model to use as News Encoder')
+parser.add_argument('--path_pt_news_enc', type=str, default=None, help="Path to pre-trained News Encoder")
+parser.add_argument('--fix_pt_art_emb', type=bool, default=None, help='fix pre-computed article embeddings')
+parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined vocabulary')
+parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
+
+# end-to-end
+parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn"], help='Model to use as News Encoder')
+
+
+# Positional Embeddings #
+parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe'], help='Type of positional embedding')
+
+# Temporal Embeddings #
+parser.add_argument('--temp_embs', type=str, default=None, choices=['lte', 'nte', 'tte'], help='Type of temporal embedding')
+parser.add_argument('--temp_embs_hidden_units', type=int, default=[128, 256], help='Hidden units for neural temporal embedding')
+parser.add_argument('--temp_embs_act_func', type=str, default=None, choices=['relu', 'gelu', 'tanh'], help='Activation function for neural temporal embedding')
+
+# Prediction Layer #
+parser.add_argument('--pred_layer', type=str, default=None, choices=['l2', 'cos'], help='Type of prediction layer')
+parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help='Type of next-item embedding layer')
+
+###########################################
+
 # BERT #
 parser.add_argument('--bert_max_len', type=int, default=None, help='Length of sequence for bert')
 parser.add_argument('--bert_num_items', type=int, default=None, help='Number of total items')
@@ -109,18 +164,21 @@ parser.add_argument('--bert_num_blocks', type=int, default=None, help='Number of
 parser.add_argument('--bert_num_heads', type=int, default=None, help='Number of heads for multi-attention')
 parser.add_argument('--bert_dropout', type=float, default=None, help='Dropout probability to use throughout the model')
 parser.add_argument('--bert_mask_prob', type=float, default=None, help='Probability for masking items in the training sequence')
+parser.add_argument('--bert_mask_token', type=int, default=None, help='Token id for Mask')
+
+################################################################
 # DAE #
-parser.add_argument('--dae_num_items', type=int, default=None, help='Number of total items')
-parser.add_argument('--dae_num_hidden', type=int, default=0, help='Number of hidden layers in DAE')
-parser.add_argument('--dae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in DAE')
-parser.add_argument('--dae_latent_dim', type=int, default=200, help="Dimension of latent vector in DAE")
-parser.add_argument('--dae_dropout', type=float, default=0.5, help='Probability of input dropout in DAE')
-# VAE #
-parser.add_argument('--vae_num_items', type=int, default=None, help='Number of total items')
-parser.add_argument('--vae_num_hidden', type=int, default=0, help='Number of hidden layers in VAE')
-parser.add_argument('--vae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in VAE')
-parser.add_argument('--vae_latent_dim', type=int, default=200, help="Dimension of latent vector in VAE (K in paper)")
-parser.add_argument('--vae_dropout', type=float, default=0.5, help='Probability of input dropout in VAE')
+# parser.add_argument('--dae_num_items', type=int, default=None, help='Number of total items')
+# parser.add_argument('--dae_num_hidden', type=int, default=0, help='Number of hidden layers in DAE')
+# parser.add_argument('--dae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in DAE')
+# parser.add_argument('--dae_latent_dim', type=int, default=200, help="Dimension of latent vector in DAE")
+# parser.add_argument('--dae_dropout', type=float, default=0.5, help='Probability of input dropout in DAE')
+# # VAE #
+# parser.add_argument('--vae_num_items', type=int, default=None, help='Number of total items')
+# parser.add_argument('--vae_num_hidden', type=int, default=0, help='Number of hidden layers in VAE')
+# parser.add_argument('--vae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in VAE')
+# parser.add_argument('--vae_latent_dim', type=int, default=200, help="Dimension of latent vector in VAE (K in paper)")
+# parser.add_argument('--vae_dropout', type=float, default=0.5, help='Probability of input dropout in VAE')
 
 ################
 # Experiment

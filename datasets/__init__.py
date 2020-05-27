@@ -5,7 +5,6 @@ from .dpg import *
 DATASETS = {
     ML1MDatasetML.code(): ML1MDatasetML,
     ML20MDatasetML.code(): ML20MDatasetML,
-    DPG_Dec19Dataset.code(): DPG_Dec19Dataset,
     DPG_Nov19Dataset.code(): DPG_Nov19Dataset
 
 }

@@ -11,10 +11,11 @@ class MultiHeadedAttention(nn.Module):
         super().__init__()
         assert d_model % h == 0
 
-        # We assume d_v always equals d_k
+        # We assume d_v always equals d_k ( values & keys)
         self.d_k = d_model // h
-        self.h = h
+        self.h = h # num heads
 
+        # create 3 weight matrices for query, key and value respectively
         self.linear_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(3)])
         self.output_linear = nn.Linear(d_model, d_model)
         self.attention = Attention()
@@ -27,11 +28,15 @@ class MultiHeadedAttention(nn.Module):
         # 1) Do all the linear projections in batch from d_model => h x d_k
         query, key, value = [l(x).view(batch_size, -1, self.h, self.d_k).transpose(1, 2)
                              for l, x in zip(self.linear_layers, (query, key, value))]
+        # value := (B x h x L_hist x d_k)
 
         # 2) Apply attention on all the projected vectors in batch.
         x, attn = self.attention(query, key, value, mask=mask, dropout=self.dropout)
+        # attn := (B x h x L_hist x L_hist)
+        # x := (B x h x L_hist x d_k)
 
         # 3) "Concat" using a view and apply a final linear.
         x = x.transpose(1, 2).contiguous().view(batch_size, -1, self.h * self.d_k)
+        # (B x L_hist x d_model)
 
         return self.output_linear(x)

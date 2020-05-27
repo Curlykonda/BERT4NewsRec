@@ -1,5 +1,5 @@
 from .base import AbstractTrainer
-from .utils import recalls_and_ndcgs_for_ks
+from .utils_metrics import calc_recalls_and_ndcgs_for_ks
 from loggers import MetricGraphPrinter
 
 import torch
@@ -58,7 +58,7 @@ class VAETrainer(AbstractTrainer):
         inputs, labels = batch
         logits, _, _ = self.model(inputs)
         logits[inputs!=0] = -float("Inf") # IMPORTANT: remove items that were in the input
-        metrics = recalls_and_ndcgs_for_ks(logits, labels, self.metric_ks)
+        metrics = calc_recalls_and_ndcgs_for_ks(logits, labels, self.metric_ks)
 
         # Annealing beta
         if self.finding_best_beta:
