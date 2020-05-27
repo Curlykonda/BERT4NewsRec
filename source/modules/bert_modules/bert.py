@@ -33,16 +33,21 @@ class BERT(nn.Module):
     def forward(self, x, mask=None):
 
         if mask is None:
-            mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
+            if isinstance(x, list):
+                mask = (x[0] > 0).unsqueeze(1).repeat(1, x[0].size(1), 1).unsqueeze(1)
+            else:
+                mask = (x > 0).unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
         else:
             # check dimesions of mask to match requirements for self-attention
             # in case of News, input mask is of shape (B x L_hist)
             # -> (B x 1 x L_hist x D_model)
-            mask = mask.unsqueeze(1).repeat(1, x.size(1), 1).unsqueeze(1)
+            mask = mask.unsqueeze(1).repeat(1, mask.size(1), 1).unsqueeze(1)
 
         # embedding the indexed sequence to sequence of vectors
         # combine token & positional embeddings
+        print(x[0].norm(2))
         x = self.embedding(x)
+        print(x.norm(2))
         #x = x_emb
 
         # running over multiple transformer blocks
@@ -50,7 +55,5 @@ class BERT(nn.Module):
             x = transformer.forward(x, mask)
 
         # (B x seq_len x d_bert)
+        print(x.norm(2))
         return x
-
-    def init_weights(self):
-        pass

@@ -8,10 +8,39 @@ import sys
 
 import numpy as np
 import torch
+import torch.nn as nn
 from torch.backends import cudnn
 
-sys.path.append("..")
 
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        if m.reset_parameters():
+            return
+    elif isinstance(m, nn.Embedding) and not m.requires_grad:
+        pass
+    torch.nn.init.xavier_uniform_(m)
+
+
+
+    # if isinstance(m, nn.Linear):
+    #     if m.reset_parameters():
+    #         pass
+    #     else:
+    #         torch.nn.init.xavier_uniform(m)
+    #         #m.bias.data.fill_(0.01)
+    # if isinstance(m, nn.Conv1d):
+    #     torch.nn.init.xavier_uniform_(m.weight)
+    #     if m.bias is not None:
+    #         torch.nn.init.zeros_(m.bias)
+    # if isinstance(m, nn.Conv2d):
+    #     torch.nn.init.xavier_uniform_(m.weight)
+    #     if m.bias is not None:
+    #         torch.nn.init.zeros_(m.bias)
+    # elif isinstance(m, nn.Embedding):
+    #     pass
+    #     # embeddings are initialised in a different way
+    #     # if m.requires_grad:
+    #     #     nn.init.xavier_uniform(m)
 
 def check_all_equal(iterator):
     # check if all elements have the same value

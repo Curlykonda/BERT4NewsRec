@@ -55,8 +55,7 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
 
         if self.args.incl_time_stamp:
             seqs, mask, cands, labels, time_stamps = batch
-            # TODO: logits = self.model.forward_w_time_stamps(seqs, mask, cands, time_stamps)
-            logits = self.model(seqs, mask, cands)
+            logits = self.model([seqs, time_stamps], mask, cands)
         else:
             seqs, mask, cands, labels = batch
             time_stamps = None
@@ -75,9 +74,16 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
         return loss
 
     def calculate_metrics(self, batch):
-        seqs, mask, cands, labels = batch
-        scores = self.model(seqs, mask, cands)  # (B x N_c)
-        #scores = scores[:, -1, :]  # (B x N_c)
+        if self.args.incl_time_stamp:
+            seqs, mask, cands, labels, time_stamps = batch
+            logits = self.model([seqs, time_stamps], mask, cands) # (B x N_c)
+        else:
+            seqs, mask, cands, labels = batch
+            time_stamps = None
+            logits = self.model(seqs, mask, cands) # (B x N_c)
+
+        # TODO: check scores
+        scores = nn.functional.softmax(logits, dim=1)
 
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)

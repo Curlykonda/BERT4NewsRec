@@ -109,22 +109,26 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
     def code(cls):
         return 'bert4nie'
 
-    def forward(self, hist_as_article_indices, mask, candidates_as_article_indices):
+    def forward(self, history, mask, candidates):
+
+        # hist as article indices, candidates_as_article_indices
+        if isinstance(history, list):
+            history, time_stamps = history
+        else:
+            time_stamps = None
 
         # article encoding
         if self.token_embedding is not None:
-            encoded_arts = self.encode_news_w_token(hist_as_article_indices)
+            encoded_arts = self.encode_news_w_token(history)
             # encode candidates
             # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_article)
-            encoded_cands = self.encode_news_w_token(candidates_as_article_indices)
+            encoded_cands = self.encode_news_w_token(candidates)
         else:
-            encoded_arts = self.encode_news(hist_as_article_indices)
-            encoded_cands = self.encode_news(candidates_as_article_indices)
-
-        self.encoded_arts = encoded_arts  # (B x L_hist x D_article)
+            encoded_arts = self.encode_news(history) # (B x L_hist x D_article)
+            encoded_cands = self.encode_news(candidates)
 
         # interest modeling
-        interest_reps = self.create_hidden_interest_representations(encoded_arts, mask)
+        interest_reps = self.create_hidden_interest_representations(encoded_arts, time_stamps, mask)
         # (B x L_hist x D_bert)
 
         # embedding projection
@@ -137,7 +141,7 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
             if len(interest_reps.shape) < len(encoded_cands.shape):
                 # (B x L x D_a) x (B x L x N_c x D_a) -> (B x L x N_c)
                 # flatten inputs to compute scores
-                scores = self.prediction_layer(interest_reps.view(-1, interest_reps.shape[-1]),
+                logits = self.prediction_layer(interest_reps.view(-1, interest_reps.shape[-1]),
                                                encoded_cands.view(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
                 # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
             elif len(interest_reps.shape) == len(encoded_cands.shape):
@@ -146,10 +150,10 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
 
                 pred_embs = interest_reps[:, -1, :] # (B x D_a)
                 cands = encoded_cands.transpose(1, 2)
-                scores = self.prediction_layer(pred_embs, cands) # (B x N_c)
+                logits = self.prediction_layer(pred_embs, cands) # (B x N_c)
             else:
                 raise NotImplementedError()
-            return scores
+            return logits
         else:
             return interest_reps, encoded_cands
 
@@ -185,22 +189,25 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         # (B x L_hist x D_article)
         return encoded_arts
 
-    def create_hidden_interest_representations(self, encoded_articles, mask):
+    def create_hidden_interest_representations(self, encoded_articles, time_stamps, mask):
         # build mask: perhaps by adding up the word ids? -> make efficient for batch
         # mask = (article_seq_as_word_ids != self.mask_token).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
         # mask = (article_seq_as_word_ids[:, :, 0] == self.mask_token) # B x L_hist
 
         # (B x D_article x L_hist) -> (B x L_hist x D_article)
-        #art_emb = encoded_articles.transpose(1, 2)
         art_emb = encoded_articles
         if mask is not None:
             # replace mask positions with mask embedding
             art_emb[mask] = self.mask_embedding.to(art_emb.device)
             # encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
         else:
-            raise ValueError("Should apply mask before using BERT ;)")
+            raise ValueError("Should apply masking before using BERT ;)")
+
         # (B x L_hist x D_model) -> (B x L_hist x D_model)
-        interest_reps = self.user_encoder(art_emb, mask)
+        if time_stamps is not None:
+            interest_reps = self.user_encoder([art_emb, time_stamps], mask)
+        else:
+            interest_reps = self.user_encoder(art_emb, mask)
 
         return interest_reps
 

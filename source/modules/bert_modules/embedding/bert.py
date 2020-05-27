@@ -44,11 +44,19 @@ class BERTEmbedding(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, seq):
+    def forward(self, to_emb):
         # sum token & positional embedding
-        tkn = self.token_emb(seq) if self.token_emb is not None else seq
-        pos = self.position_emb(seq) if self.position_emb is not None else seq
+        if isinstance(to_emb, list):
+            seq, ts = to_emb
+            # seq: (B x L x D_a)
+            # ts: (B x L)
+        else:
+            seq = ts = to_emb
 
+        tkn = self.token_emb(seq) * math.sqrt(self.embed_size) if self.token_emb is not None else seq
+        pos = self.position_emb(ts) if self.position_emb is not None else ts
+
+        #print(pos.norm(2))
         return self.dropout(tkn + pos)
 
     def _get_token_emb(self):
@@ -64,11 +72,13 @@ class BERTEmbedding(nn.Module):
             return None
 
     def _get_pos_emb(self):
+        # valid code?
         if self.pos_code is not None \
             and self.pos_code not in POS_EMBS and self.pos_code not in TEMP_EMBS:
                 raise KeyError("{} is unknown Positional/Temporal Embedding".format(self.pos_code))
 
-        self.pos_code = self.pos_code.lower()
+        if self.pos_code is not None:
+            self.pos_code = self.pos_code.lower()
 
         # pos embs
         if 'tpe' == self.pos_code:
@@ -77,11 +87,11 @@ class BERTEmbedding(nn.Module):
             return LearnablePositionEmbedding(self.embed_size, self.max_seq_len)
         # temp embs
         elif 'lte' == self.pos_code:
-            temp_emb = TEMP_EMBS[self.pos_code](1, self.embed_size)
-            return temp_emb.reset_parameters()
+            temp_emb = TEMP_EMBS[self.pos_code]
+            return temp_emb(self.embed_size)
         elif 'nte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.embed_size, self.args.temp_embs_hidden_units, self.args.temp_embs_act_func)
+            return temp_emb(self.embed_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
         else:
             return None
 

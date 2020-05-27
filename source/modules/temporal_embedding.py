@@ -10,23 +10,38 @@ import math
 class NormalLinear(nn.Linear):
     """
     Linear layer (weight matrix + bias vector) initialised with 0-mean Gaussian
-
-    Use to create Temporal Embedding from 1D input (e.g. time stamp)
-    self.temp_embedding = NormalLinear(1, self.embedding_dim)
     """
-    def forward(self, t):
-        return self.forward(t)
-
-    @staticmethod
-    def code():
-        # linear projected temporal embedding
-        return 'lte'
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
         self.weight.data.normal_(0, stdv)
         if self.bias is not None:
             self.bias.data.normal_(0, stdv)
+
+class LinearProject(nn.Module):
+    """
+    Use to create Temporal Embedding from 0D input (e.g. time stamp)
+    (B x L_hist) -> (B x L_hist x D_e)
+    """
+    def __init__(self, d_model=768):
+        super(LinearProject, self).__init__()
+
+        #self.lin = NormalLinear(1, d_model)
+        self.lin = nn.Linear(1, d_model)
+        self.d_model = d_model
+        #self.lin.reset_parameters()
+
+    @staticmethod
+    def code():
+        # linear projected temporal embedding
+        return 'lte'
+
+    def forward(self, t):
+        # project single-value time stamps to temporal embedding
+        # (B x L_hist) -> (B x L_hist x D_e)
+        t = t.float()
+        t_out = self.lin(t.unsqueeze(2))
+        return t_out / math.sqrt(self.d_model)
 
 class NeuralFunc(nn.Module):
     def __init__(self, embed_dim, hidden_units=[256, 768], act_func="relu"):
@@ -38,9 +53,9 @@ class NeuralFunc(nn.Module):
 
         for i, hidden in enumerate(hidden_units):
             if 0 == i:
-                self.lin_layers.append(nn.Linear(i, hidden))
+                self.lin_layers.append(nn.Linear(1, hidden))
             else:
-                self.lin_layers.append(hidden_units[i-1], hidden)
+                self.lin_layers.append(nn.Linear(hidden_units[i-1], hidden))
 
         func = act_func.lower()
 
@@ -59,9 +74,10 @@ class NeuralFunc(nn.Module):
         return 'nte'
 
     def forward(self, x):
+        x = x.unsqueeze(2).float()
         # input x: time stamp in UNIX format, i.e. single int value
         for i, lin in enumerate(self.lin_layers):
-            if i != len(self.lin_layers):
+            if i < len(self.lin_layers)-1:
                 x = self.activation(lin(x))
             else:
                 x_out = lin(x)
@@ -69,6 +85,6 @@ class NeuralFunc(nn.Module):
         return x_out
 
 TEMP_EMBS = {
-    NormalLinear.code(): NormalLinear,
+    LinearProject.code(): LinearProject,
     NeuralFunc.code(): NeuralFunc
 }
