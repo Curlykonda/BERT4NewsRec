@@ -34,18 +34,18 @@ def get_dummy_bert_output(self, batch_size, dim_bert=64, seq_len=20, n_layers=12
 
 class BertFeatureExtractor():
 
-    def __init__(self, bert_dir_path, **kwargs):
+    def __init__(self, bert_dir_path, lower_case=False, **kwargs):
         super().__init__(**kwargs)
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # self.batch_size = batch_size
         # self.max_seq_len = max_seq_len
 
-        self.dev_mode = False
+        self.lower_case = lower_case
         self.bert_emd_dim = 768
 
         self.sent_tokenizer = sent_tokenize
-        self.bert_tokenizer = BertTokenizer._from_pretrained(bert_dir_path)
+        self.bert_tokenizer = BertTokenizer._from_pretrained(bert_dir_path, do_lower_case=lower_case)
         self.bert_tokenizer.add_special_tokens({"unk_token": '[UNK]', 'cls_token': '[CLS]',
                                                 'pad_token': '[PAD]', 'sep_token': '[SEP]'})
 
@@ -132,7 +132,7 @@ class BertFeatureExtractor():
         return x_out
 
     def encode_text_to_features_batches(self, content: dict, methods: list, batch_size: int, max_seq_len: int,
-                                        add_special_tokens=True, lower_case=True):
+                                        add_special_tokens=True):
         """
         input:
             - content: {art_ID: {'text', 'pub_date', 'first_pub_date', 'author', 'snippet', 'n_words'}}
@@ -157,7 +157,6 @@ class BertFeatureExtractor():
 
         # debug with prints wuhu!
         print(content[item_keys[0]].keys())
-
         #
         while (start_idx < n_items):
 
@@ -182,12 +181,8 @@ class BertFeatureExtractor():
             #tokenise text into token IDs
             tokens = []
             for i in item_indices:
-                tokens.append(self.tokenize_text_to_ids(content[item_keys[i]]['text'], add_special_tokens, lower_case))
+                tokens.append(self.tokenize_text_to_ids(content[item_keys[i]]['text'], add_special_tokens))
 
-
-            # if naive_method:
-            #     tokens_raw, _ = zip(*[self.tokenize_text_to_ids(text, add_special_tokens=False, lower_case=True)
-            #                           for text in content[item_keys]])
 
             #create tensor from tokens
             x_in = torch.tensor(tokens, requires_grad=False, device=self.device).long()  # batch_size x max_len
@@ -217,8 +212,8 @@ class BertFeatureExtractor():
                 for idx in slice_idx:
                     seq_embeddings[i][item_keys[item_indices[idx]]] = bert_features[idx, :].cpu()
 
-            if start_idx > 0 and batch_size*10 % start_idx == 0:
-                print("batch {}".format(start_idx//batch_size))
+            # if start_idx > 0 and batch_size*10 % start_idx == 0:
+            #     print("batch {}".format(start_idx//batch_size))
 
             start_idx += batch_size
             stop_idx += batch_size
@@ -244,7 +239,7 @@ class BertFeatureExtractor():
 
         return tokens
 
-    def tokenize_text_to_ids(self, text, add_special_tokens=True, lower_case=False):
+    def tokenize_text_to_ids(self, text, add_special_tokens=True):
         """
         With tokenizer, separate text first into tokens
         and then convert these to corresponding IDs of the vocabulary
@@ -281,10 +276,7 @@ class BertFeatureExtractor():
 
         # split each sentence of the text into tokens
         for s in sents:
-            if lower_case:
-                tokens.extend([word.lower() for word in self.bert_tokenizer.tokenize(s) if word.isalpha()])
-            else:
-                tokens.extend([word for word in self.bert_tokenizer.tokenize(s) if word.isalpha()])
+            tokens.extend([word for word in self.bert_tokenizer.tokenize(s) if word.isalpha()])
 
             if add_special_tokens:
                 tokens.append(self.bert_tokenizer.sep_token)

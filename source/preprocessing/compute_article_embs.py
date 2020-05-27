@@ -32,7 +32,7 @@ def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_art
 
     all_articles = news_data['all']
 
-    bert_feat_extractor = BertFeatureExtractor(path_to_pt_model)
+    bert_feat_extractor = BertFeatureExtractor(path_to_pt_model, lower_case=lower_case)
     print("encode news articles ...")
 
     if feature_method is None:
@@ -49,10 +49,10 @@ def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_art
         methods.append(feature_method)
 
     # subset = {k: all_articles[k] for k in list(all_articles.keys())[:100]}
+
     bert_embeddings = bert_feat_extractor.encode_text_to_features_batches(
         all_articles, methods,
-        batch_size, max_article_len,
-        lower_case=lower_case)
+        batch_size, max_article_len)
     if store:
         bert_export_path = Path("/".join(['.', 'pc_article_embeddings', "BERTje"]))
         if not bert_export_path.is_dir():
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', type=str, default='../../Data/DPG_nov19/medium_time_split_n_rnd_users/news_data.pkl', help='data path')
     parser.add_argument('--model_path', type=str, default='../../BertModelsPT/bert-base-dutch-cased', help='model path')
     parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
-    parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
+    parser.add_argument('--lower_case', type=int, default=0, help="Lowercase the article content")
     parser.add_argument('--batch_size', type=int, default=64)
     #parser.add_argument('--pkl_protocol', type=int, default=4, help="Pickle protocol with which data has been stored")
 

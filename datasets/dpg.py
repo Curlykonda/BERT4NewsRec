@@ -21,6 +21,7 @@ class AbstractDatasetDPG(AbstractDataset):
         self.min_hist_len = self.args.min_hist_len
         self.use_content = args.use_article_content
         self.pt_news_encoder = args.pt_news_encoder
+        self.w_time_stamp = args.incl_time_stamp
 
         seed = args.dataloader_random_seed
         self.rnd = random.Random(seed)
@@ -42,8 +43,8 @@ class AbstractDatasetDPG(AbstractDataset):
 
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
-        folder_name = '{}-min_len{}-split{}-news_enc_{}' \
-            .format(self.code(), self.min_hist_len, self.split, self.pt_news_encoder)
+        folder_name = '{}-min_len{}-{}-nenc_{}-time{}' \
+            .format(self.code(), self.min_hist_len, self.split, self.pt_news_encoder, int(self.w_time_stamp))
         return preprocessed_root.joinpath(folder_name)
 
     def load_dataset(self):
@@ -132,15 +133,16 @@ class AbstractDatasetDPG(AbstractDataset):
         m = self.sample_method
         print(m)
         if 'n_rnd_users' == m:
-            news_data, user_data, logging_dates = get_data_n_rnd_users(config.data_dir, n_users,
-                                                                       news_len=config.news_len,
-                                                                       min_hist_len=config.min_hist_len,
-                                                                       max_hist_len=config.max_hist_len,
-                                                                       min_test_len=config.min_test_len,
-                                                                       save_path=config.save_path,
-                                                                       sample_name=sample_name,
-                                                                       test_time_thresh=threshold_time,
-                                                                       overwrite_existing=config.overwrite_existing)
+            raise NotImplementedError()
+            # news_data, user_data, logging_dates = get_data_n_rnd_users(config.data_dir, n_users,
+            #                                                            news_len=config.news_len,
+            #                                                            min_hist_len=config.min_hist_len,
+            #                                                            max_hist_len=config.max_hist_len,
+            #                                                            min_test_len=config.min_test_len,
+            #                                                            save_path=config.save_path,
+            #                                                            sample_name=sample_name,
+            #                                                            test_time_thresh=threshold_time,
+            #                                                            overwrite_existing=config.overwrite_existing)
         else:
             raise NotImplementedError()
 
@@ -241,7 +243,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
                         u_id2idx[u_id] = u_idx = len(u_id2idx)  # create mapping from u_id to index
 
-                        if self.args.incl_time_stamp:
+                        if self.w_time_stamp:
                             train[u_idx] = train_items
                             test[u_idx] = test_items
                         else:
@@ -258,9 +260,9 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                         tmp_test = []
                         for i, (item, time_stamp) in enumerate(full_hist):
                             if time_stamp < threshold_date:
-                                train[u_idx].append((item, time_stamp) if self.args.incl_time_stamp else item)
+                                train[u_idx].append((item, time_stamp) if self.w_time_stamp else item)
                             else:
-                                if self.args.incl_time_stamp:
+                                if self.w_time_stamp:
                                     tmp_test = full_hist[i:]
                                 else:
                                     tmp_test = [*list(zip(*full_hist[i:]))[0]]

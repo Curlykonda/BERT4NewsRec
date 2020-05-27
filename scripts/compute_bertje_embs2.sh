@@ -17,7 +17,7 @@ python --version
 
 data=("./Data/DPG_nov19/medium_time_split_n_rnd_users/news_data.pkl")
 pt_model="./BertModelsPT/bert-base-dutch-cased"
-max_len=(128 256)
+max_len=(128 256 512)
 lower_case=0
 
 #embeddings="../embeddings/cc.nl.300.bin"

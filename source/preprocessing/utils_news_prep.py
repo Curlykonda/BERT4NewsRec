@@ -539,19 +539,6 @@ def get_dpg_data_processed(data_path, train_method, neg_sample_ratio=4, max_hist
 
     return data, vocab, news_as_word_ids, art_id2idx, u_id2idx
 
-def init_weights(m):
-    if isinstance(m, nn.Linear):
-        torch.nn.init.xavier_uniform_(m.weight)
-        m.bias.data.fill_(0.01)
-    if isinstance(m, nn.Conv1d):
-        torch.nn.init.xavier_uniform_(m.weight)
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
-    if isinstance(m, nn.Conv2d):
-        torch.nn.init.xavier_uniform_(m.weight)
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
-
 def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_len: int, art_emb_dim: int,
                                lower_case=False, pd_vocab=False, path_to_pt_model=None, feature_method=None):
 
@@ -579,8 +566,6 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         if not bert_export_path.is_dir():
             os.makedirs(bert_export_path)
 
-        bert_feat_extractor = BertFeatureExtractor(path_to_pt_model)
-
         methods = [('last_cls', None), ('sum_last_n', 4)]
         if feature_method is None:
             print('No BERTje method specified, using default "last_cls"')
@@ -607,12 +592,12 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
 
             return art_id2idx, art_emb_matrix
 
+        bert_feat_extractor = BertFeatureExtractor(path_to_pt_model, lower_case)
         print("encode news articles ...")
         #subset = {k: all_articles[k] for k in list(all_articles.keys())[:100]}
         bert_embeddings = bert_feat_extractor.encode_text_to_features_batches(
                                             all_articles, methods,
-                                            10, max_article_len,
-                                            lower_case=lower_case)
+                                            10, max_article_len)
 
         # save pre computed bert embeddings
         for i, (m, n) in enumerate(methods):
