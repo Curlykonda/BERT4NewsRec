@@ -20,6 +20,7 @@ pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
 art_len=128
 SEEDS=(42)
 POS_EMBS=("tpe" "lpe")
+method=("last_cls", 0)
 
 
 echo "$datapath"
@@ -29,7 +30,7 @@ do
   for POS in "${POS_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc $pt_news_enc \
-  --pos_embs $POS --max_article_len $art_len --lower_case 0
+  --pos_embs $POS --max_article_len $art_len --bert_feature_method=$method
   done
 done
 

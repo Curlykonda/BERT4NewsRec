@@ -120,8 +120,7 @@ parser.add_argument('--pt_art_emb_path', type=str, default=None, help='Path to p
 parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of word embedding vectors')
 
 parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
-
-parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', None), help='Method for BERT-based article embs')
+parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', 0), help='Method for BERT-based article embs')
 
 
 ################

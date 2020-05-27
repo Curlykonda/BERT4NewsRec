@@ -566,19 +566,18 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         if not bert_export_path.is_dir():
             os.makedirs(bert_export_path)
 
-        methods = [('last_cls', None), ('sum_last_n', 4)]
         if feature_method is None:
             print('No BERTje method specified, using default "last_cls"')
-            methods = [('last_cls', None), ('sum_last_n', 4)]
+            methods = [('last_cls', 0), ('sum_last_n', 4)]
             feature_method = methods[1]
         else:
             if not isinstance(feature_method, tuple):
-                raise ValueError("Feature method should be tuple (method, N). If 'N' does not apply, pass None")
+                raise ValueError("Feature method should be tuple (method, N). If 'N' does not apply, pass 0")
             methods = [feature_method]
             #raise ValueError('specify method to extract BERTje features!')
 
-        if feature_method not in methods:
-            methods.append(feature_method)
+        # if feature_method not in methods:
+        #     methods.append(feature_method)
 
         ## check for existing
         m, n = feature_method

@@ -73,8 +73,8 @@ class NeuralFunc(nn.Module):
         # neural temporal embedding (func approx)
         return 'nte'
 
-    def forward(self, x):
-        x = x.unsqueeze(2).float()
+    def forward(self, x_in):
+        x = x_in.unsqueeze(2).float()
         # input x: time stamp in UNIX format, i.e. single int value
         for i, lin in enumerate(self.lin_layers):
             if i < len(self.lin_layers)-1:
