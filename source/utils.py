@@ -10,7 +10,37 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.backends import cudnn
+import arrow
 
+def map_time_stamp_to_vector(ts, ts_len=4):
+    """
+    input:
+        ts (int): UNIX time stamp
+
+    output:
+        ts_vector (list): vector representation of the datetime
+    """
+    ts = arrow.get(ts)
+
+    ts_vector = [
+        ts.weekday(),
+        ts.hour,
+        ts.minute,
+        ts.second
+    ]
+    to_add = None
+    if ts_len == 4:
+        return ts_vector
+    if ts_len > 4:
+        to_add = [ts.day] # 1 - 7
+    if ts > 5:
+        to_add.append(ts.month) # 1 - 12
+    if ts > 6:
+        to_add.append(ts.year - 2000)
+    if ts > 7:
+        raise ValueError()
+
+    return to_add + ts_vector
 
 def init_weights(m):
     if isinstance(m, nn.Linear):
