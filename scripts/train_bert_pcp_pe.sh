@@ -24,7 +24,7 @@ method="last_cls"
 N=0
 nie="lin"
 #LR=(0.01, 0.001, 0.0001)
-lr=0.01
+lr=0.002
 decay_step=25
 
 echo "$datapath"
