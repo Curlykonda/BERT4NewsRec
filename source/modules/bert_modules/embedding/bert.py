@@ -36,7 +36,6 @@ class BERTEmbedding(nn.Module):
         self.temp_embs_act_func = args.temp_embs_act_func
         self.len_time_vec = args.len_time_vec
 
-
         self.token_code = token_code
         self.pos_code = pos_code
 
