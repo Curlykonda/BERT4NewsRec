@@ -120,7 +120,7 @@ parser.add_argument('--pt_art_emb_path', type=str, default=None, help='Path to p
 parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of word embedding vectors')
 
 parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
-parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', 0), help='Method for BERT-based article embs')
+parser.add_argument('--bert_feature_method', type=tuple, default=('last_cls', 0), nargs=2, help='Method for BERT-based article embs')
 
 
 ################
@@ -149,7 +149,7 @@ parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe']
 parser.add_argument('--normalise_time_stamps', type=str, default='standard', help="specify scaler for time stamps")
 parser.add_argument('--len_time_vec', type=int, default=4, help='Which information to include from UNIX timestamp')
 parser.add_argument('--temp_embs', type=str, default=None, choices=['lte', 'nte', 'tte'], help='Type of temporal embedding')
-parser.add_argument('--temp_embs_hidden_units', type=int, default=[256, 768], help='Hidden units for neural temporal embedding')
+parser.add_argument('--temp_embs_hidden_units', type=int, default=[256, 768], nargs='*', help='Hidden units for neural temporal embedding')
 parser.add_argument('--temp_embs_act_func', type=str, default=None, choices=['relu', 'gelu', 'tanh'], help='Activation function for neural temporal embedding')
 
 # Prediction Layer #

@@ -580,6 +580,7 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         #     methods.append(feature_method)
 
         ## check for existing
+        print(feature_method)
         m, n = feature_method
         file_name = get_emb_file_name(m, n, max_article_len, lower_case)
         if bert_export_path.joinpath(file_name + ".pkl").is_file():
