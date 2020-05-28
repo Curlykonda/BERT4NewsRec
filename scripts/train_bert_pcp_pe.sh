@@ -23,6 +23,9 @@ POS_EMBS=("tpe" "lpe")
 method="last_cls"
 N=0
 nie="lin"
+#LR=(0.01, 0.001, 0.0001)
+lr=0.01
+decay_step=25
 
 echo "$datapath"
 for SEED in "${SEEDS[@]}"
@@ -31,7 +34,8 @@ do
   for POS in "${POS_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
-  --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie
+  --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
+  --lr $lr --decay_step $decay_step
   done
 done
 

@@ -186,10 +186,10 @@ def set_args_bert_pcp(args):
     args.num_gpu = 1
     args.device_idx = '0'
     args.optimizer = 'Adam'
-    args.lr = 0.001
+    args.lr = 0.001 if args.lr is None else args.lr
     args.enable_lr_schedule = True
-    args.decay_step = 25
-    args.gamma = 1.0
+    args.decay_step = 25 if args.decay_step is None else args.decay_step
+    args.gamma = 0.1
     args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
     # evaluation
     args.metric_ks = [5, 10, 50]
