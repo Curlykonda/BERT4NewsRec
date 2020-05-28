@@ -26,7 +26,7 @@ N=0
 d_model=768
 t_act_func="relu"
 
-lr=0.01
+lr=0.002
 decay_step=25
 
 echo "$datapath"
