@@ -571,8 +571,9 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
             methods = [('last_cls', 0), ('sum_last_n', 4)]
             feature_method = methods[1]
         else:
-            if not isinstance(feature_method, tuple):
-                raise ValueError("Feature method should be tuple (method, N). If 'N' does not apply, pass 0")
+            if not isinstance(feature_method, list):
+                raise ValueError("Feature method should be list [method, N]. If 'N' does not apply, pass 0")
+            feature_method[1] = int(feature_method[1])
             methods = [feature_method]
             #raise ValueError('specify method to extract BERTje features!')
 
