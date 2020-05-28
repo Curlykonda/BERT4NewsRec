@@ -20,7 +20,7 @@ class NormalLinear(nn.Linear):
 
 class LinearProject(nn.Module):
     """
-    Use to create Temporal Embedding from 0D input (e.g. time stamp)
+    Use to create Temporal Embedding from 1D input (e.g. time vector)
     (B x L_hist) -> (B x L_hist x D_e)
     """
     def __init__(self, d_in=1, d_model=768):
@@ -41,8 +41,12 @@ class LinearProject(nn.Module):
         # project single-value time stamps to temporal embedding
         # (B x L_hist) -> (B x L_hist x D_e)
         t = t.float()
-        t_out = self.lin(t.unsqueeze(2))
-        return t_out / math.sqrt(self.d_model)
+        if len(t.shape) < 3:
+            t_out = self.lin(t.unsqueeze(2))
+        else:
+            t_out = self.lin(t)
+        return t_out
+        # / math.sqrt(self.d_model)
 
 class NeuralFunc(nn.Module):
     def __init__(self, d_in, d_model, hidden_units=[256, 768], act_func="relu"):

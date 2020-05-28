@@ -36,7 +36,7 @@ do
   for TE in "${TEMP_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
-  --temp_embs=$TE --max_article_len=$art_len --bert_feature_method $method $N \
+  --temp_embs=$TE --incl_time_stamp=True --max_article_len=$art_len --bert_feature_method $method $N \
   --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
   --lr $lr --decay_step $decay_step
   done
