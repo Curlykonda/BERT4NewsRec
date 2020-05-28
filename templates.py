@@ -259,7 +259,6 @@ def set_args_bert_pcp(args):
     # pseudo categorical prediction
     args.mode = 'train'
 
-
     # dataset
     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
     args.min_hist_len = 8
@@ -269,7 +268,6 @@ def set_args_bert_pcp(args):
     args.use_article_content = True
     args.incl_time_stamp = False
     args.pt_news_encoder = 'BERTje'
-
 
     args.fix_pt_art_emb = True
     args.pd_vocab = True
