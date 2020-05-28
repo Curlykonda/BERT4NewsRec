@@ -48,9 +48,12 @@ class TrigonometricPositionEmbedding(nn.Module):
         return 'tpe'
 
     def forward(self, x):
-        # x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
-        # return self.dropout(x)
-        return Variable(self.pe[:, :x.size(1)], requires_grad=False).to(x.device)
+
+        if self.pe.device != x.device:
+            self.pe = self.pe.to(x.device)
+
+        pe = Variable(self.pe[:, :x.size(1)], requires_grad=False)
+        return pe
 
 
 POS_EMBS = {
