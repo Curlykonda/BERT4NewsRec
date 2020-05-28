@@ -35,7 +35,6 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         vocab_size = args.max_vocab_size  # account for all items including PAD token
         # load pretrained embeddings
 
-
         if args.fix_pt_art_emb:
             # fix pre-computed article embs - no need for Word Embs or vocab
             token_embedding = None
@@ -100,7 +99,7 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
             self.nie_layer = None
 
         # trainable mask embedding
-        self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True)
+        self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True, device=args.device)
         self.mask_token = args.bert_mask_token
         self.encoded_art = None
 
@@ -198,7 +197,9 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         art_emb = encoded_articles
         if mask is not None:
             # replace mask positions with mask embedding
-            art_emb[mask] = self.mask_embedding.to(art_emb.device)
+            if self.mask_embedding.device != art_emb.device:
+                self.mask_embedding = self.mask_embedding.to(art_emb.device)
+            art_emb[mask] = self.mask_embedding
             # encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
         else:
             raise ValueError("Should apply masking before using BERT ;)")
