@@ -16,7 +16,7 @@ python --version
 
 #data=("../Data/DPG_nov19/medium_time_split_most_common/")
 #embeddings="../embeddings/cc.nl.300.bin"
-pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
 art_len=30
 SEEDS=(42)
 POS_EMBS=("tpe" "lpe")

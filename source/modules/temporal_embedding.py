@@ -75,7 +75,10 @@ class NeuralFunc(nn.Module):
         return 'nte'
 
     def forward(self, x_in):
-        x = x_in.unsqueeze(2).float()
+        if len(x_in.shape) < 3:
+            x = x_in.unsqueeze(2).float()
+        else:
+            x = x_in.float()
         # input x: time stamp in vector format, e.g. [DD, HH, mm, ss]
         for i, lin in enumerate(self.lin_layers):
             if i < len(self.lin_layers)-1:
@@ -83,7 +86,7 @@ class NeuralFunc(nn.Module):
             else:
                 x_out = lin(x)
         # (B x L x D_model)
-        return x_out.squeeze(2)
+        return x_out.squeeze()
 
 TEMP_EMBS = {
     LinearProject.code(): LinearProject,
