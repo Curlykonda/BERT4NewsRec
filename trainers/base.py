@@ -77,8 +77,6 @@ class AbstractTrainer(metaclass=ABCMeta):
 
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
-        if self.args.enable_lr_schedule:
-            self.lr_scheduler.step()
 
         average_meter_set = AverageMeterSet()
         tqdm_dataloader = tqdm(self.train_loader)
@@ -112,6 +110,10 @@ class AbstractTrainer(metaclass=ABCMeta):
 
             if self.args.local and batch_idx == 20:
                 break
+
+        # adapt learning rate
+        if self.args.enable_lr_schedule:
+            self.lr_scheduler.step()
 
         return accum_iter
 
