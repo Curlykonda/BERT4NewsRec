@@ -12,6 +12,18 @@ import torch.nn as nn
 from torch.backends import cudnn
 import arrow
 
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def set_random_seeds(rnd_seed):
+    random.seed(rnd_seed)
+    torch.manual_seed(rnd_seed)
+    torch.cuda.manual_seed_all(rnd_seed)
+    np.random.seed(rnd_seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
+
 def map_time_stamp_to_vector(ts, ts_len=4):
     """
     input:
@@ -187,14 +199,6 @@ def create_exp_name(config, seperator='_'):
     res_path.mkdir(parents=True, exist_ok=True)
 
     return exp_name, res_path
-
-def set_random_seeds(rnd_seed):
-    random.seed(rnd_seed)
-    torch.manual_seed(rnd_seed)
-    torch.cuda.manual_seed_all(rnd_seed)
-    np.random.seed(rnd_seed)
-    cudnn.deterministic = True
-    cudnn.benchmark = False
 
 def save_metrics_as_pickle(metrics, res_path : Path, file_name : str):
     with open(res_path / (file_name + '.pkl'), 'wb') as fout:

@@ -11,7 +11,7 @@ from tqdm import tqdm
 import json
 from abc import *
 from pathlib import Path
-
+import time
 
 class AbstractTrainer(metaclass=ABCMeta):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
@@ -68,13 +68,22 @@ class AbstractTrainer(metaclass=ABCMeta):
     def train(self):
         accum_iter = 0
         self.validate(0, accum_iter)
+
+        t0 = time.time()
         for epoch in range(self.num_epochs):
+            t1 = time.time()
             accum_iter = self.train_one_epoch(epoch, accum_iter)
+            t2 = time.time()
+            print("Train epoch in {.2f} min".format((t2-t1)/60))
             self.validate(epoch, accum_iter)
+            t3 = time.time()
+            print("Val epoch in {.2f} min".format((t3 - t2) / 60))
+
         self.logger_service.complete({
             'state_dict': (self._create_state_dict()),
         })
         self.writer.close()
+        print("Run completed in {.2f} h".format((time.time() - t0) / 360))
 
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
