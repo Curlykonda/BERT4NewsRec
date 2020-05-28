@@ -140,7 +140,8 @@ class AbstractTrainer(metaclass=ABCMeta):
 
                 for k, v in metrics.items():
                     average_meter_set.update(k, v)
-                description_metrics = ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
+                description_metrics = ['AUC'] +\
+                                      ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
                                       ['Recall@%d' % k for k in self.metric_ks[:3]]
                 description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
                 description = description.replace('NDCG', 'N').replace('Recall', 'R')

@@ -89,7 +89,7 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
         #scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
         metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
-        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(scores, labels)
+        metrics.update(calc_auc_and_mrr(scores, labels))
 
         return metrics
 
@@ -213,5 +213,5 @@ class Bert4NewsDistanceTrainer(BERTTrainer):
 
         # Note: inside this function, scores are inverted. check if aligns with distance function
         metrics = calc_recalls_and_ndcgs_for_ks(dist_scores.view(-1, n_cands), labels.view(-1, n_cands), self.metric_ks)
-        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(dist_scores.view(-1, n_cands), labels.view(-1, n_cands))
+        metrics.update(calc_auc_and_mrr(dist_scores.view(-1, n_cands), labels.view(-1, n_cands)))
         return metrics
