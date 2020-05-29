@@ -141,6 +141,7 @@ def set_template(args):
         # args.incl_time_stamp = True
 
         args.lower_case = False
+        args.cuda_launch_blocking=True
 
 
 def set_args_bert_pcp(args):
@@ -193,7 +194,7 @@ def set_args_bert_pcp(args):
     args.gamma = 0.1
     args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
     # evaluation
-    args.metric_ks = [5, 10, 50]
+    args.metric_ks = [5, 10]
     args.best_metric = 'NDCG@10'
 
     # model
