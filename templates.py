@@ -132,13 +132,13 @@ def set_template(args):
 
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.max_article_len = 30
-        args.pos_embs = 'tpe'
-        args.incl_time_stamp = False
+        # args.pos_embs = 'tpe'
+        # args.incl_time_stamp = False
 
-        # args.temp_embs = 'lte'
-        # args.temp_embs_hidden_units = [256, 768]
-        # args.temp_embs_act_func = "relu"
-        # args.incl_time_stamp = True
+        args.temp_embs = 'nte'
+        args.temp_embs_hidden_units = [256, 768]
+        args.temp_embs_act_func = "relu"
+        args.incl_time_stamp = True
 
         args.lower_case = False
         args.cuda_launch_blocking=True

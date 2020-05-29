@@ -7,6 +7,6 @@ NEGATIVE_SAMPLERS = {
     RandomNegativeSamplerPerUser.code(): RandomNegativeSamplerPerUser,
 }
 
-def negative_sampler_factory(code, train, val, test, user_count, item_count, sample_size, seq_lengths, seed, save_folder):
+def negative_sampler_factory(mode, code, train, val, test, user_count, item_count, sample_size, seq_lengths, seed, save_folder):
     negative_sampler = NEGATIVE_SAMPLERS[code]
-    return negative_sampler(train, val, test, user_count, item_count, sample_size, seq_lengths, seed, save_folder)
+    return negative_sampler(mode, train, val, test, user_count, item_count, sample_size, seq_lengths, seed, save_folder)

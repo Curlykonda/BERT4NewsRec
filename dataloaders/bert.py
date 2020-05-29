@@ -30,7 +30,8 @@ class BertDataloader(AbstractDataloader):
         ####################
         # Negative Sampling
 
-        self.train_neg_sampler = self.get_negative_sampler(args.train_negative_sampler_code,
+        self.train_neg_sampler = self.get_negative_sampler("train",
+                                                           args.train_negative_sampler_code,
                                                            args.train_negative_sample_size,
                                                            args.train_negative_sampling_seed,
                                                            self.valid_items['train'],
@@ -38,11 +39,12 @@ class BertDataloader(AbstractDataloader):
 
         self.train_negative_samples = self.train_neg_sampler.get_negative_samples()
 
-        self.test_neg_sampler = self.get_negative_sampler(args.test_negative_sampler_code,
-                                                               args.test_negative_sample_size,
-                                                               args.test_negative_sampling_seed,
-                                                               self.valid_items['test'],
-                                                               None)
+        self.test_neg_sampler = self.get_negative_sampler("test",
+                                                           args.test_negative_sampler_code,
+                                                           args.test_negative_sample_size,
+                                                           args.test_negative_sampling_seed,
+                                                           self.valid_items['test'],
+                                                           None)
 
         self.test_negative_samples = self.test_neg_sampler.get_negative_samples()
 
@@ -84,7 +86,7 @@ class BertDataloader(AbstractDataloader):
         dataset = BertEvalDataset(self.train, targets, self.max_hist_len, self.mask_token, self.test_negative_samples, multiple_eval_items=self.multiple_eval_items)
         return dataset
 
-    def get_negative_sampler(self, code, neg_sample_size, seed, item_set, seq_lengths):
+    def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
         # sample negative instances for each user
 
         if False:
@@ -92,7 +94,7 @@ class BertDataloader(AbstractDataloader):
             raise NotImplementedError()
         else:
             # use item set for simple neg sampling
-            negative_sampler = negative_sampler_factory(code, self.train, self.val, self.test,
+            negative_sampler = negative_sampler_factory(mode, code, self.train, self.val, self.test,
                                                         self.user_count, item_set,
                                                         neg_sample_size,
                                                         seed,
