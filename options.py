@@ -89,6 +89,8 @@ parser.add_argument('--trainer_code', type=str, default='bert', choices=TRAINERS
 parser.add_argument('--device', type=str, default='cpu', choices=['cpu', 'cuda'])
 parser.add_argument('--num_gpu', type=int, default=1)
 parser.add_argument('--device_idx', type=str, default='0')
+parser.add_argument('--cuda_launch_blocking', type=bool, default=False)
+
 # optimizer #
 parser.add_argument('--optimizer', type=str, default='Adam', choices=['SGD', 'Adam'])
 parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
