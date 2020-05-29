@@ -132,12 +132,13 @@ def set_template(args):
 
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.max_article_len = 30
-        # args.pos_embs = 'tpe'
-        # args.incl_time_stamp = False
-        args.temp_embs = 'nte'
-        args.temp_embs_hidden_units = [256, 768]
-        args.temp_embs_act_func = "relu"
-        args.incl_time_stamp = True
+        args.pos_embs = 'tpe'
+        args.incl_time_stamp = False
+
+        # args.temp_embs = 'lte'
+        # args.temp_embs_hidden_units = [256, 768]
+        # args.temp_embs_act_func = "relu"
+        # args.incl_time_stamp = True
 
         args.lower_case = False
 
@@ -153,7 +154,7 @@ def set_args_bert_pcp(args):
     # preprosessing
     args.n_users = 10000
     args.use_article_content = True
-    args.incl_time_stamp = False
+    #args.incl_time_stamp = False
     args.pt_news_encoder = 'BERTje'
 
     args.fix_pt_art_emb = True
@@ -176,7 +177,7 @@ def set_args_bert_pcp(args):
     args.train_negative_sample_size = 5
     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
     args.test_negative_sampler_code = 'random'
-    args.test_negative_sample_size = 99
+    args.test_negative_sample_size = 5
     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  # 98765
 
     # training

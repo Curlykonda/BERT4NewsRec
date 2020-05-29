@@ -27,6 +27,8 @@ nie="lin"
 lr=0.002
 decay_step=25
 
+exp_descr="pcp"
+
 echo "$datapath"
 for SEED in "${SEEDS[@]}"
 do
@@ -35,7 +37,8 @@ do
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
   --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
-  --lr $lr --decay_step $decay_step
+  --lr $lr --decay_step $decay_step \
+  --experiment_description $exp_descr $POS
   done
 done
 

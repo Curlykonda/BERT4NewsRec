@@ -28,12 +28,12 @@ parser.add_argument('--test_model_path', type=str, default=None)
 parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DATASETS.keys())
 
 ## MovieLens
-parser.add_argument('--min_rating', type=int, default=4, help='Only keep ratings greater than equal to this value')
-parser.add_argument('--min_uc', type=int, default=5, help='Only keep users with more than min_uc ratings')
-parser.add_argument('--min_sc', type=int, default=0, help='Only keep items with more than min_sc ratings')
+parser.add_argument('--min_rating', type=int, default=None, help='Only keep ratings greater than equal to this value')
+parser.add_argument('--min_uc', type=int, default=None, help='Only keep users with more than min_uc ratings')
+parser.add_argument('--min_sc', type=int, default=None, help='Only keep items with more than min_sc ratings')
 parser.add_argument('--split', type=str, default='leave_one_out', help='How to split the datasets')
-parser.add_argument('--dataset_split_seed', type=int, default=98765)
-parser.add_argument('--eval_set_size', type=int, default=500,
+parser.add_argument('--dataset_split_seed', type=int, default=None)
+parser.add_argument('--eval_set_size', type=int, default=None,
                     help='Size of val and test set. 500 for ML-1m and 10000 for ML-20m recommended')
 
 ## DPG
@@ -168,25 +168,12 @@ parser.add_argument('--bert_dropout', type=float, default=None, help='Dropout pr
 parser.add_argument('--bert_mask_prob', type=float, default=None, help='Probability for masking items in the training sequence')
 parser.add_argument('--bert_mask_token', type=int, default=None, help='Token id for Mask')
 
-################################################################
-# DAE #
-# parser.add_argument('--dae_num_items', type=int, default=None, help='Number of total items')
-# parser.add_argument('--dae_num_hidden', type=int, default=0, help='Number of hidden layers in DAE')
-# parser.add_argument('--dae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in DAE')
-# parser.add_argument('--dae_latent_dim', type=int, default=200, help="Dimension of latent vector in DAE")
-# parser.add_argument('--dae_dropout', type=float, default=0.5, help='Probability of input dropout in DAE')
-# # VAE #
-# parser.add_argument('--vae_num_items', type=int, default=None, help='Number of total items')
-# parser.add_argument('--vae_num_hidden', type=int, default=0, help='Number of hidden layers in VAE')
-# parser.add_argument('--vae_hidden_dim', type=int, default=600, help='Dimension of hidden layer in VAE')
-# parser.add_argument('--vae_latent_dim', type=int, default=200, help="Dimension of latent vector in VAE (K in paper)")
-# parser.add_argument('--vae_dropout', type=float, default=0.5, help='Probability of input dropout in VAE')
 
 ################
 # Experiment
 ################
 parser.add_argument('--experiment_dir', type=str, default='experiments')
-parser.add_argument('--experiment_description', type=str, default='test')
+parser.add_argument('--experiment_description', type=str, default='test', nargs='*')
 
 
 ################

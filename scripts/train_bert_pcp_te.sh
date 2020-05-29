@@ -28,6 +28,8 @@ t_act_func="relu"
 
 lr=0.002
 decay_step=25
+exp_descr="pcp"
+
 
 echo "$datapath"
 for SEED in "${SEEDS[@]}"
@@ -38,7 +40,8 @@ do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
   --temp_embs=$TE --incl_time_stamp=1 --max_article_len=$art_len --bert_feature_method $method $N \
   --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-  --lr $lr --decay_step $decay_step
+  --lr $lr --decay_step $decay_step \
+  --experiment_description $exp_descr $TE
   done
 done
 
