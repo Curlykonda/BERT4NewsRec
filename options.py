@@ -48,6 +48,7 @@ parser.add_argument('--use_article_content', type=bool, default=False, help="Ind
 parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")
 
 parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time stamps for article reads or not")
+parser.add_argument('--incl_u_id', type=bool, default=False, help="User ID passed to model")
 parser.add_argument('--time_threshold', type=str, default="23-11-2019 23:59:59", help='date for splitting train/test. format: "DD-MM-YYYY HH:mm:ss"')
 
 parser.add_argument('--train_method', type=str, default='masked_item', choices=['masked_interest', 'wu', 'pos_cut_off'])
@@ -56,6 +57,7 @@ parser.add_argument('--n_users', type=int, help="Number of users in the dataset"
 
 parser.add_argument('--validation_portion', type=float, default=0.1, help="Portion of test data used for validation")
 parser.add_argument('--lower_case', type=bool, default=False, help="Lowercase the article content")
+parser.add_argument('--language', type=str, default=None, choices=['dutch'])
 
 
 ################

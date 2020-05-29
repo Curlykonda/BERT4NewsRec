@@ -32,11 +32,12 @@ class AbstractDataloader(metaclass=ABCMeta):
         else:
             args.n_users = self.user_count
 
-
         if args.n_articles is not None:
             assert args.n_articles == self.item_count
         else:
             args.n_articles = self.item_count
+
+
 
     @classmethod
     @abstractmethod

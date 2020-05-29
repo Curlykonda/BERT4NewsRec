@@ -1,4 +1,4 @@
-from .bert import BERTModel, BERT4NewsRecModel, Bert4NextItemEmbedPrediction
+from .bert import BERTModel, BERT4NewsRecModel, BERT4NewsRecModel
 from .NPA import VanillaNPA
 from source.utils import init_weights
 
@@ -9,7 +9,7 @@ MODELS = {
     BERTModel.code(): BERTModel,
     VanillaNPA.code(): VanillaNPA,
     BERT4NewsRecModel.code(): BERT4NewsRecModel,
-    Bert4NextItemEmbedPrediction.code(): Bert4NextItemEmbedPrediction
+    BERT4NewsRecModel.code(): BERT4NewsRecModel
 }
 
 def model_factory(args):

@@ -345,7 +345,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
             if self.args.pt_news_encoder is None:
                 # prepare news articles to create article embeddings end-to-end
                 vocab, news_as_word_ids, art_id2idx = preprocess_dpg_news_file(news_file=news_data,
-                                                                               tokenizer=word_tokenize,
+                                                                               language=self.args.language,
                                                                                min_counts_for_vocab=self.args.min_counts_for_vocab,
                                                                                max_article_len=self.args.max_article_len,
                                                                                max_vocab_size=self.args.max_vocab_size)

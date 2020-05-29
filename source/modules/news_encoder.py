@@ -3,6 +3,7 @@ import torch.nn as nn
 import transformers
 
 from source.modules.attention import PersonalisedAttentionWu
+from source.modules.preference_query import PrefQueryWu
 
 
 class BERTje(transformers.BertModel):
@@ -45,11 +46,31 @@ class PrecomputedFixedEmbeddings(nn.Module):
         # lookup embedding
         return self.article_embeddings(article_indices)
 
+class NpaNewsEncoder(nn.Module):
+    def __init__(self, n_users, dim_articles=400, dim_u_id_emb=50, dim_pref_q=200, dim_word_emb=300, kernel_size=3, dropout_p=0.2):
+        super(NpaNewsEncoder, self).__init__()
 
-class NewsEncoderWuCNN(nn.Module):
+        self.d_art = dim_articles
+        self.d_u_id = dim_u_id_emb
+        self.d_pref = dim_pref_q
+        self.d_we = dim_word_emb
+        self.n_users = n_users
+
+        self.news_encoder = NpaCNN(dim_articles, dim_pref_q, dim_word_emb, kernel_size, dropout_p)
+        self.user_id_embeddings = nn.Embedding(n_users, self.d_u_id)
+        self.pref_q_word = PrefQueryWu(self.d_pref, self.d_u_id)
+
+    def forward(self, embedd_words, u_id):
+        u_id_emb = self.user_id_embeddings(u_id)
+        pref_q = self.pref_q_word(u_id_emb)
+        context_art_rep = self.news_encoder(embedd_words, pref_q)
+
+        return context_art_rep
+
+class NpaCNN(nn.Module):
 
     def __init__(self, n_filters=400, dim_pref_q=200, word_emb_dim=300, kernel_size=3, dropout_p=0.2):
-        super(NewsEncoderWuCNN, self).__init__()
+        super(NpaCNN, self).__init__()
 
         self.n_filters = n_filters # output dimension
         self.dim_pref_q = dim_pref_q

@@ -16,6 +16,7 @@ import torch
 import torch.nn as nn
 
 import fasttext
+from transformers import BertTokenizer
 
 from source.preprocessing.bert_feature_extractor import BertFeatureExtractor
 from source.utils import get_art_id_from_dpg_history, build_vocab_from_word_counts, pad_sequence, reverse_mapping_dict
@@ -371,8 +372,13 @@ def prep_dpg_user_file(user_file, news_file, art_id2idx, train_method, test_inte
 
     return u_id2idx, data
 
-def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_article_len=30, max_vocab_size=30000):
+def preprocess_dpg_news_file(news_file, language, min_counts_for_vocab=2, max_article_len=30, max_vocab_size=30000, lower_case=False):
 
+    vocab = None
+    news_as_word_ids = []
+    art_id2idx = {}
+
+    # load data
     if isinstance(news_file, str):
         with open(news_file, 'rb') as f:
             news_data = pickle.load(f)
@@ -381,18 +387,30 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
     else:
         raise NotImplementedError()
 
+    # determine language
+    if isinstance(language, str):
+        language = language.lower()
+    elif language is None:
+        print("No language specified. Assuming 'dutch'")
+        language = "dutch"
+    else:
+        raise ValueError()
+
     article_ids = news_data['all']
 
-    vocab = defaultdict(int)
-    news_as_word_ids = []
-    art_id2idx = {}
-
     # 1. construct raw vocab
-    print("construct raw vocabulary ...")
+    print("> construct raw vocabulary ...")
     vocab_raw = Counter({'PAD': 999999})
 
     for art_id in article_ids:
-        tokens = tokenizer(article_ids[art_id]["snippet"].lower(), language='dutch')
+        if "snippet" in article_ids[art_id]:
+            text = article_ids[art_id]["snippet"]
+        else:
+            text = article_ids[art_id]['text'][:max_article_len+10]
+
+        tokens = word_tokenize(text.lower(), language=language) if lower_case \
+            else word_tokenize(text, language=language)
+
         vocab_raw.update(tokens)
         article_ids[art_id]['tokens'] = tokens
 
@@ -400,13 +418,14 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
             print(len(vocab_raw))
 
     # 2. construct working vocab
-    print("construct working vocabulary ...")
+    print("> construct working vocabulary ...")
+    # vocab: word -> index
     vocab = build_vocab_from_word_counts(vocab_raw, max_vocab_size, min_counts_for_vocab)
     print("Vocab: {}  Raw: {}".format(len(vocab), len(vocab_raw)))
     #del(vocab_raw)
 
     # 3. encode news as sequence of word_ids
-    print("encode news as word_ids ...")
+    print("> encode news as word_ids ...")
     news_as_word_ids = {} # {'0': [0] * max_article_len}
     art_id2idx = {}  # {'0': 0}
 
@@ -429,9 +448,14 @@ def preprocess_dpg_news_file(news_file, tokenizer, min_counts_for_vocab=2, max_a
     # reformat as array
     # news_as_word_ids = np.array(news_as_word_ids, dtype='int32')
 
+
     return vocab, news_as_word_ids, art_id2idx
 
 def get_word_embs_from_pretrained_ft(vocab, emb_path, emb_dim=300):
+    if emb_path is None:
+        print("No path to pretrained word embeddings given")
+        return None
+
     try:
         ft = fasttext.load_model(emb_path) # load pretrained vectors
 

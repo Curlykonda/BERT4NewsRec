@@ -74,13 +74,14 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
         return loss
 
     def calculate_metrics(self, batch):
-        if self.args.incl_time_stamp:
-            seqs, mask, cands, labels, time_stamps = batch
-            logits = self.model([seqs, time_stamps], mask, cands) # (B x N_c)
-        else:
-            seqs, mask, cands, labels = batch
-            time_stamps = None
-            logits = self.model(seqs, mask, cands) # (B x N_c)
+
+        input = batch['input']
+        lbls = batch['lbls']
+        logits = self.model(**batch['input']) # (B x N_c)
+        # else:
+        #     seqs, mask, cands, labels = batch
+        #     time_stamps = None
+        #     logits = self.model(seqs, mask, cands) # (B x N_c)
 
         # TODO: check scores
         scores = nn.functional.softmax(logits, dim=1)
@@ -88,8 +89,8 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, labels))
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
+        metrics.update(calc_auc_and_mrr(scores, lbls))
 
         return metrics
 

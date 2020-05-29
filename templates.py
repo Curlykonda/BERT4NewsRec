@@ -130,15 +130,26 @@ def set_template(args):
 
         set_args_bert_pcp(args)
 
-        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
-        args.max_article_len = 30
-        # args.pos_embs = 'tpe'
-        # args.incl_time_stamp = False
+        args.news_encoder = "wucnn"
+        args.incl_u_id = True
+        args.pt_news_encoder = None #'BERTje'
 
-        args.temp_embs = 'nte'
-        args.temp_embs_hidden_units = [256, 768]
-        args.temp_embs_act_func = "relu"
-        args.incl_time_stamp = True
+        args.fix_pt_art_emb = False
+        args.pd_vocab = True
+        args.dim_art_emb = 256
+        args.bert_hidden_units = args.dim_art_emb
+
+        args.path_pt_news_enc = None #"./BertModelsPT/bert-base-dutch-cased"
+        args.language = "dutch"
+
+        args.max_article_len = 30
+        args.pos_embs = 'tpe'
+        args.incl_time_stamp = False
+
+        # args.temp_embs = 'nte'
+        # args.temp_embs_hidden_units = [256, 768]
+        # args.temp_embs_act_func = "relu"
+        # args.incl_time_stamp = True
 
         args.lower_case = False
         args.cuda_launch_blocking=True
@@ -198,7 +209,7 @@ def set_args_bert_pcp(args):
     args.best_metric = 'NDCG@10'
 
     # model
-    args.model_code = 'bert4nie'
+    args.model_code = 'bert4news'
     args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
     # bert
     args.bert_dropout = 0.1

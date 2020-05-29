@@ -141,10 +141,12 @@ class AbstractTrainer(metaclass=ABCMeta):
                 if isinstance(batch, dict):
                     device_dict = {}
                     for key, val in batch.items():
-                        if not isinstance(val, list):
-                            device_dict[key] = val.to(self.device)
-                        else:
+                        if isinstance(val, list):
                             device_dict[key] = [elem.to(self.device) for elem in val]
+                        elif isinstance(val, dict):
+                            device_dict[key] = {k: v.to(self.device) for k, v in val.items()}
+                        else:
+                            device_dict[key] = val.to(self.device)
 
                     batch = device_dict
                     #batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
