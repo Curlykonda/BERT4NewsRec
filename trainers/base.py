@@ -68,7 +68,7 @@ class AbstractTrainer(metaclass=ABCMeta):
     def train(self):
         accum_iter = 0
         self.validate(0, accum_iter)
-
+        print("\n > Start training")
         t0 = time.time()
         for epoch in range(self.num_epochs):
             t1 = time.time()

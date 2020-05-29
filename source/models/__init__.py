@@ -10,8 +10,6 @@ MODELS = {
     VanillaNPA.code(): VanillaNPA,
     BERT4NewsRecModel.code(): BERT4NewsRecModel,
     Bert4NextItemEmbedPrediction.code(): Bert4NextItemEmbedPrediction
-    # DAEModel.code(): DAEModel,
-    # VAEModel.code(): VAEModel
 }
 
 def model_factory(args):
