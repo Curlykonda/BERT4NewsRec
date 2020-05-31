@@ -131,13 +131,7 @@ def set_template(args):
         set_args_bert_pcp(args)
 
         args.news_encoder = "wucnn"
-        args.incl_u_id = True
-        args.pt_news_encoder = None #'BERTje'
-
-        args.fix_pt_art_emb = False
-        args.pd_vocab = True
-        args.dim_art_emb = 256
-        args.bert_hidden_units = args.dim_art_emb
+        set_args_npa_cnn(args)
 
         args.path_pt_news_enc = None #"./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
@@ -221,3 +215,14 @@ def set_args_bert_pcp(args):
 
     args.pred_layer = 'l2'  # prediction layer
     #args.nie_layer = None
+
+def set_args_npa_cnn(args):
+    args.incl_u_id = True
+    args.pt_news_encoder = None  # 'BERTje'
+    args.fix_pt_art_emb = False
+    args.pd_vocab = True
+
+    args.dim_art_emb = 400 if args.dim_art_emb is None else args.dim_art_emb
+    args.bert_hidden_units = args.dim_art_emb
+
+    args.path_pt_news_enc = None

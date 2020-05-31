@@ -370,6 +370,8 @@ class BertTrainDatasetNews(BertTrainDataset):
         time_stamps = []
         n_cands = len(neg_samples[0])
 
+        pos_irrelevant_lbl = -1 # label to indicate irrelevant position to avoid confusion with other categorical labels
+
         for idx, entry in enumerate(seq):
             if self.w_time_stamps:
                 art_id, ts = entry
@@ -398,16 +400,19 @@ class BertTrainDatasetNews(BertTrainDataset):
                     m_val = 1
 
                 hist.append(art_idx2word_ids(tkn, self.art2words))
-                labels.append(art_id)
+
                 mask.append(m_val)
 
                 cands = neg_samples[idx] + [art_id]
                 self.rng.shuffle(cands) # shuffle candidates so model cannot trivially guess target position
+
+                labels.append(cands.index(art_id))
+
                 candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
 
             else:
                 hist.append(art_idx2word_ids(art_id, self.art2words))
-                labels.append(0)
+                labels.append(pos_irrelevant_lbl)
                 mask.append(1)
 
                 cands = neg_samples[idx] + [art_id]
@@ -422,7 +427,7 @@ class BertTrainDatasetNews(BertTrainDataset):
         candidates = pad_seq(candidates, self.pad_token, self.max_hist_len,
                              max_article_len=(self.max_article_len if self.art2words is not None else None),
                              n=n_cands+1)
-        labels = pad_seq(labels, pad_token=0, max_hist_len=self.max_hist_len,)
+        labels = pad_seq(labels, pad_token=pos_irrelevant_lbl, max_hist_len=self.max_hist_len,)
         mask = pad_seq(mask, pad_token=1, max_hist_len=self.max_hist_len,)
 
         assert len(hist) == self.max_hist_len
