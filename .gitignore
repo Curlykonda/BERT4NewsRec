@@ -194,3 +194,4 @@ experiments/
 /slurm_outs/
 /BertModelsPT/
 /pc_article_embeddings/*
+/pc_word_embeddings/*
