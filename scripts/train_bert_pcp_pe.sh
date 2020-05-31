@@ -16,7 +16,9 @@ python --version
 
 #data=("../Data/DPG_nov19/medium_time_split_most_common/")
 #embeddings="../embeddings/cc.nl.300.bin"
-pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
+pt_news_enc="BERTje"
+pt_news_enc_path = "./BertModelsPT/bert-base-dutch-cased"
+
 art_len=30
 SEEDS=(42)
 POS_EMBS=("tpe" "lpe")
@@ -35,7 +37,8 @@ do
   echo "$SEED"
   for POS in "${POS_EMBS[@]}"
   do
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
+  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
   --experiment_description $exp_descr $POS

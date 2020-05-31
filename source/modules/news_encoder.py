@@ -170,3 +170,4 @@ class KimCNN(torch.nn.Module):
   @classmethod
   def code(cls):
       return "kim_cnn"
+
