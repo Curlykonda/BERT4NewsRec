@@ -167,7 +167,7 @@ def set_args_bert_pcp(args):
         args.pd_vocab = True
         args.dim_art_emb = 768
 
-    elif "wuncnn" == args.news_encoder:
+    elif "wucnn" == args.news_encoder:
         set_args_npa_cnn(args)
 
     # args.lower_case = False
