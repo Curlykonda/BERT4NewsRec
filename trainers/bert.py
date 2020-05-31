@@ -53,13 +53,19 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
 
     def calculate_loss(self, batch):
 
-        if self.args.incl_time_stamp:
-            seqs, mask, cands, labels, time_stamps = batch
-            logits = self.model([seqs, time_stamps], mask, cands)
-        else:
-            seqs, mask, cands, labels = batch
-            time_stamps = None
-            logits = self.model(seqs, mask, cands) # (B*T) x N_c
+        input = batch['input']
+        cands = input['cands']
+        labels = batch['lbls']
+
+        logits = self.model(**batch['input']) # (B*T) x N_c
+
+        # if self.args.incl_time_stamp:
+        #     seqs, mask, cands, labels, time_stamps = batch
+        #     logits = self.model([seqs, time_stamps], mask, cands)
+        # else:
+        #     seqs, mask, cands, labels = batch
+        #     time_stamps = None
+        #     logits = self.model(seqs, mask, cands)
 
         # labels have to indicate which candidate is the correct one
         # convert target item index to categorical label C = [0, N_c]

@@ -92,8 +92,9 @@ class AbstractTrainer(metaclass=ABCMeta):
         tqdm_dataloader = tqdm(self.train_loader)
 
         for batch_idx, batch in enumerate(tqdm_dataloader):
-            batch_size = batch[0].size(0)
-            batch = [x.to(self.device) for x in batch]
+
+            batch = self.batch_to_device(batch)
+            batch_size = self.args.train_batch_size
 
             self.optimizer.zero_grad()
             loss = self.calculate_loss(batch)
@@ -138,20 +139,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         with torch.no_grad():
             tqdm_dataloader = tqdm(self.val_loader)
             for batch_idx, batch in enumerate(tqdm_dataloader):
-                if isinstance(batch, dict):
-                    device_dict = {}
-                    for key, val in batch.items():
-                        if isinstance(val, list):
-                            device_dict[key] = [elem.to(self.device) for elem in val]
-                        elif isinstance(val, dict):
-                            device_dict[key] = {k: v.to(self.device) for k, v in val.items()}
-                        else:
-                            device_dict[key] = val.to(self.device)
-
-                    batch = device_dict
-                    #batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
-                else:
-                    batch = [x.to(self.device) for x in batch]
+                batch = self.batch_to_device(batch)
 
                 metrics = self.calculate_metrics(batch)
 
@@ -206,6 +194,24 @@ class AbstractTrainer(metaclass=ABCMeta):
             with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
                 json.dump(average_metrics, f, indent=4)
             print(average_metrics)
+
+    def batch_to_device(self, batch):
+        if isinstance(batch, dict):
+            device_dict = {}
+            for key, val in batch.items():
+                if isinstance(val, list):
+                    device_dict[key] = [elem.to(self.device) for elem in val]
+                elif isinstance(val, dict):
+                    device_dict[key] = {k: v.to(self.device) for k, v in val.items()}
+                else:
+                    device_dict[key] = val.to(self.device)
+
+            batch = device_dict
+            # batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
+        else:
+            batch = [x.to(self.device) for x in batch]
+
+        return batch
 
     def _create_optimizer(self):
         args = self.args

@@ -65,6 +65,7 @@ class NpaNewsEncoder(nn.Module):
         pref_q = self.pref_q_word(u_id_emb)
         context_art_rep = self.news_encoder(embedd_words, pref_q)
 
+        # (B x D_art)
         return context_art_rep
 
 class NpaCNN(nn.Module):
@@ -87,22 +88,25 @@ class NpaCNN(nn.Module):
 
     def forward(self, embedded_news, pref_query):
         contextual_rep = []
-        # embedded_news.shape = batch_size X max_hist_len X max_title_len X word_emb_dim
+        # embedded_news.shape = (B x L_art x D_we)
         embedded_news = self.dropout_in(embedded_news)
         # encode each browsed news article and concatenate
-        for n_news in range(embedded_news.shape[1]):
 
-            # concatenate words
-            article_one = embedded_news[:, n_news, :, :].squeeze(1) # shape = (batch_size, title_len, emb_dim)
+        return self.pers_attn_word(self.cnn_encoder(embedded_news.unsqueeze(1)).squeeze(-1), pref_query)
 
-            encoded_news = self.cnn_encoder(article_one.unsqueeze(1))
-            # encoded_news.shape = batch_size X n_cnn_filters X max_title_len
-
-            #pers attn
-            contextual_rep.append(self.pers_attn_word(encoded_news.squeeze(-1), pref_query))
-            assert contextual_rep[-1].shape[1] == self.n_filters # batch_size X n_cnn_filters
-
-        return torch.stack(contextual_rep, axis=2) # batch_s X dim_news_rep X history_len
+        # for n_news in range(embedded_news.shape[1]):
+        #
+        #     # concatenate words
+        #     article_one = embedded_news[:, n_news, :, :].squeeze(1) # shape = (batch_size, title_len, emb_dim)
+        #
+        #     encoded_news = self.cnn_encoder(article_one.unsqueeze(1))
+        #     # encoded_news.shape = batch_size X n_cnn_filters X max_title_len
+        #
+        #     #pers attn
+        #     contextual_rep.append(self.pers_attn_word(encoded_news.squeeze(-1), pref_query))
+        #     assert contextual_rep[-1].shape[1] == self.n_filters # batch_size X n_cnn_filters
+        #
+        # return torch.stack(contextual_rep, axis=2) # batch_s X dim_news_rep X history_len
 
     @classmethod
     def code(cls):

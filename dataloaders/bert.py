@@ -439,7 +439,7 @@ class BertTrainDatasetNews(BertTrainDataset):
             inp['ts'] = torch.LongTensor(time_stamps)
 
         if u_idx is not None:
-            inp['u_id': torch.LongTensor(u_idx)]
+            inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len) # need tensors of equal lenght for collate function
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
 
@@ -490,6 +490,7 @@ class BertEvalDatasetNews(BertEvalDataset):
 
         target = [test_items[-1]]
         candidates = target + negs # candidates as article indices
+        candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         #candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
         labels = [1] * len(target) + [0] * len(negs)
 

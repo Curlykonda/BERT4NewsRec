@@ -124,17 +124,15 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         time_stamps = kwargs['ts'] if 'ts' in kwargs else None
 
         # article encoding
-        if self.token_embedding is not None:
-            encoded_arts = self.encode_news_w_token(history, u_ids)
-            # encode candidates
-            # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_article)
-            encoded_cands = self.encode_news_w_token(candidates, u_ids)
-        else:
-            encoded_arts = self.encode_news(history) # (B x L_hist x D_article)
-            encoded_cands = self.encode_news(candidates)
+        # (B x L_hist) => (B x L_hist x D_art)
+        encoded_hist = self.encode_hist(history, u_ids)
+        # encode candidates
+        # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_art)
+        encoded_cands = self.encode_candidates(candidates, u_ids)
+
 
         # interest modeling
-        interest_reps = self.create_hidden_interest_representations(encoded_arts, time_stamps, mask)
+        interest_reps = self.create_hidden_interest_representations(encoded_hist, time_stamps, mask)
         # (B x L_hist x D_bert)
 
         # embedding projection
@@ -145,13 +143,13 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         # score prediction
         if self.prediction_layer is not None:
             if len(interest_reps.shape) < len(encoded_cands.shape):
-                # (B x L x D_a) x (B x L x N_c x D_a) -> (B x L x N_c)
                 # flatten inputs to compute scores
+                # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
                 logits = self.prediction_layer(interest_reps.view(-1, interest_reps.shape[-1]),
                                                encoded_cands.view(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
-                # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
+                # -> ((B*L) x N_c)
             elif len(interest_reps.shape) == len(encoded_cands.shape):
-                # test case where we only have candidates for the last position
+                # Test Case: we only have candidates for the last position
                 # hence, we only need the relevant embedding at the last position
 
                 pred_embs = interest_reps[:, -1, :] # (B x D_a)
@@ -163,41 +161,75 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         else:
             return interest_reps, encoded_cands
 
-    def encode_news_w_token(self, article_seq, u_ids=None):
+    def encode_hist(self, article_seq, u_idx=None):
         encoded_arts = []
-        # embedding the indexed sequence to sequence of vectors
-        # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
-        embedded_arts = self.token_embedding(article_seq)
+        if self.token_embedding is not None:
+            # embedding the indexed sequence to sequence of vectors
+            # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
+            embedded_arts = self.token_embedding(article_seq)
+        else:
+            embedded_arts = article_seq
 
         # encode word embeddings into article embedding
-        # (B x L_hist x L_article x D_word_emb) => (B x L_hist x D_article)
-        for n_news in range(embedded_arts.shape[1]):
-            #
-            article_one = embedded_arts[:, n_news, :, :]
-
-            # create article embeddings
-            if u_ids is not None:
-                context_art = self.news_encoder(article_one.unsqueeze(1), u_ids)
-            else:
-                context_art = self.news_encoder(article_one.unsqueeze(1))
-
-            encoded_arts.append(context_art.squeeze())
+        # (B x L_hist x L_art x D_word_emb) => (B x L_hist x D_art)
+        # for n_news in range(embedded_arts.shape[1]):
+        #     #
+        #     article_pos = embedded_arts[:, n_news, :, :]
+        #
+        #     # create article embeddings
+        #     encoded_arts.append(self.encode_news(article_pos, u_idx))
 
         # -> (B x D_article x L_hist)
-        encoded_arts = torch.stack(encoded_arts, axis=2)
+        # encoded_arts = torch.stack(encoded_arts, axis=2)
 
-        # encoded_arts = self.news_encoder(embedded_arts)
+        encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i in torch.unbind(embedded_arts, dim=1)], dim=2)
 
         # (B x L_hist x D_article)
         return encoded_arts.transpose(1, 2)
 
-    def encode_news(self, article_seq):
-        # retrieve article embedding
-        # (B x L_hist) => (B x L_hist x D_article)
-        encoded_arts = self.news_encoder(article_seq)
+    def encode_news(self, article_seq, u_idx=None):
 
-        # (B x L_hist x D_article)
-        return encoded_arts
+        # (B x L_art) => (B x D_art)
+        if u_idx is not None:
+            encoded_arts = self.news_encoder(article_seq, u_idx)
+        else:
+            encoded_arts = self.news_encoder(article_seq)
+
+        # (B x D_article)
+        return encoded_arts.squeeze(1)
+
+    def encode_candidates(self, cands, u_idx=None):
+        encoded_arts = []
+        if self.token_embedding is not None:
+            # embedding the indexed sequence to sequence of vectors
+            # (B x L_hist x N_c x L_article) => (B x L_hist x N_c x L_article x D_word_emb)
+            embedded_arts = self.token_embedding(cands)
+
+            # Two cases:
+            # Train: L_hist > 1
+            # Test: L_hist = 1
+            if len(embedded_arts.shape) == 4:
+                embedded_arts = embedded_arts.unsqueeze(1)
+
+            n_cands = embedded_arts.shape[2]
+
+            for n_news in range(embedded_arts.shape[1]):
+                #article_pos = embedded_arts[:, n_news, :, :]
+
+                # create article embeddings
+                encoded_cands = torch.stack([self.encode_news(x_i, u_idx) for x_i
+                                            in torch.unbind(embedded_arts[:, n_news, :, :], dim=1)], dim=2)
+
+                encoded_arts.append(encoded_cands.transpose(1, 2))
+
+            # -> (B x L_hist x N_c x D_art)
+            encoded_arts = torch.stack(encoded_arts, axis=1)
+
+            return encoded_arts.squeeze(1)
+
+        else:
+            embedded_arts = cands
+            raise NotImplementedError()
 
     def create_hidden_interest_representations(self, encoded_articles, time_stamps, mask):
         # build mask: perhaps by adding up the word ids? -> make efficient for batch
