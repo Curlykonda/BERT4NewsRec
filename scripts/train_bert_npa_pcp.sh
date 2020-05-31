@@ -3,6 +3,7 @@
 #SBATCH -n 8
 #SBATCH -t 06:00:00
 #SBATCH -p gpu_shared
+#SBATCH --gres=gpu:2
 #SBATCH --mem=60000M
 
 
