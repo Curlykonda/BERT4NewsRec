@@ -228,8 +228,8 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             return encoded_arts.squeeze(1)
 
         else:
-            embedded_arts = cands
-            raise NotImplementedError()
+            encoded_arts = self.news_encoder(cands)
+            return encoded_arts
 
     def create_hidden_interest_representations(self, encoded_articles, time_stamps, mask):
         # build mask: perhaps by adding up the word ids? -> make efficient for batch

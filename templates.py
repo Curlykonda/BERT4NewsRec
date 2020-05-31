@@ -128,13 +128,14 @@ def set_template(args):
     elif args.template.startswith("local_bert_pcp"):
         args.local = True
 
+        args.pt_news_encoder = 'BERTje'
+        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        args.language = "dutch"
+
         set_args_bert_pcp(args)
 
-        args.news_encoder = "wucnn"
-        set_args_npa_cnn(args)
-
-        args.path_pt_news_enc = None #"./BertModelsPT/bert-base-dutch-cased"
-        args.language = "dutch"
+        # args.news_encoder = "wucnn"
+        # set_args_npa_cnn(args)
 
         args.max_article_len = 30
         args.pos_embs = 'tpe'
@@ -160,12 +161,15 @@ def set_args_bert_pcp(args):
     # preprosessing
     args.n_users = 10000
     args.use_article_content = True
-    #args.incl_time_stamp = False
-    args.pt_news_encoder = 'BERTje'
 
-    args.fix_pt_art_emb = True
-    args.pd_vocab = True
-    args.dim_art_emb = 768
+    if 'BERTje' == args.pt_news_encoder:
+        args.fix_pt_art_emb = True
+        args.pd_vocab = True
+        args.dim_art_emb = 768
+
+    elif "wuncnn" == args.news_encoder:
+        set_args_npa_cnn(args)
+
     # args.lower_case = False
 
     # split strategy
@@ -215,6 +219,7 @@ def set_args_bert_pcp(args):
 
     args.pred_layer = 'l2'  # prediction layer
     #args.nie_layer = None
+
 
 def set_args_npa_cnn(args):
     args.incl_u_id = True
