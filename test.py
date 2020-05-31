@@ -28,6 +28,11 @@ if __name__ == "__main__":
     print("(B x N_art x D_art)")
     print("{:.3f}s".format(t1-t0))
 
-    conv1a = nn.Conv1d(n_art, d_art, kernel_size=(k1, d_we), padding=(k1 - 2, 0))
-    conv_out = conv1a(inp)
-    print(conv_out.shape)
+    #Now, what we're looking for is an alternative that computes this in parallel,
+    #without a for loop but using the same News Encoder for all articles
+    #Idea: some 2D Conv with kernel size (3, 1, d_we) to avoid convolving across articles
+
+
+    # conv1a = nn.Conv1d(n_art, d_art, kernel_size=(k1, d_we), padding=(k1 - 2, 0))
+    # conv_out = conv1a(inp)
+    # print(conv_out.shape)
