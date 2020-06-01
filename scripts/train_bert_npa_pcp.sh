@@ -29,7 +29,7 @@ nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.002
 decay_step=25
-batch=10
+batch=64
 
 exp_descr="pcp_NpaCNN"
 
