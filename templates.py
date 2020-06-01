@@ -1,3 +1,5 @@
+from utils import set_up_gpu
+
 def set_template(args):
     if args.template is None:
         return
@@ -148,6 +150,8 @@ def set_template(args):
 
         args.lower_case = False
         args.cuda_launch_blocking=True
+
+    set_up_gpu(args)
 
 
 def set_args_bert_pcp(args):
