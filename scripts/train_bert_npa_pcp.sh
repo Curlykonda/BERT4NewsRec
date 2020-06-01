@@ -40,7 +40,7 @@ do
   for POS in "${POS_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
-  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb\
+  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb \
   --num_epochs=50 --bert_num_blocks=1 --bert_max_len=50 \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
@@ -58,7 +58,7 @@ do
   for TE in "${TEMP_EMBS[@]}"
   do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
-  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb\
+  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb \
   --num_epochs=50 --bert_num_blocks=1 --bert_max_len=50 \
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
   --max_article_len=$art_len --nie_layer $nie \
