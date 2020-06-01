@@ -30,6 +30,7 @@ nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.002
 decay_step=25
+batch=64
 
 exp_descr="pcp_NpaCNN"
 
@@ -42,7 +43,7 @@ do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb\
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --num_gpu=2 \
   --experiment_description $exp_descr $POS
   done
 done

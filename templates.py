@@ -177,7 +177,7 @@ def set_args_bert_pcp(args):
 
     # dataloader
     args.dataloader_code = 'bert_news'
-    batch = 128 if not args.local else 10
+    batch = args.train_batch_size if not args.local else 10
     args.train_batch_size = batch
     args.val_batch_size = batch
     args.test_batch_size = batch
@@ -194,7 +194,7 @@ def set_args_bert_pcp(args):
     args.trainer_code = 'bert_news_ce'
     args.device = 'cuda' #if not args.local else 'cpu'
 
-    args.num_gpu = 1
+    args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
     args.device_idx = '0'
     args.optimizer = 'Adam'
     args.lr = 0.001 if args.lr is None else args.lr
