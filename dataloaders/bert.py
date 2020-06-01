@@ -415,8 +415,16 @@ class BertTrainDatasetNews(BertTrainDataset):
                 labels.append(pos_irrelevant_lbl)
                 mask.append(1)
 
-                cands = neg_samples[idx] + [art_id]
-                candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
+                if self.art2words is None:
+                    cands = [0] * (len(neg_samples[idx]) + 1)
+                else:
+                    cands = [[0] * self.max_article_len] * (len(neg_samples[idx]) + 1)
+
+                candidates.append(cands)
+
+                # cands = neg_samples[idx] + [art_id]
+                #candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
+
 
 
         # truncate sequence & apply left-side padding

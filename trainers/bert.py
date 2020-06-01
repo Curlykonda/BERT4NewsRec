@@ -54,20 +54,21 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
     def calculate_loss(self, batch):
 
         input = batch['input']
-        cands = input['cands']
+        #cands = input['cands']
+        mask = input['mask']
         cat_labels = batch['lbls']
 
         logits = self.model(**batch['input']) # (B*T) x N_c
 
         # categorical labels indicate which candidate is the correct one C = [0, N_c]
-        lbls = cat_labels[cat_labels != -1]
+        lbls = cat_labels[mask == 0]
         # c = cands[cat_labels != -1]
         # categorical_lbls = (c == lbls.unsqueeze(1).repeat(1, c.size(1))).nonzero()[:, -1]
 
         # determine relevant logits for position where label is unequal -1
-        rel_logits = logits[cat_labels.view(-1) != -1]
+        #rel_logits = logits[cat_labels.view(-1) != -1]
         # calculate a separate loss for each class label per observation and sum the result.
-        loss = self.ce(rel_logits, lbls)
+        loss = self.ce(logits, lbls)
         # note: NPA approach only computes NLL for positive class -> select only logits for positive class?
         return loss
 

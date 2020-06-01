@@ -134,6 +134,7 @@ def set_template(args):
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
 
+        args.bert_num_blocks = 1
         set_args_bert_pcp(args)
 
         # args.news_encoder = "wucnn"
@@ -143,13 +144,14 @@ def set_template(args):
         args.pos_embs = 'tpe'
         args.incl_time_stamp = False
 
-        # args.temp_embs = 'nte'
-        # args.temp_embs_hidden_units = [256, 768]
-        # args.temp_embs_act_func = "relu"
+        # args.temp_embs = 'lte'
+        # # args.temp_embs_hidden_units = [256, 768]
+        # # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
 
         args.lower_case = False
         args.cuda_launch_blocking=True
+
 
     set_up_gpu(args)
 
