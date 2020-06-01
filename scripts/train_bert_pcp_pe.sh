@@ -28,6 +28,7 @@ nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.002
 decay_step=25
+epochs=100
 
 exp_descr="pcp"
 
@@ -41,8 +42,17 @@ do
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cpu"\
-  --experiment_description $exp_descr $POS
+  --experiment_description $exp_descr $POS &
+
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
+  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+  --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
+  --num_epochs=50 --bert_num_blocks=1 --bert_max_len=50 \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cpu"\
+  --experiment_description $exp_descr $POS &
+
   done
 done
+wait
 
 

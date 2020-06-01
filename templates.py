@@ -205,7 +205,7 @@ def set_args_bert_pcp(args):
     args.enable_lr_schedule = True
     args.decay_step = 25 if args.decay_step is None else args.decay_step
     args.gamma = 0.1
-    args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+    #args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
     # evaluation
     args.metric_ks = [5, 10]
     args.best_metric = 'NDCG@10'
@@ -217,9 +217,9 @@ def set_args_bert_pcp(args):
     args.bert_dropout = 0.1
     args.bert_hidden_units = args.dim_art_emb
     args.bert_mask_prob = 0.15
-    args.bert_max_len = 100
-    args.bert_num_blocks = 2
-    args.bert_num_heads = 4
+    args.bert_max_len = 100 if args.bert_max_len is None else args.bert_max_len
+    args.bert_num_blocks = 2 if args.bert_num_blocks is None else args.bert_num_blocks
+    args.bert_num_heads = 4 if args.bert_num_heads is None else args.bert_num_heads
 
     args.pred_layer = 'l2'  # prediction layer
     #args.nie_layer = None
