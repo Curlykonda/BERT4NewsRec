@@ -196,7 +196,7 @@ def set_args_bert_pcp(args):
 
     # training
     args.trainer_code = 'bert_news_ce'
-    args.device = 'cuda' #if not args.local else 'cpu'
+    #args.device = 'cuda' #if not args.local else 'cpu'
 
     args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
     args.device_idx = '0'
