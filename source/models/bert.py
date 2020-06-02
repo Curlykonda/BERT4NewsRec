@@ -14,7 +14,7 @@ from ..modules.news_encoder import *
 from ..modules.bert_modules.embedding.token import *
 
 
-class BERTModel(BaseModel):
+class BERT4RecModel(BaseModel):
     def __init__(self, args):
         super().__init__(args)
         self.bert = BERT(args)
@@ -193,8 +193,6 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         #
         #     # create article embeddings
         #     encoded_arts.append(self.encode_news(article_pos, u_idx))
-
-
 
     def encode_news(self, article_seq, u_idx=None):
 

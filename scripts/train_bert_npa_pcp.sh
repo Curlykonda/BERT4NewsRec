@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=bert4rec_m_common
-#SBATCH -n 8
+#SBATCH --job-name=npa_cnn_te_pe
+#SBATCH -n 16
 #SBATCH -t 06:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
