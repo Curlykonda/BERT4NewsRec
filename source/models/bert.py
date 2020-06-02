@@ -110,13 +110,17 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True, device=args.device)
         self.mask_token = args.bert_mask_token
         self.encoded_art = None
-
+        self.train_mode = False
 
     @classmethod
     def code(cls):
         return 'bert4news'
 
-    def forward(self, **kwargs):
+    def set_train_mode(self, val):
+        self.train_mode = val
+
+    def forward(self, cand_mask, **kwargs):
+
         history = kwargs['hist']
         mask = kwargs['mask']
         candidates = kwargs['cands']
@@ -128,13 +132,16 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         encoded_hist = self.encode_hist(history, u_ids)
         # encode candidates
         # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_art)
-        encoded_cands = self.encode_candidates(candidates, u_ids, mask)
+        encoded_cands = self.encode_candidates(candidates, u_ids, cand_mask)
 
 
         # interest modeling
         interest_reps = self.create_hidden_interest_representations(encoded_hist, time_stamps, mask)
         # (B x L_hist x D_bert)
-        rel_interests = interest_reps[mask == 0]
+        if cand_mask is not None:
+            rel_interests = interest_reps[cand_mask != -1]
+        else:
+            rel_interests = interest_reps[mask == 0]
 
         # embedding projection
         if self.nie_layer is not None:
@@ -200,20 +207,19 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         # (B x D_article)
         return encoded_arts.squeeze(1)
 
-    def encode_candidates(self, cands, u_idx=None, mask=None):
+    def encode_candidates(self, cands, u_idx=None, cand_mask=None):
         # print(cands.shape)
 
         if self.token_embedding is not None:
             if len(cands.shape) > 3:
-
                 # filter out relevant candidates (only in train case)
                 # select masking positions with provided mask (L_M := number of all mask positions in batch)
                 if u_idx is not None:
-                    rel_u_idx = u_idx.unsqueeze(1).repeat(1, mask.shape[1])[mask == 0]
+                    rel_u_idx = u_idx.unsqueeze(1).repeat(1, cand_mask.shape[1])[cand_mask != -1]
                 else:
                     rel_u_idx = None
                 # select candidate subset  (L_M x N_c)
-                rel_cands = cands[mask == 0]
+                rel_cands = cands[cand_mask != -1]
             else:
                 # test case
                 # (B x N_c x L_art)
@@ -234,7 +240,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             if len(cands.shape) > 2:
                 # filter out relevant candidates (only in train case)
                 # select masking positions with provided mask (L_M := number of all mask positions in batch)
-                rel_cands = cands[mask == 0]
+                rel_cands = cands[cand_mask != -1]
             else:
                 rel_cands = cands
 
