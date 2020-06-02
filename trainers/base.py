@@ -83,7 +83,7 @@ class AbstractTrainer(metaclass=ABCMeta):
             'state_dict': (self._create_state_dict()),
         })
         self.writer.close()
-        print("\n >> Run completed in {:.2f} min \n".format((time.time() - t0) / 60))
+        print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
 
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
