@@ -234,9 +234,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             if len(cands.shape) > 2:
                 # filter out relevant candidates (only in train case)
                 # select masking positions with provided mask (L_M := number of all mask positions in batch)
-                cands = cands[mask == 0]
+                rel_cands = cands[mask == 0]
+            else:
+                rel_cands = cands
 
-            encoded_arts = self.news_encoder(cands)
+            encoded_arts = self.news_encoder(rel_cands)
             return encoded_arts.transpose(1, 2)
 
     def create_hidden_interest_representations(self, encoded_articles, time_stamps, mask):

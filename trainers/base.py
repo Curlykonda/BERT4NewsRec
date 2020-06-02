@@ -134,10 +134,79 @@ class AbstractTrainer(metaclass=ABCMeta):
     def validate(self, epoch, accum_iter):
         self.model.eval()
 
+        #average_meter_set = AverageMeterSet()
+
+        average_meter_set = self.eval_one_epoch(self.val_loader)
+
+        # with torch.no_grad():
+        #     tqdm_dataloader = tqdm(self.val_loader)
+        #     for batch_idx, batch in enumerate(tqdm_dataloader):
+        #         batch = self.batch_to_device(batch)
+        #
+        #         metrics = self.calculate_metrics(batch)
+        #
+        #         for k, v in metrics.items():
+        #             average_meter_set.update(k, v)
+        #         description_metrics = ['AUC'] +\
+        #                               ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
+        #                               ['Recall@%d' % k for k in self.metric_ks[:3]]
+        #         description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
+        #         description = description.replace('NDCG', 'N').replace('Recall', 'R')
+        #         description = description.format(*(average_meter_set[k].avg for k in description_metrics))
+        #         tqdm_dataloader.set_description(description)
+        #
+        #         if self.args.local and batch_idx > 2:
+        #             break
+
+        log_data = {
+            'state_dict': (self._create_state_dict()),
+            'epoch': epoch+1,
+            'accum_iter': accum_iter,
+        }
+        log_data.update(average_meter_set.averages())
+        self.log_extra_val_info(log_data)
+        self.logger_service.log_val(log_data)
+
+    def test(self):
+        print('Test best model with test set!')
+
+        best_model = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
+        self.model.load_state_dict(best_model)
+        self.model.eval()
+
+        average_meter_set = self.eval_one_epoch(self.test_loader)
+
+        # with torch.no_grad():
+        #     tqdm_dataloader = tqdm(self.test_loader)
+        #     for batch_idx, batch in enumerate(tqdm_dataloader):
+        #         batch = self.batch_to_device(batch)
+        #
+        #         metrics = self.calculate_metrics(batch)
+        #
+        #         for k, v in metrics.items():
+        #             average_meter_set.update(k, v)
+        #         description_metrics = ['AUC'] +\
+        #                               ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
+        #                               ['Recall@%d' % k for k in self.metric_ks[:3]]
+        #         description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
+        #         description = description.replace('NDCG', 'N').replace('Recall', 'R')
+        #         description = description.format(*(average_meter_set[k].avg for k in description_metrics))
+        #         tqdm_dataloader.set_description(description)
+        #
+        #         if self.args.local and batch_idx > 1:
+        #             break
+
+        average_metrics = average_meter_set.averages()
+        with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
+            json.dump(average_metrics, f, indent=4)
+        print(average_metrics)
+
+    def eval_one_epoch(self, eval_loader):
+
         average_meter_set = AverageMeterSet()
 
         with torch.no_grad():
-            tqdm_dataloader = tqdm(self.val_loader)
+            tqdm_dataloader = tqdm(eval_loader)
             for batch_idx, batch in enumerate(tqdm_dataloader):
                 batch = self.batch_to_device(batch)
 
@@ -153,47 +222,10 @@ class AbstractTrainer(metaclass=ABCMeta):
                 description = description.format(*(average_meter_set[k].avg for k in description_metrics))
                 tqdm_dataloader.set_description(description)
 
-                if self.args.local and batch_idx == 1:
+                if self.args.local and batch_idx > 2:
                     break
 
-            log_data = {
-                'state_dict': (self._create_state_dict()),
-                'epoch': epoch+1,
-                'accum_iter': accum_iter,
-            }
-            log_data.update(average_meter_set.averages())
-            self.log_extra_val_info(log_data)
-            self.logger_service.log_val(log_data)
-
-    def test(self):
-        print('Test best model with test set!')
-
-        best_model = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
-        self.model.load_state_dict(best_model)
-        self.model.eval()
-
-        average_meter_set = AverageMeterSet()
-
-        with torch.no_grad():
-            tqdm_dataloader = tqdm(self.test_loader)
-            for batch_idx, batch in enumerate(tqdm_dataloader):
-                batch = [x.to(self.device) for x in batch]
-
-                metrics = self.calculate_metrics(batch)
-
-                for k, v in metrics.items():
-                    average_meter_set.update(k, v)
-                description_metrics = ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-                                      ['Recall@%d' % k for k in self.metric_ks[:3]]
-                description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-                description = description.replace('NDCG', 'N').replace('Recall', 'R')
-                description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-                tqdm_dataloader.set_description(description)
-
-            average_metrics = average_meter_set.averages()
-            with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
-                json.dump(average_metrics, f, indent=4)
-            print(average_metrics)
+        return average_meter_set
 
     def batch_to_device(self, batch):
         if isinstance(batch, dict):

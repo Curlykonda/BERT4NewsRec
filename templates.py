@@ -129,6 +129,8 @@ def set_template(args):
 
     elif args.template.startswith("local_bert_pcp"):
         args.local = True
+        args.device = 'cuda'
+        args.num_epochs = 10
 
         args.pt_news_encoder = 'BERTje'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
