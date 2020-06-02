@@ -127,13 +127,13 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         u_ids = kwargs['u_id'][:, 0] if 'u_id' in kwargs else None
         time_stamps = kwargs['ts'] if 'ts' in kwargs else None
 
-        # article encoding
+        ### article encoding ###
+        # history
         # (B x L_hist) => (B x L_hist x D_art)
         encoded_hist = self.encode_hist(history, u_ids)
-        # encode candidates
+        # candidates
         # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_art)
         encoded_cands = self.encode_candidates(candidates, u_ids, cand_mask)
-
 
         # interest modeling
         interest_reps = self.create_hidden_interest_representations(encoded_hist, time_stamps, mask)
@@ -219,7 +219,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
                 else:
                     rel_u_idx = None
                 # select candidate subset  (L_M x N_c)
-                rel_cands = cands[cand_mask != -1]
+                try:
+                    rel_cands = cands[cand_mask != -1]
+                except:
+                    print(cands.shape)
+                    print(cand_mask.shape)
             else:
                 # test case
                 # (B x N_c x L_art)
@@ -240,7 +244,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             if len(cands.shape) > 2:
                 # filter out relevant candidates (only in train case)
                 # select masking positions with provided mask (L_M := number of all mask positions in batch)
-                rel_cands = cands[cand_mask != -1]
+                try:
+                    rel_cands = cands[cand_mask != -1]
+                except:
+                    print(cands.shape)
+                    print(cand_mask.shape)
             else:
                 rel_cands = cands
 

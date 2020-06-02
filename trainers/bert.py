@@ -55,13 +55,12 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
 
         cat_labels = batch['lbls']
         self.model.set_train_mode(True)
-        logits = self.model(cat_labels, **batch['input']) # (B*T) x N_c
+        # forward pass
+        logits = self.model(cat_labels, **batch['input']) # L x N_c
 
         # categorical labels indicate which candidate is the correct one C = [0, N_c]
+        # for positions where label is unequal -1
         lbls = cat_labels[cat_labels != -1]
-
-        # determine relevant logits for position where label is unequal -1
-        #rel_logits = logits[cat_labels.view(-1) != -1]
 
         # calculate a separate loss for each class label per observation and sum the result.
         loss = self.ce(logits, lbls)
@@ -73,13 +72,8 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
         input = batch['input'].items()
         lbls = batch['lbls']
         self.model.set_train_mode(False)
-        logits = self.model(None, **batch['input']) # (B x N_c)
-        # else:
-        #     seqs, mask, cands, labels = batch
-        #     time_stamps = None
-        #     logits = self.model(seqs, mask, cands) # (B x N_c)
+        logits = self.model(None, **batch['input']) # (L x N_c)
 
-        # TODO: check scores
         scores = nn.functional.softmax(logits, dim=1)
 
         # select scores for the article indices of candidates
