@@ -391,7 +391,7 @@ class BertTrainDatasetNews(BertTrainDataset):
                     m_val = 0
                 elif prob < 0.9:
                     # put random item
-                    tkn = self.rng.randint(1, self.num_items)
+                    tkn = self.rng.choice(range(self.num_items))
                     # tokens.append(art_idx2word_ids(self.rng.randint(1, self.num_items), self.art2words))
                     m_val = 1
                 else:
