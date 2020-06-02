@@ -161,8 +161,13 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             embedded_arts = self.token_embedding(article_seq)
 
             # -> (B x D_article x L_hist)
-            encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i
-                                            in torch.unbind(embedded_arts, dim=1)], dim=2)
+            encoded_arts = []
+            for x_i in torch.unbind(embedded_arts, dim=1):
+                encoded_arts.append(self.encode_news(x_i, u_idx))
+
+            encoded_arts = torch.stack(encoded_arts, dim=2)
+            # encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i
+            #                                 in torch.unbind(embedded_arts, dim=1)], dim=2)
 
             # (B x L_hist x D_article)
             return encoded_arts.transpose(1, 2)
