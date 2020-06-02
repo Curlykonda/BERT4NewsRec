@@ -208,7 +208,6 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         return encoded_arts.squeeze(1)
 
     def encode_candidates(self, cands, u_idx=None, cand_mask=None):
-        # print(cands.shape)
 
         if self.token_embedding is not None:
             if len(cands.shape) > 3:
@@ -220,10 +219,13 @@ class BERT4NewsRecModel(NewsRecBaseModel):
                     rel_u_idx = None
                 # select candidate subset  (L_M x N_c)
                 try:
+                    #
                     rel_cands = cands[cand_mask != -1]
                 except:
                     print(cands.shape)
                     print(cand_mask.shape)
+                    print(cands.device)
+                    print(cand_mask.device)
             else:
                 # test case
                 # (B x N_c x L_art)
