@@ -148,35 +148,30 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             # print(encoded_cands.shape)
             logits = self.prediction_layer(rel_interests, encoded_cands) # .reshape(-1, encoded_cands.shape[-1], encoded_cands.shape[1])
             # (B x N_c)
-
-            # if len(interest_reps.shape) < len(encoded_cands.shape):
-            #     # flatten inputs to compute scores
-            #     # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
-            #     logits = self.prediction_layer(interest_reps.reshape(-1, interest_reps.shape[-1]),
-            #                                    encoded_cands.reshape(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
-            #     # -> ((B*L) x N_c)
-            # elif len(interest_reps.shape) == len(encoded_cands.shape):
-            #     # Test Case: we only have candidates for the last position
-            #     # hence, we only need the relevant embedding at the last position
-            #
-            #     #pred_embs = interest_reps[:, -1, :] # (B x D_a)
-            #     rel_interests = interest_reps[mask == 0]
-            #     cands = encoded_cands.transpose(1, 2)
-            #     logits = self.prediction_layer(rel_interests, encoded_cands.reshape(-1, encoded_cands.shape[-1], encoded_cands.shape[1])) # (B x N_c)
-            # else:
-            #     raise NotImplementedError()
             return logits
         else:
+            # item embedding case
             return interest_reps, encoded_cands
 
     def encode_hist(self, article_seq, u_idx=None):
-        encoded_arts = []
+
         if self.token_embedding is not None:
             # embedding the indexed sequence to sequence of vectors
             # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
             embedded_arts = self.token_embedding(article_seq)
+
+            # -> (B x D_article x L_hist)
+            encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i
+                                            in torch.unbind(embedded_arts, dim=1)], dim=2)
+
+            # (B x L_hist x D_article)
+            return encoded_arts.transpose(1, 2)
+
         else:
-            embedded_arts = article_seq
+            # BERTje case
+            # (B x L_hist) -> (B x L_hist x D_article)
+            encoded_arts = self.encode_news(article_seq, u_idx)
+            return encoded_arts
 
         # encode word embeddings into article embedding
         # (B x L_hist x L_art x D_word_emb) => (B x L_hist x D_art)
@@ -187,13 +182,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         #     # create article embeddings
         #     encoded_arts.append(self.encode_news(article_pos, u_idx))
 
-        # -> (B x D_article x L_hist)
-        # encoded_arts = torch.stack(encoded_arts, axis=2)
 
-        encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i in torch.unbind(embedded_arts, dim=1)], dim=2)
-
-        # (B x L_hist x D_article)
-        return encoded_arts.transpose(1, 2)
 
     def encode_news(self, article_seq, u_idx=None):
 
@@ -218,11 +207,8 @@ class BERT4NewsRecModel(NewsRecBaseModel):
                     rel_u_idx = u_idx.unsqueeze(1).repeat(1, mask.shape[1])[mask == 0]
                 else:
                     rel_u_idx = None
-                # concat candidate subset  (L_M x N_c)
+                # select candidate subset  (L_M x N_c)
                 rel_cands = cands[mask == 0]
-                # embed & encode this subset (L_M x N_c x D_art)
-
-                # assign article encoding to respective positions
             else:
                 # test case
                 # (B x N_c x L_art)
@@ -238,34 +224,9 @@ class BERT4NewsRecModel(NewsRecBaseModel):
 
             return rel_enc_cands
 
-
-            #embedded_arts = self.token_embedding(cands)
-
-            # Two cases:
-            # Train: L_hist > 1
-            # Test: L_hist = 1
-            # if len(embedded_arts.shape) == 4:
-            #     embedded_arts = embedded_arts.unsqueeze(1)
-
-            # n_cands = embedded_arts.shape[2]
-            #
-            # for n_news in range(embedded_arts.shape[1]):
-            #     #article_pos = embedded_arts[:, n_news, :, :]
-            #
-            #
-            #     encoded_cands = torch.stack([self.encode_news(x_i, u_idx) for x_i
-            #                                 in torch.unbind(embedded_arts[:, n_news, :, :], dim=1)], dim=2)
-            #
-            #     encoded_arts.append(encoded_cands.transpose(1, 2))
-            #
-            # # -> (B x L_hist x N_c x D_art)
-            # encoded_arts = torch.stack(encoded_arts, axis=1)
-            #
-            # return encoded_arts.squeeze(1)
-
         else:
+            # using pre-computed embeddings -> news encoder as a lookup
             if len(cands.shape) > 2:
-
                 # filter out relevant candidates (only in train case)
                 # select masking positions with provided mask (L_M := number of all mask positions in batch)
                 cands = cands[mask == 0]
