@@ -10,7 +10,49 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.backends import cudnn
+import arrow
 
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def set_random_seeds(rnd_seed):
+    random.seed(rnd_seed)
+    torch.manual_seed(rnd_seed)
+    torch.cuda.manual_seed_all(rnd_seed)
+    np.random.seed(rnd_seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
+
+def map_time_stamp_to_vector(ts, ts_len=4):
+    """
+    input:
+        ts (int): UNIX time stamp
+
+    output:
+        ts_vector (list): vector representation of the datetime
+    """
+    ts = arrow.get(ts)
+
+    ts_vector = [
+        ts.weekday(),
+        ts.hour,
+        ts.minute,
+        ts.second
+    ]
+    to_add = None
+    if ts_len == 4:
+        return ts_vector
+    if ts_len > 4:
+        to_add = [ts.day] # 1 - 7
+    if ts > 5:
+        to_add.append(ts.month) # 1 - 12
+    if ts > 6:
+        to_add.append(ts.year - 2000)
+    if ts > 7:
+        raise ValueError()
+
+    return to_add + ts_vector
 
 def init_weights(m):
     if isinstance(m, nn.Linear):
@@ -157,14 +199,6 @@ def create_exp_name(config, seperator='_'):
     res_path.mkdir(parents=True, exist_ok=True)
 
     return exp_name, res_path
-
-def set_random_seeds(rnd_seed):
-    random.seed(rnd_seed)
-    torch.manual_seed(rnd_seed)
-    torch.cuda.manual_seed_all(rnd_seed)
-    np.random.seed(rnd_seed)
-    cudnn.deterministic = True
-    cudnn.benchmark = False
 
 def save_metrics_as_pickle(metrics, res_path : Path, file_name : str):
     with open(res_path / (file_name + '.pkl'), 'wb') as fout:

@@ -14,7 +14,7 @@ from ..modules.news_encoder import *
 from ..modules.bert_modules.embedding.token import *
 
 
-class BERTModel(BaseModel):
+class BERT4RecModel(BaseModel):
     def __init__(self, args):
         super().__init__(args)
         self.bert = BERT(args)
@@ -30,106 +30,118 @@ class BERTModel(BaseModel):
         return logits
 
 
-class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
+def make_bert4news_model(args):
+    token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer = None, None, None, None, None
+
+    vocab_size = args.max_vocab_size  # account for all items including PAD token
+    # load pretrained embeddings
+
+    if args.fix_pt_art_emb:
+        # fix pre-computed article embs - no need for Word Embs or vocab
+        token_embedding = None
+    else:
+        # compute article embs end-to-end using vocab + Word Embs + News Encoder
+        # load vocab
+        with Path(args.vocab_path).open('rb') as fin:
+            data = pickle.load(fin)
+            vocab = data['vocab']
+
+        # load pre-trained Word Embs, if exists
+        pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
+        # intialise Token (Word) Embs either with pre-trained or random
+        token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
+
+    # article embeddings
+    if args.rel_pc_art_emb_path is not None:
+        # load pre-computed article embs
+        with Path(args.rel_pc_art_emb_path).open('rb') as fin:
+            precomputed_art_embs = pickle.load(fin)
+
+        assert precomputed_art_embs.shape[0] == args.num_items, "Mismatch in number of items!"
+        assert precomputed_art_embs.shape[1] == args.dim_art_emb, "Mismatch in dimension of article embeddings!"
+
+        news_encoder = PrecomputedFixedEmbeddings(precomputed_art_embs)
+    else:
+        # get news_encoder from code
+        if "wucnn" == args.news_encoder:
+            news_encoder = NpaNewsEncoder(args.n_users, args.dim_art_emb)
+        else:
+            raise NotImplementedError("Selected invalid News Encoder!")
+
+    # select positional or temporal emb
+    pos_emb = None
+    if args.pos_embs is not None:
+        pos_emb = args.pos_embs
+    elif args.temp_embs is not None:
+        pos_emb = args.temp_embs
+    elif args.pos_embs is not None and args.temp_embs is not None:
+        raise ValueError("Can't use positional and temporal embedding! Use one or none")
+
+    # initialise BERT user encoder
+    user_encoder = BERT(args, token_emb=None, pos_emb=pos_emb)
+
+    # output layer: return the predicted and candidate embeddings
+    if args.pred_layer is None:
+        prediction_layer = None
+    elif 'l2' == args.pred_layer:
+        # L2 distance
+        # compute similarities between prediction & candidates
+        prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
+    elif 'cos' == args.pred_layer:
+        # cosine distance
+        raise NotImplementedError()
+
+    if args.nie_layer is not None:
+        # project hidden interest representation to next-item embedding
+        nie_layer = nn.Linear(args.bert_hidden_units, args.dim_art_emb)
+
+    return token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer
+
+class BERT4NewsRecModel(NewsRecBaseModel):
     def __init__(self, args):
-        vocab_size = args.max_vocab_size  # account for all items including PAD token
-        # load pretrained embeddings
 
-
-        if args.fix_pt_art_emb:
-            # fix pre-computed article embs - no need for Word Embs or vocab
-            token_embedding = None
-        else:
-            # compute article embs end-to-end using vocab + Word Embs + News Encoder
-            # load vocab
-            with Path(args.vocab_path).open('rb') as fin:
-                data = pickle.load(fin)
-                vocab = data['vocab']
-
-            # load pre-trained Word Embs, if exist
-            pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
-            # intialise Token (Word) Embs either with pre-trained or random
-            token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
-
-        # article embeddings
-        if args.rel_pc_art_emb_path is not None:
-            # load pre-computed article embs
-            with Path(args.rel_pc_art_emb_path).open('rb') as fin:
-                precomputed_art_embs = pickle.load(fin)
-
-            assert precomputed_art_embs.shape[0] == args.num_items, "Mismatch in number of items!"
-            assert precomputed_art_embs.shape[1] == args.dim_art_emb, "Mismatch in dimension of article embeddings!"
-
-            news_encoder = PrecomputedFixedEmbeddings(precomputed_art_embs)
-        else:
-            # get news_encoder from code
-            if "wucnn" == args.news_encoder:
-                news_encoder = NewsEncoderWuCNN(n_filters=args.dim_art_emb)
-            else:
-                raise NotImplementedError("Selected invalid News Encoder!")
-
-        # select positional or temporal emb
-        pos_emb = None
-        if args.pos_embs is not None:
-            pos_emb = args.pos_embs
-        elif args.temp_embs is not None:
-            pos_emb = args.temp_embs
-        elif args.pos_embs is not None and args.temp_embs is not None:
-            raise ValueError("Can't use positional and temporal embedding! Use one or none")
-
-        # initialise BERT user encoder
-        user_encoder = BERT(args, token_emb=None, pos_emb=pos_emb)
-
-        # output layer: return the predicted and candidate embeddings
-        if args.pred_layer is None:
-            prediction_layer = None
-        elif 'l2' == args.pred_layer:
-            # L2 distance
-            # compute similarities between prediction & candidates
-            prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
-        elif 'cos' == args.pred_layer:
-            # cosine distance
-            raise NotImplementedError()
+        token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer = make_bert4news_model(args)
 
         super().__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
 
-        if args.nie_layer is not None:
-            # project hidden interest representation to next-item embedding
-            self.nie_layer = nn.Linear(args.bert_hidden_units, args.dim_art_emb)
-        else:
-            self.nie_layer = None
+        self.nie_layer = nie_layer
 
         # trainable mask embedding
-        self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True)
+        self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True, device=args.device)
         self.mask_token = args.bert_mask_token
         self.encoded_art = None
-
+        self.train_mode = False
 
     @classmethod
     def code(cls):
-        return 'bert4nie'
+        return 'bert4news'
 
-    def forward(self, history, mask, candidates):
+    def set_train_mode(self, val):
+        self.train_mode = val
 
-        # hist as article indices, candidates_as_article_indices
-        if isinstance(history, list):
-            history, time_stamps = history
-        else:
-            time_stamps = None
+    def forward(self, cand_mask, **kwargs):
 
-        # article encoding
-        if self.token_embedding is not None:
-            encoded_arts = self.encode_news_w_token(history)
-            # encode candidates
-            # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_article)
-            encoded_cands = self.encode_news_w_token(candidates)
-        else:
-            encoded_arts = self.encode_news(history) # (B x L_hist x D_article)
-            encoded_cands = self.encode_news(candidates)
+        history = kwargs['hist']
+        mask = kwargs['mask']
+        candidates = kwargs['cands']
+        u_ids = kwargs['u_id'][:, 0] if 'u_id' in kwargs else None
+        time_stamps = kwargs['ts'] if 'ts' in kwargs else None
+
+        ### article encoding ###
+        # history
+        # (B x L_hist) => (B x L_hist x D_art)
+        encoded_hist = self.encode_hist(history, u_ids)
+        # candidates
+        # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_art)
+        encoded_cands = self.encode_candidates(candidates, u_ids, cand_mask)
 
         # interest modeling
-        interest_reps = self.create_hidden_interest_representations(encoded_arts, time_stamps, mask)
+        interest_reps = self.create_hidden_interest_representations(encoded_hist, time_stamps, mask)
         # (B x L_hist x D_bert)
+        if cand_mask is not None:
+            rel_interests = interest_reps[cand_mask != -1]
+        else:
+            rel_interests = interest_reps[mask == 0]
 
         # embedding projection
         if self.nie_layer is not None:
@@ -138,56 +150,110 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
 
         # score prediction
         if self.prediction_layer is not None:
-            if len(interest_reps.shape) < len(encoded_cands.shape):
-                # (B x L x D_a) x (B x L x N_c x D_a) -> (B x L x N_c)
-                # flatten inputs to compute scores
-                logits = self.prediction_layer(interest_reps.view(-1, interest_reps.shape[-1]),
-                                               encoded_cands.view(-1, encoded_cands.shape[-1], encoded_cands.shape[2]))
-                # (B x L x D_a) x (B x L x N_c x D_a) -> ((B*L) x N_c)
-            elif len(interest_reps.shape) == len(encoded_cands.shape):
-                # test case where we only have candidates for the last position
-                # hence, we only need the relevant embedding at the last position
 
-                pred_embs = interest_reps[:, -1, :] # (B x D_a)
-                cands = encoded_cands.transpose(1, 2)
-                logits = self.prediction_layer(pred_embs, cands) # (B x N_c)
-            else:
-                raise NotImplementedError()
+            # print(rel_interests.shape)
+            # print(encoded_cands.shape)
+            logits = self.prediction_layer(rel_interests, encoded_cands) # .reshape(-1, encoded_cands.shape[-1], encoded_cands.shape[1])
+            # (B x N_c)
             return logits
         else:
+            # item embedding case
             return interest_reps, encoded_cands
 
-    def encode_news_w_token(self, article_seq):
-        encoded_arts = []
-        # embedding the indexed sequence to sequence of vectors
-        # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
-        embedded_arts = self.token_embedding(article_seq)
+    def encode_hist(self, article_seq, u_idx=None):
+
+        if self.token_embedding is not None:
+            # embedding the indexed sequence to sequence of vectors
+            # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
+            embedded_arts = self.token_embedding(article_seq)
+
+            # -> (B x D_article x L_hist)
+            encoded_arts = []
+            for x_i in torch.unbind(embedded_arts, dim=1):
+                encoded_arts.append(self.encode_news(x_i, u_idx))
+
+            encoded_arts = torch.stack(encoded_arts, dim=2)
+            # encoded_arts = torch.stack([self.encode_news(x_i, u_idx) for x_i
+            #                                 in torch.unbind(embedded_arts, dim=1)], dim=2)
+
+            # (B x L_hist x D_article)
+            return encoded_arts.transpose(1, 2)
+
+        else:
+            # BERTje case
+            # (B x L_hist) -> (B x L_hist x D_article)
+            encoded_arts = self.encode_news(article_seq, u_idx)
+            return encoded_arts
 
         # encode word embeddings into article embedding
-        # (B x L_hist x L_article x D_word_emb) => (B x L_hist x D_article)
-        for n_news in range(embedded_arts.shape[1]):
-            #
-            article_one = embedded_arts[:, n_news, :, :]
+        # (B x L_hist x L_art x D_word_emb) => (B x L_hist x D_art)
+        # for n_news in range(embedded_arts.shape[1]):
+        #     #
+        #     article_pos = embedded_arts[:, n_news, :, :]
+        #
+        #     # create article embeddings
+        #     encoded_arts.append(self.encode_news(article_pos, u_idx))
+
+    def encode_news(self, article_seq, u_idx=None):
+
+        # (B x L_art) => (B x D_art)
+        if u_idx is not None:
+            encoded_arts = self.news_encoder(article_seq, u_idx)
+        else:
+            encoded_arts = self.news_encoder(article_seq)
+
+        # (B x D_article)
+        return encoded_arts.squeeze(1)
+
+    def encode_candidates(self, cands, u_idx=None, cand_mask=None):
+
+        if self.token_embedding is not None:
+            if len(cands.shape) > 3:
+                # filter out relevant candidates (only in train case)
+                # select masking positions with provided mask (L_M := number of all mask positions in batch)
+                if u_idx is not None:
+                    rel_u_idx = u_idx.unsqueeze(1).repeat(1, cand_mask.shape[1])[cand_mask != -1]
+                else:
+                    rel_u_idx = None
+                # select candidate subset  (L_M x N_c)
+                try:
+                    #
+                    rel_cands = cands[cand_mask != -1]
+                except:
+                    print(cands.shape)
+                    print(cand_mask.shape)
+                    print(cands.device)
+                    print(cand_mask.device)
+            else:
+                # test case
+                # (B x N_c x L_art)
+                rel_cands = cands
+                rel_u_idx = u_idx
+
+            # (L x N_c x L_art) => (L x N_c x L_article x D_word_emb)
+            emb_cands = self.token_embedding(rel_cands)
 
             # create article embeddings
-            context_art = self.news_encoder(article_one.unsqueeze(1))
-            encoded_arts.append(context_art)
+            rel_enc_cands = torch.stack([self.encode_news(x_i, rel_u_idx) for x_i
+                                in torch.unbind(emb_cands, dim=1)], dim=2)
 
-        # -> (B x D_article x L_hist)
-        encoded_arts = torch.stack(encoded_arts, axis=2)
+            return rel_enc_cands
 
-        # encoded_arts = self.news_encoder(embedded_arts)
+        else:
+            # using pre-computed embeddings -> news encoder as a lookup
+            if len(cands.shape) > 2:
+                # filter out relevant candidates (only in train case)
+                # select masking positions with provided mask (L_M := number of all mask positions in batch)
+                try:
+                    rel_cands = cands[cand_mask != -1]
+                except:
+                    print(cands.shape)
+                    print(cand_mask.shape)
+            else:
+                rel_cands = cands
 
-        # (B x L_hist x D_article)
-        return encoded_arts.transpose(1, 2)
-
-    def encode_news(self, article_seq):
-        # retrieve article embedding
-        # (B x L_hist) => (B x L_hist x D_article)
-        encoded_arts = self.news_encoder(article_seq)
-
-        # (B x L_hist x D_article)
-        return encoded_arts
+            encoded_arts = self.news_encoder(rel_cands)
+            return encoded_arts.transpose(1, 2)
 
     def create_hidden_interest_representations(self, encoded_articles, time_stamps, mask):
         # build mask: perhaps by adding up the word ids? -> make efficient for batch
@@ -198,7 +264,9 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
         art_emb = encoded_articles
         if mask is not None:
             # replace mask positions with mask embedding
-            art_emb[mask] = self.mask_embedding.to(art_emb.device)
+            if self.mask_embedding.device != art_emb.device:
+                self.mask_embedding = self.mask_embedding.to(art_emb.device)
+            art_emb[mask] = self.mask_embedding
             # encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
         else:
             raise ValueError("Should apply masking before using BERT ;)")
@@ -208,107 +276,5 @@ class Bert4NextItemEmbedPrediction(NewsRecBaseModel):
             interest_reps = self.user_encoder([art_emb, time_stamps], mask)
         else:
             interest_reps = self.user_encoder(art_emb, mask)
-
-        return interest_reps
-
-
-class BERT4NewsRecModel(NewsRecBaseModel):
-    """
-
-    returns: un-normalised scores over candidate items
-    """
-    def __init__(self, args):
-        # load pretrained embeddings
-
-        vocab_size = args.max_vocab_size # account for all items including PAD token
-        #Later: news_encoder = BERT(args, token_emb='new')
-        token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, args.bert_hidden_units, args.pretrained_emb_path)
-        #news_encoder = KimCNN(args.bert_hidden_units, args.dim_word_emb)
-
-        # TODO: load precomputed article embeddings from directory and verfiy matrix format (n_articles x dim_art_emb)
-        if args.pt_news_encoder is not None:
-            precomputed_art_embs = None
-            news_encoder = PrecomputedFixedEmbeddings(precomputed_art_embs)
-        else:
-            # get news_encoder from code
-            raise NotImplementedError("Selected invalid News Encoder!")
-
-        user_encoder = BERT(args, token_emb=None) # new module: BERTasUserEncoder
-
-        # output layer: return the predicted and candidate embeddings
-        # Trainer will compute similarities between prediction & candidates
-        prediction_layer = SimpleDot()
-
-
-        super().__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
-
-        self.encoded_art = None
-        self.mask_token = args.bert_mask_token
-
-    @classmethod
-    def code(cls):
-        return 'bert4news'
-
-    def forward(self, brows_hist_as_article_indices, mask, candidates_as_article_indices):
-
-        encoded_arts = self.encode_news(brows_hist_as_article_indices)
-        self.encoded_art = encoded_arts # (B x L_hist x D_article)
-
-        interest_reps = self.create_hidden_interest_representations(encoded_arts, mask)
-        # (B x L_hist x D_bert)
-
-        # create next-item embeddings from interest representations
-        self.predicted_embs = self.nie_layer(interest_reps) # (B x L_hist x D_article)
-
-        # encode candidates
-        # (B x L_hist x n_candidates) -> (B x L_hist x n_candidates x D_article)
-        encoded_cands = self.encode_news(candidates_as_article_indices)
-
-        scores = self.prediction_layer(self.predicted_embs, encoded_cands) # (B x L_hist x n_candidates)
-
-        return scores
-
-    def encode_news(self, article_seq_as_word_ids):
-
-        encoded_arts = []
-
-        # embedding the indexed sequence to sequence of vectors
-        # (B x L_hist x L_article) => (B x L_hist x L_article x D_word_emb)
-        embedded_arts = self.token_embedding(article_seq_as_word_ids)
-
-        # encode word embeddings into article embedding
-        # (B x L_hist x L_article x D_word_emb) => (B x L_hist x D_article)
-        for n_news in range(embedded_arts.shape[1]):
-
-            # concatenate words
-            article_one = embedded_arts[:, n_news, :, :]
-
-            context_art = self.news_encoder(article_one.unsqueeze(1))
-            encoded_arts.append(context_art)
-
-        # -> (B x D_article x L_hist)
-        encoded_arts = torch.stack(encoded_arts, axis=2)
-
-        #encoded_arts = self.news_encoder(embedded_arts)
-
-
-        # (B x L_hist x D_article)
-        return encoded_arts
-
-    def create_hidden_interest_representations(self, encoded_articles, mask):
-        # build mask: perhaps by adding up the word ids? -> make efficient for batch
-        # mask = (article_seq_as_word_ids != self.mask_token).unsqueeze(1).repeat(1, article_seq_as_word_ids.size(1), 1).unsqueeze(1)
-        # mask = (article_seq_as_word_ids[:, :, 0] == self.mask_token) # B x L_hist
-
-        # (B x D_article x L_hist) -> (B x L_hist x D_article)
-        art_emb = encoded_articles.transpose(1,2)
-        if mask is not None:
-            # replace mask positions with mask embedding
-            art_emb[mask] = self.token_embedding._mask_embedding.to(art_emb.device)
-            #encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
-        else:
-            raise ValueError("Should apply mask before using BERT ;)")
-        # (B x L_hist x D_model) -> (B x L_hist x D_model)
-        interest_reps = self.user_encoder(art_emb, mask)
 
         return interest_reps

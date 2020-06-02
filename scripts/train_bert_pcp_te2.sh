@@ -19,17 +19,23 @@ python --version
 pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
 art_len=30
 SEEDS=(42)
-POS_EMBS=("tpe" "lpe")
-method=("last_cls", 0)
+TEMP_EMBS=("lte" "nte")
+method="last_cls"
+N=0
+
+d_model=768
+t_act_func="relu"
+
 
 echo "$datapath"
 for SEED in "${SEEDS[@]}"
 do
   echo "$SEED"
-  for POS in "${POS_EMBS[@]}"
+  for TE in "${TEMP_EMBS[@]}"
   do
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc $pt_news_enc \
-  --pos_embs $POS --max_article_len $art_len --bert_feature_method=$method
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --path_pt_news_enc=$pt_news_enc \
+  --pos_embs=$TE --max_article_len=$art_len --bert_feature_method $method $N \
+  --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func
   done
 done
 

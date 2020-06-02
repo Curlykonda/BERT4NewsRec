@@ -14,7 +14,6 @@ from torch import optim as optim
 
 
 def setup_train(args):
-    set_up_gpu(args)
 
     export_root = create_experiment_export_folder(args)
     export_experiments_config_as_json(args, export_root)
@@ -25,6 +24,10 @@ def setup_train(args):
 
 def create_experiment_export_folder(args):
     experiment_dir, experiment_description = args.experiment_dir, args.experiment_description
+
+    if isinstance(experiment_description, list):
+        experiment_description = "_".join(experiment_description)
+
     if not os.path.exists(experiment_dir):
         os.mkdir(experiment_dir)
     experiment_path = get_name_of_experiment_path(experiment_dir, experiment_description)
@@ -73,6 +76,8 @@ def fix_random_seed_as(random_seed):
 
 def set_up_gpu(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = args.device_idx
+    if args.cuda_launch_blocking:
+        os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
     args.num_gpu = len(args.device_idx.split(","))
 
 
@@ -104,6 +109,7 @@ class AverageMeterSet(object):
             meter = AverageMeter()
             meter.update(0)
             return meter
+
         return self.meters[key]
 
     def update(self, name, value, n=1):

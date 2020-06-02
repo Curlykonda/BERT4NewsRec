@@ -5,7 +5,7 @@ from abc import *
 
 from source.modules.attention import PersonalisedAttentionWu
 from source.modules.click_predictor import SimpleDot
-from source.modules.news_encoder import NewsEncoderWuCNN
+from source.modules.news_encoder import NpaCNN
 from source.modules.preference_query import PrefQueryWu
 
 

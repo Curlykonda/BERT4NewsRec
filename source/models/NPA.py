@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from source.models.base import NewsRecBaseModel
 from source.modules.click_predictor import SimpleDot
-from source.modules.news_encoder import NewsEncoderWuCNN
+from source.modules.news_encoder import NpaCNN
 from source.modules.attention import PersonalisedAttentionWu
 from source.modules.interest_extractor import GRU as GRU_interest
 from source.modules.preference_query import PrefQueryWu
@@ -39,7 +39,7 @@ class BaseModelNPA(NewsRecBaseModel):
 
         self.user_id_embeddings = nn.Embedding(n_users, self.dim_emb_user_id)
 
-        self.news_encoder = (NewsEncoderWuCNN(n_filters=n_filters_cnn, word_emb_dim=emb_dim_words, dim_pref_q=emb_dim_pref_query, dropout_p=dropout_p)
+        self.news_encoder = (NpaCNN(n_filters=n_filters_cnn, word_emb_dim=emb_dim_words, dim_pref_q=emb_dim_pref_query, dropout_p=dropout_p)
                              if news_encoder is None else news_encoder)
 
         # preference queries
@@ -143,7 +143,7 @@ class VanillaNPA(BaseModelNPA):
 
         self.user_id_embeddings = nn.Embedding(n_users, self.dim_emb_user_id, padding_idx=0)
 
-        self.news_encoder = NewsEncoderWuCNN(n_filters=n_filters_cnn, word_emb_dim=emb_dim_words, dim_pref_q=emb_dim_pref_query, dropout_p=dropout_p)
+        self.news_encoder = NpaCNN(n_filters=n_filters_cnn, word_emb_dim=emb_dim_words, dim_pref_q=emb_dim_pref_query, dropout_p=dropout_p)
 
         # preference queries
         self.pref_q_word = PrefQueryWu(self.dim_pref_q, self.dim_emb_user_id)

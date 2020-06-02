@@ -3,6 +3,7 @@ import torch.nn as nn
 import transformers
 
 from source.modules.attention import PersonalisedAttentionWu
+from source.modules.preference_query import PrefQueryWu
 
 
 class BERTje(transformers.BertModel):
@@ -45,11 +46,32 @@ class PrecomputedFixedEmbeddings(nn.Module):
         # lookup embedding
         return self.article_embeddings(article_indices)
 
+class NpaNewsEncoder(nn.Module):
+    def __init__(self, n_users, dim_articles=400, dim_u_id_emb=50, dim_pref_q=200, dim_word_emb=300, kernel_size=3, dropout_p=0.2):
+        super(NpaNewsEncoder, self).__init__()
 
-class NewsEncoderWuCNN(nn.Module):
+        self.d_art = dim_articles
+        self.d_u_id = dim_u_id_emb
+        self.d_pref = dim_pref_q
+        self.d_we = dim_word_emb
+        self.n_users = n_users
+
+        self.news_encoder = NpaCNN(dim_articles, dim_pref_q, dim_word_emb, kernel_size, dropout_p)
+        self.user_id_embeddings = nn.Embedding(n_users, self.d_u_id)
+        self.pref_q_word = PrefQueryWu(self.d_pref, self.d_u_id)
+
+    def forward(self, embedd_words, u_id):
+        u_id_emb = self.user_id_embeddings(u_id)
+        pref_q = self.pref_q_word(u_id_emb)
+        context_art_rep = self.news_encoder(embedd_words, pref_q)
+
+        # (B x D_art)
+        return context_art_rep
+
+class NpaCNN(nn.Module):
 
     def __init__(self, n_filters=400, dim_pref_q=200, word_emb_dim=300, kernel_size=3, dropout_p=0.2):
-        super(NewsEncoderWuCNN, self).__init__()
+        super(NpaCNN, self).__init__()
 
         self.n_filters = n_filters # output dimension
         self.dim_pref_q = dim_pref_q
@@ -66,22 +88,25 @@ class NewsEncoderWuCNN(nn.Module):
 
     def forward(self, embedded_news, pref_query):
         contextual_rep = []
-        # embedded_news.shape = batch_size X max_hist_len X max_title_len X word_emb_dim
+        # embedded_news.shape = (B x L_art x D_we)
         embedded_news = self.dropout_in(embedded_news)
         # encode each browsed news article and concatenate
-        for n_news in range(embedded_news.shape[1]):
 
-            # concatenate words
-            article_one = embedded_news[:, n_news, :, :].squeeze(1) # shape = (batch_size, title_len, emb_dim)
+        return self.pers_attn_word(self.cnn_encoder(embedded_news.unsqueeze(1)).squeeze(-1), pref_query)
 
-            encoded_news = self.cnn_encoder(article_one.unsqueeze(1))
-            # encoded_news.shape = batch_size X n_cnn_filters X max_title_len
-
-            #pers attn
-            contextual_rep.append(self.pers_attn_word(encoded_news.squeeze(-1), pref_query))
-            assert contextual_rep[-1].shape[1] == self.n_filters # batch_size X n_cnn_filters
-
-        return torch.stack(contextual_rep, axis=2) # batch_s X dim_news_rep X history_len
+        # for n_news in range(embedded_news.shape[1]):
+        #
+        #     # concatenate words
+        #     article_one = embedded_news[:, n_news, :, :].squeeze(1) # shape = (batch_size, title_len, emb_dim)
+        #
+        #     encoded_news = self.cnn_encoder(article_one.unsqueeze(1))
+        #     # encoded_news.shape = batch_size X n_cnn_filters X max_title_len
+        #
+        #     #pers attn
+        #     contextual_rep.append(self.pers_attn_word(encoded_news.squeeze(-1), pref_query))
+        #     assert contextual_rep[-1].shape[1] == self.n_filters # batch_size X n_cnn_filters
+        #
+        # return torch.stack(contextual_rep, axis=2) # batch_s X dim_news_rep X history_len
 
     @classmethod
     def code(cls):
@@ -145,3 +170,4 @@ class KimCNN(torch.nn.Module):
   @classmethod
   def code(cls):
       return "kim_cnn"
+

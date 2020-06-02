@@ -11,7 +11,7 @@ from tqdm import tqdm
 import json
 from abc import *
 from pathlib import Path
-
+import time
 
 class AbstractTrainer(metaclass=ABCMeta):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
@@ -27,6 +27,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         self.test_loader = test_loader
         self.optimizer = self._create_optimizer()
         if args.enable_lr_schedule:
+            # Decays the learning rate of each parameter group by gamma every step_size epochs
             self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=args.decay_step, gamma=args.gamma)
 
         self.num_epochs = args.num_epochs
@@ -67,39 +68,49 @@ class AbstractTrainer(metaclass=ABCMeta):
     def train(self):
         accum_iter = 0
         self.validate(0, accum_iter)
+        print("\n > Start training")
+        t0 = time.time()
         for epoch in range(self.num_epochs):
+            t1 = time.time()
             accum_iter = self.train_one_epoch(epoch, accum_iter)
+            t2 = time.time()
+            print("> Train epoch in {:.3f} min".format((t2-t1)/60))
             self.validate(epoch, accum_iter)
+            t3 = time.time()
+            print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
+
         self.logger_service.complete({
             'state_dict': (self._create_state_dict()),
         })
         self.writer.close()
+        print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
 
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
-        if self.args.enable_lr_schedule:
-            self.lr_scheduler.step()
 
         average_meter_set = AverageMeterSet()
         tqdm_dataloader = tqdm(self.train_loader)
 
         for batch_idx, batch in enumerate(tqdm_dataloader):
-            batch_size = batch[0].size(0)
-            batch = [x.to(self.device) for x in batch]
 
+            batch = self.batch_to_device(batch)
+            batch_size = self.args.train_batch_size
+
+            # forward pass
             self.optimizer.zero_grad()
             loss = self.calculate_loss(batch)
-            loss.backward()
 
+            # backward pass
+            loss.backward()
             self.optimizer.step()
 
+            # update metrics
             average_meter_set.update('loss', loss.item())
-            tqdm_dataloader.set_description(
-                'Epoch {}, loss {:.3f} '.format(epoch+1, average_meter_set['loss'].avg))
 
             accum_iter += batch_size
 
             if self._needs_to_log(accum_iter):
+                tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
                 tqdm_dataloader.set_description('Logging to Tensorboard')
                 log_data = {
                     'state_dict': (self._create_state_dict()),
@@ -113,51 +124,30 @@ class AbstractTrainer(metaclass=ABCMeta):
             if self.args.local and batch_idx == 20:
                 break
 
+        # adapt learning rate
+        if self.args.enable_lr_schedule:
+            self.lr_scheduler.step()
+            if epoch % self.lr_scheduler.step_size == 0:
+                print(self.optimizer.defaults['lr'])
+
+
         return accum_iter
 
     def validate(self, epoch, accum_iter):
         self.model.eval()
 
-        average_meter_set = AverageMeterSet()
+        #average_meter_set = AverageMeterSet()
 
-        with torch.no_grad():
-            tqdm_dataloader = tqdm(self.val_loader)
-            for batch_idx, batch in enumerate(tqdm_dataloader):
-                if isinstance(batch, dict):
-                    device_dict = {}
-                    for key, val in batch.items():
-                        if not isinstance(val, list):
-                            device_dict[key] = val.to(self.device)
-                        else:
-                            device_dict[key] = [elem.to(self.device) for elem in val]
+        average_meter_set = self.eval_one_epoch(self.val_loader)
 
-                    batch = device_dict
-                    #batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
-                else:
-                    batch = [x.to(self.device) for x in batch]
-
-                metrics = self.calculate_metrics(batch)
-
-                for k, v in metrics.items():
-                    average_meter_set.update(k, v)
-                description_metrics = ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-                                      ['Recall@%d' % k for k in self.metric_ks[:3]]
-                description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-                description = description.replace('NDCG', 'N').replace('Recall', 'R')
-                description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-                tqdm_dataloader.set_description(description)
-
-                if self.args.local and batch_idx == 1:
-                    break
-
-            log_data = {
-                'state_dict': (self._create_state_dict()),
-                'epoch': epoch+1,
-                'accum_iter': accum_iter,
-            }
-            log_data.update(average_meter_set.averages())
-            self.log_extra_val_info(log_data)
-            self.logger_service.log_val(log_data)
+        log_data = {
+            'state_dict': (self._create_state_dict()),
+            'epoch': epoch+1,
+            'accum_iter': accum_iter,
+        }
+        log_data.update(average_meter_set.averages())
+        self.log_extra_val_info(log_data)
+        self.logger_service.log_val(log_data)
 
     def test(self):
         print('Test best model with test set!')
@@ -166,28 +156,58 @@ class AbstractTrainer(metaclass=ABCMeta):
         self.model.load_state_dict(best_model)
         self.model.eval()
 
+        average_meter_set = self.eval_one_epoch(self.test_loader)
+
+        average_metrics = average_meter_set.averages()
+        with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
+            json.dump(average_metrics, f, indent=4)
+        print(average_metrics)
+
+    def eval_one_epoch(self, eval_loader):
+
         average_meter_set = AverageMeterSet()
 
         with torch.no_grad():
-            tqdm_dataloader = tqdm(self.test_loader)
+            tqdm_dataloader = tqdm(eval_loader)
             for batch_idx, batch in enumerate(tqdm_dataloader):
-                batch = [x.to(self.device) for x in batch]
+                batch = self.batch_to_device(batch)
 
                 metrics = self.calculate_metrics(batch)
 
                 for k, v in metrics.items():
                     average_meter_set.update(k, v)
-                description_metrics = ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-                                      ['Recall@%d' % k for k in self.metric_ks[:3]]
-                description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-                description = description.replace('NDCG', 'N').replace('Recall', 'R')
-                description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-                tqdm_dataloader.set_description(description)
 
-            average_metrics = average_meter_set.averages()
-            with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
-                json.dump(average_metrics, f, indent=4)
-            print(average_metrics)
+                if self.args.local and batch_idx > 20:
+                    break
+
+                if batch_idx % 10 == 0 and batch_idx > 0:
+                    descr = get_metric_descr(average_meter_set, self.metric_ks)
+                    tqdm_dataloader.set_description(descr)
+
+        descr = get_metric_descr(average_meter_set, self.metric_ks)
+        print("\n Epoch avg.: {}".format(descr))
+        #tqdm_dataloader.set_description(descr)
+
+        return average_meter_set
+
+
+    def batch_to_device(self, batch):
+        if isinstance(batch, dict):
+            device_dict = {}
+            for key, val in batch.items():
+                if isinstance(val, list):
+                    device_dict[key] = [elem.to(self.device) for elem in val]
+                elif isinstance(val, dict):
+                    device_dict[key] = {k: v.to(self.device) for k, v in val.items()}
+                else:
+                    device_dict[key] = val.to(self.device)
+
+            batch = device_dict
+            # batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
+        else:
+            batch = [x.to(self.device) for x in batch]
+
+        return batch
 
     def _create_optimizer(self):
         args = self.args
@@ -226,3 +246,13 @@ class AbstractTrainer(metaclass=ABCMeta):
 
     def _needs_to_log(self, accum_iter):
         return accum_iter % self.log_period_as_iter < self.args.train_batch_size and accum_iter != 0
+
+def get_metric_descr(metric_set, metric_ks=[5, 10]):
+    description_metrics = ['AUC'] + \
+                          ['NDCG@%d' % k for k in metric_ks[:3]] + \
+                          ['Recall@%d' % k for k in metric_ks[:3]]
+    description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
+    description = description.replace('NDCG', 'N').replace('Recall', 'R')
+    description = description.format(*(metric_set[k].avg for k in description_metrics))
+
+    return description

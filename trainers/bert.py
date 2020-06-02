@@ -53,43 +53,34 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
 
     def calculate_loss(self, batch):
 
-        if self.args.incl_time_stamp:
-            seqs, mask, cands, labels, time_stamps = batch
-            logits = self.model([seqs, time_stamps], mask, cands)
-        else:
-            seqs, mask, cands, labels = batch
-            time_stamps = None
-            logits = self.model(seqs, mask, cands) # (B*T) x N_c
+        cat_labels = batch['lbls']
+        self.model.set_train_mode(True)
+        # forward pass
+        logits = self.model(cat_labels, **batch['input']) # L x N_c
 
-        # labels have to indicate which candidate is the correct one
-        # convert target item index to categorical label C = [0, N_c]
-        lbls = labels[labels > 0]
-        c = cands[labels > 0]
-        categorical_lbls = (c == lbls.unsqueeze(1).repeat(1, c.size(1))).nonzero()[:, -1]
+        # categorical labels indicate which candidate is the correct one C = [0, N_c]
+        # for positions where label is unequal -1
+        lbls = cat_labels[cat_labels != -1]
 
-        rel_logits = logits[labels.view(-1) > 0]
         # calculate a separate loss for each class label per observation and sum the result.
-        loss = self.ce(rel_logits, categorical_lbls)
-        # note: NPA approach only computes NLL for positive class -> select only logits for positive class?
+        loss = self.ce(logits, lbls)
+
         return loss
 
     def calculate_metrics(self, batch):
-        if self.args.incl_time_stamp:
-            seqs, mask, cands, labels, time_stamps = batch
-            logits = self.model([seqs, time_stamps], mask, cands) # (B x N_c)
-        else:
-            seqs, mask, cands, labels = batch
-            time_stamps = None
-            logits = self.model(seqs, mask, cands) # (B x N_c)
 
-        # TODO: check scores
+        input = batch['input'].items()
+        lbls = batch['lbls']
+        self.model.set_train_mode(False)
+        logits = self.model(None, **batch['input']) # (L x N_c)
+
         scores = nn.functional.softmax(logits, dim=1)
 
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
-        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(scores, labels)
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
+        metrics.update(calc_auc_and_mrr(scores, lbls))
 
         return metrics
 
@@ -213,5 +204,5 @@ class Bert4NewsDistanceTrainer(BERTTrainer):
 
         # Note: inside this function, scores are inverted. check if aligns with distance function
         metrics = calc_recalls_and_ndcgs_for_ks(dist_scores.view(-1, n_cands), labels.view(-1, n_cands), self.metric_ks)
-        metrics['auc'], metrics['mrr'] = calc_auc_and_mrr(dist_scores.view(-1, n_cands), labels.view(-1, n_cands))
+        metrics.update(calc_auc_and_mrr(dist_scores.view(-1, n_cands), labels.view(-1, n_cands)))
         return metrics

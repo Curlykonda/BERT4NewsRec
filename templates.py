@@ -1,3 +1,5 @@
+from utils import set_up_gpu
+
 def set_template(args):
     if args.template is None:
         return
@@ -127,138 +129,38 @@ def set_template(args):
 
     elif args.template.startswith("local_bert_pcp"):
         args.local = True
+        args.device = 'cuda'
+        args.num_epochs = 10
 
+        args.pt_news_encoder = 'BERTje'
+        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        args.language = "dutch"
+
+        args.bert_num_blocks = 1
         set_args_bert_pcp(args)
 
-        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        # args.news_encoder = "wucnn"
+        # set_args_npa_cnn(args)
+
         args.max_article_len = 30
-        # args.pos_embs = 'tpe'
-        # args.incl_time_stamp = False
-        args.temp_embs = 'nte'
-        args.temp_embs_hidden_units = [128, 512, 768]
-        args.temp_embs_act_func = "relu"
+        args.pos_embs = 'tpe'
+        args.incl_time_stamp = False
 
-        args.incl_time_stamp = True
-        args.lower_case = True
+        # args.temp_embs = 'lte'
+        # # args.temp_embs_hidden_units = [256, 768]
+        # # args.temp_embs_act_func = "relu"
+        # args.incl_time_stamp = True
+
+        args.lower_case = False
+        args.cuda_launch_blocking=True
 
 
-    # elif args.template.startswith('train_dae'):
-    #     args.mode = 'train'
-    #
-    #     args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-    #     args.min_rating = 0 if args.dataset_code == 'ml-1m' else 4
-    #     args.min_uc = 5
-    #     args.min_sc = 0
-    #     args.split = 'holdout'
-    #     args.dataset_split_seed = 98765
-    #     args.eval_set_size = 500 if args.dataset_code == 'ml-1m' else 10000
-    #
-    #     args.dataloader_code = 'ae'
-    #     batch = 128 if args.dataset_code == 'ml-1m' else 512
-    #     args.train_batch_size = batch
-    #     args.val_batch_size = batch
-    #     args.test_batch_size = batch
-    #
-    #     args.trainer_code = 'dae'
-    #     args.device = 'cuda'
-    #     args.num_gpu = 1
-    #     args.device_idx = '0'
-    #     args.optimizer = 'Adam'
-    #     args.lr = 1e-3
-    #     args.enable_lr_schedule = False
-    #     args.weight_decay = 0.00
-    #     args.num_epochs = 100 if args.dataset_code == 'ml-1m' else 200
-    #     args.metric_ks = [1, 5, 10, 20, 50, 100]
-    #     args.best_metric = 'NDCG@10'
-    #
-    #     args.model_code = 'dae'
-    #     args.model_init_seed = 0
-    #     args.dae_num_hidden = 2
-    #     args.dae_hidden_dim = 600
-    #     args.dae_latent_dim = 200
-    #     args.dae_dropout = 0.5
-    #
-    # elif args.template.startswith('train_vae_search_beta'):
-    #     args.mode = 'train'
-    #
-    #     args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-    #     args.min_rating = 0 if args.dataset_code == 'ml-1m' else 4
-    #     args.min_uc = 5
-    #     args.min_sc = 0
-    #     args.split = 'holdout'
-    #     args.dataset_split_seed = 98765
-    #     args.eval_set_size = 500 if args.dataset_code == 'ml-1m' else 10000
-    #
-    #     args.dataloader_code = 'ae'
-    #     batch = 128 if args.dataset_code == 'ml-1m' else 512
-    #     args.train_batch_size = batch
-    #     args.val_batch_size = batch
-    #     args.test_batch_size = batch
-    #
-    #     args.trainer_code = 'vae'
-    #     args.device = 'cuda'
-    #     args.num_gpu = 1
-    #     args.device_idx = '0'
-    #     args.optimizer = 'Adam'
-    #     args.lr = 1e-3
-    #     args.enable_lr_schedule = False
-    #     args.weight_decay = 0.01
-    #     args.num_epochs = 100 if args.dataset_code == 'ml-1m' else 200
-    #     args.metric_ks = [1, 5, 10, 20, 50, 100]
-    #     args.best_metric = 'NDCG@10'
-    #     args.total_anneal_steps = 3000 if args.dataset_code == 'ml-1m' else 20000
-    #     args.find_best_beta = True
-    #
-    #     args.model_code = 'vae'
-    #     args.model_init_seed = 0
-    #     args.vae_num_hidden = 2
-    #     args.vae_hidden_dim = 600
-    #     args.vae_latent_dim = 200
-    #     args.vae_dropout = 0.5
-    #
-    # elif args.template.startswith('train_vae_give_beta'):
-    #     args.mode = 'train'
-    #
-    #     args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-    #     args.min_rating = 0 if args.dataset_code == 'ml-1m' else 4
-    #     args.min_uc = 5
-    #     args.min_sc = 0
-    #     args.split = 'holdout'
-    #     args.dataset_split_seed = 98765
-    #     args.eval_set_size = 500 if args.dataset_code == 'ml-1m' else 10000
-    #
-    #     args.dataloader_code = 'ae'
-    #     batch = 128 if args.dataset_code == 'ml-1m' else 512
-    #     args.train_batch_size = batch
-    #     args.val_batch_size = batch
-    #     args.test_batch_size = batch
-    #
-    #     args.trainer_code = 'vae'
-    #     args.device = 'cuda'
-    #     args.num_gpu = 1
-    #     args.device_idx = '0'
-    #     args.optimizer = 'Adam'
-    #     args.lr = 1e-3
-    #     args.enable_lr_schedule = False
-    #     args.weight_decay = 0.01
-    #     args.num_epochs = 100 if args.dataset_code == 'ml-1m' else 200
-    #     args.metric_ks = [1, 5, 10, 20, 50, 100]
-    #     args.best_metric = 'NDCG@100'
-    #     args.find_best_beta = False
-    #     args.anneal_cap = 0.342
-    #     args.total_anneal_steps = 3000 if args.dataset_code == 'ml-1m' else 20000
-    #
-    #     args.model_code = 'vae'
-    #     args.model_init_seed = 0
-    #     args.vae_num_hidden = 2
-    #     args.vae_hidden_dim = 600
-    #     args.vae_latent_dim = 200
-    #     args.vae_dropout = 0.5
+    set_up_gpu(args)
+
 
 def set_args_bert_pcp(args):
     # pseudo categorical prediction
     args.mode = 'train'
-
 
     # dataset
     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
@@ -267,13 +169,15 @@ def set_args_bert_pcp(args):
     # preprosessing
     args.n_users = 10000
     args.use_article_content = True
-    args.incl_time_stamp = False
-    args.pt_news_encoder = 'BERTje'
 
+    if 'BERTje' == args.pt_news_encoder:
+        args.fix_pt_art_emb = True
+        args.pd_vocab = True
+        args.dim_art_emb = 768
 
-    args.fix_pt_art_emb = True
-    args.pd_vocab = True
-    args.dim_art_emb = 768
+    elif "wucnn" == args.news_encoder:
+        set_args_npa_cnn(args)
+
     # args.lower_case = False
 
     # split strategy
@@ -281,7 +185,7 @@ def set_args_bert_pcp(args):
 
     # dataloader
     args.dataloader_code = 'bert_news'
-    batch = 128 if not args.local else 10
+    batch = args.train_batch_size if not args.local else 10
     args.train_batch_size = batch
     args.val_batch_size = batch
     args.test_batch_size = batch
@@ -291,35 +195,47 @@ def set_args_bert_pcp(args):
     args.train_negative_sample_size = 5
     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
     args.test_negative_sampler_code = 'random'
-    args.test_negative_sample_size = 99
+    args.test_negative_sample_size = 9
     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  # 98765
 
     # training
     args.trainer_code = 'bert_news_ce'
-    args.device = 'cuda' if not args.local else 'cpu'
+    #args.device = 'cuda' #if not args.local else 'cpu'
 
-    args.num_gpu = 1
+    args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
     args.device_idx = '0'
     args.optimizer = 'Adam'
-    args.lr = 0.001
+    args.lr = 0.001 if args.lr is None else args.lr
     args.enable_lr_schedule = True
-    args.decay_step = 25
-    args.gamma = 1.0
-    args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+    args.decay_step = 25 if args.decay_step is None else args.decay_step
+    args.gamma = 0.1
+    #args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
     # evaluation
-    args.metric_ks = [5, 10, 50]
+    args.metric_ks = [5, 10]
     args.best_metric = 'NDCG@10'
 
     # model
-    args.model_code = 'bert4nie'
+    args.model_code = 'bert4news'
     args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
     # bert
     args.bert_dropout = 0.1
     args.bert_hidden_units = args.dim_art_emb
     args.bert_mask_prob = 0.15
-    args.bert_max_len = 100
-    args.bert_num_blocks = 2
-    args.bert_num_heads = 4
+    args.bert_max_len = 100 if args.bert_max_len is None else args.bert_max_len
+    args.bert_num_blocks = 2 if args.bert_num_blocks is None else args.bert_num_blocks
+    args.bert_num_heads = 4 if args.bert_num_heads is None else args.bert_num_heads
 
     args.pred_layer = 'l2'  # prediction layer
-    args.nie_layer = None
+    #args.nie_layer = None
+
+
+def set_args_npa_cnn(args):
+    args.incl_u_id = True
+    args.pt_news_encoder = None  # 'BERTje'
+    args.fix_pt_art_emb = False
+    args.pd_vocab = True
+
+    args.dim_art_emb = 400 if args.dim_art_emb is None else args.dim_art_emb
+    args.bert_hidden_units = args.dim_art_emb
+
+    args.path_pt_news_enc = None

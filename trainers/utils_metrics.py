@@ -51,7 +51,7 @@ def calc_auc_and_mrr(scores, labels):
     mrr = mrr_score(scores, labels)
     auc = calc_roc_auc_tensor(scores, labels)
 
-    return auc, mrr
+    return {"AUC": auc, "MRR": mrr}
 
 def calc_roc_auc_tensor(scores, labels):
 
