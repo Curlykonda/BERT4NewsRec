@@ -18,7 +18,7 @@ python --version
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 #pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
 art_len=30
-SEEDS=(42)
+SEEDS=(113 42)
 POS_EMBS=("tpe" "lpe")
 enc="wucnn"
 d_art=400

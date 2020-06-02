@@ -109,6 +109,7 @@ class AverageMeterSet(object):
             meter = AverageMeter()
             meter.update(0)
             return meter
+
         return self.meters[key]
 
     def update(self, name, value, n=1):

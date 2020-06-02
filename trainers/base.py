@@ -83,7 +83,7 @@ class AbstractTrainer(metaclass=ABCMeta):
             'state_dict': (self._create_state_dict()),
         })
         self.writer.close()
-        print(">> Run completed in {:.2f} h".format((time.time() - t0) / 360))
+        print("\n >> Run completed in {:.2f} min \n".format((time.time() - t0) / 60))
 
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
@@ -96,19 +96,21 @@ class AbstractTrainer(metaclass=ABCMeta):
             batch = self.batch_to_device(batch)
             batch_size = self.args.train_batch_size
 
+            # forward pass
             self.optimizer.zero_grad()
             loss = self.calculate_loss(batch)
-            loss.backward()
 
+            # backward pass
+            loss.backward()
             self.optimizer.step()
 
+            # update metrics
             average_meter_set.update('loss', loss.item())
-            tqdm_dataloader.set_description(
-                'Epoch {}, loss {:.3f} '.format(epoch+1, average_meter_set['loss'].avg))
 
             accum_iter += batch_size
 
             if self._needs_to_log(accum_iter):
+                tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
                 tqdm_dataloader.set_description('Logging to Tensorboard')
                 log_data = {
                     'state_dict': (self._create_state_dict()),
@@ -138,26 +140,6 @@ class AbstractTrainer(metaclass=ABCMeta):
 
         average_meter_set = self.eval_one_epoch(self.val_loader)
 
-        # with torch.no_grad():
-        #     tqdm_dataloader = tqdm(self.val_loader)
-        #     for batch_idx, batch in enumerate(tqdm_dataloader):
-        #         batch = self.batch_to_device(batch)
-        #
-        #         metrics = self.calculate_metrics(batch)
-        #
-        #         for k, v in metrics.items():
-        #             average_meter_set.update(k, v)
-        #         description_metrics = ['AUC'] +\
-        #                               ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-        #                               ['Recall@%d' % k for k in self.metric_ks[:3]]
-        #         description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-        #         description = description.replace('NDCG', 'N').replace('Recall', 'R')
-        #         description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-        #         tqdm_dataloader.set_description(description)
-        #
-        #         if self.args.local and batch_idx > 2:
-        #             break
-
         log_data = {
             'state_dict': (self._create_state_dict()),
             'epoch': epoch+1,
@@ -175,26 +157,6 @@ class AbstractTrainer(metaclass=ABCMeta):
         self.model.eval()
 
         average_meter_set = self.eval_one_epoch(self.test_loader)
-
-        # with torch.no_grad():
-        #     tqdm_dataloader = tqdm(self.test_loader)
-        #     for batch_idx, batch in enumerate(tqdm_dataloader):
-        #         batch = self.batch_to_device(batch)
-        #
-        #         metrics = self.calculate_metrics(batch)
-        #
-        #         for k, v in metrics.items():
-        #             average_meter_set.update(k, v)
-        #         description_metrics = ['AUC'] +\
-        #                               ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-        #                               ['Recall@%d' % k for k in self.metric_ks[:3]]
-        #         description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-        #         description = description.replace('NDCG', 'N').replace('Recall', 'R')
-        #         description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-        #         tqdm_dataloader.set_description(description)
-        #
-        #         if self.args.local and batch_idx > 1:
-        #             break
 
         average_metrics = average_meter_set.averages()
         with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
@@ -214,18 +176,20 @@ class AbstractTrainer(metaclass=ABCMeta):
 
                 for k, v in metrics.items():
                     average_meter_set.update(k, v)
-                description_metrics = ['AUC'] +\
-                                      ['NDCG@%d' % k for k in self.metric_ks[:3]] +\
-                                      ['Recall@%d' % k for k in self.metric_ks[:3]]
-                description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
-                description = description.replace('NDCG', 'N').replace('Recall', 'R')
-                description = description.format(*(average_meter_set[k].avg for k in description_metrics))
-                tqdm_dataloader.set_description(description)
 
-                if self.args.local and batch_idx > 2:
+                if self.args.local and batch_idx > 20:
                     break
 
+                if batch_idx % 10 == 0 and batch_idx > 0:
+                    descr = get_metric_descr(average_meter_set, self.metric_ks)
+                    tqdm_dataloader.set_description(descr)
+
+        descr = get_metric_descr(average_meter_set, self.metric_ks)
+        print("\n Epoch avg.: {}".format(descr))
+        #tqdm_dataloader.set_description(descr)
+
         return average_meter_set
+
 
     def batch_to_device(self, batch):
         if isinstance(batch, dict):
@@ -282,3 +246,13 @@ class AbstractTrainer(metaclass=ABCMeta):
 
     def _needs_to_log(self, accum_iter):
         return accum_iter % self.log_period_as_iter < self.args.train_batch_size and accum_iter != 0
+
+def get_metric_descr(metric_set, metric_ks=[5, 10]):
+    description_metrics = ['AUC'] + \
+                          ['NDCG@%d' % k for k in metric_ks[:3]] + \
+                          ['Recall@%d' % k for k in metric_ks[:3]]
+    description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
+    description = description.replace('NDCG', 'N').replace('Recall', 'R')
+    description = description.format(*(metric_set[k].avg for k in description_metrics))
+
+    return description

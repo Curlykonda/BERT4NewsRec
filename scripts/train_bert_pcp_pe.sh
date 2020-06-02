@@ -20,7 +20,7 @@ pt_news_enc="BERTje"
 pt_news_enc_path = "./BertModelsPT/bert-base-dutch-cased"
 
 art_len=30
-SEEDS=(42)
+SEEDS=(113 42)
 POS_EMBS=("tpe" "lpe")
 method="last_cls"
 N=0
