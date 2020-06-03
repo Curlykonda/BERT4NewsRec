@@ -16,6 +16,8 @@ def train():
     #test_model = (input('Test model with test dataset? y/[n]: ') == 'y')
     #if test_model:
     trainer.test()
+    print(export_root)
+    print("\n")
 
 
 if __name__ == '__main__':

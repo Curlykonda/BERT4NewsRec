@@ -74,7 +74,7 @@ class AbstractTrainer(metaclass=ABCMeta):
             t1 = time.time()
             accum_iter = self.train_one_epoch(epoch, accum_iter)
             t2 = time.time()
-            print("> Train epoch in {:.3f} min".format((t2-t1)/60))
+            print("> Train epoch {} in {:.3f} min".format(epoch+1, (t2-t1)/60))
             self.validate(epoch, accum_iter)
             t3 = time.time()
             print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
@@ -106,11 +106,10 @@ class AbstractTrainer(metaclass=ABCMeta):
 
             # update metrics
             average_meter_set.update('loss', loss.item())
-
+            tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
             if self._needs_to_log(accum_iter):
-                tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
                 tqdm_dataloader.set_description('Logging to Tensorboard')
                 log_data = {
                     'state_dict': (self._create_state_dict()),
@@ -163,7 +162,7 @@ class AbstractTrainer(metaclass=ABCMeta):
             json.dump(average_metrics, f, indent=4)
         print(average_metrics)
 
-    def eval_one_epoch(self, eval_loader):
+    def eval_one_epoch(self, eval_loader, epoch=None):
 
         average_meter_set = AverageMeterSet()
 
@@ -185,7 +184,10 @@ class AbstractTrainer(metaclass=ABCMeta):
                     tqdm_dataloader.set_description(descr)
 
         descr = get_metric_descr(average_meter_set, self.metric_ks)
-        print("\n Epoch avg.: {}".format(descr))
+        if epoch is not None:
+            print("\n Epoch {} avg.: {}".format(epoch+1, descr))
+        else:
+            print("\n Epoch avg.: {}".format(descr))
         #tqdm_dataloader.set_description(descr)
 
         return average_meter_set

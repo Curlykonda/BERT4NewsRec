@@ -21,6 +21,10 @@ art_len=30
 SEEDS=(113 42)
 POS_EMBS=("tpe" "lpe")
 enc="wucnn"
+
+TEMP_EMBS=("lte" "nte")
+t_act_func="relu"
+
 d_art=400
 
 #method="last_cls"
@@ -55,15 +59,7 @@ do
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
   --experiment_description $exp_descr $POS
   done
-done
 
-TEMP_EMBS=("lte" "nte")
-t_act_func="relu"
-
-echo "$datapath"
-for SEED in "${SEEDS[@]}"
-do
-  echo "$SEED"
   for TE in "${TEMP_EMBS[@]}"
   do
     #1
@@ -84,5 +80,6 @@ do
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
   --experiment_description $exp_descr $TE
   done
+
 done
 
