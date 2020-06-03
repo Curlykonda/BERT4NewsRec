@@ -7,7 +7,7 @@ from sklearn.preprocessing import OneHotEncoder
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from .base import AbstractTrainer, MetricGraphPrinter, RecentModelLogger, BestModelLogger
+from .base import AbstractTrainer, ExtendedTrainer, MetricGraphPrinter, RecentModelLogger, BestModelLogger
 from utils import AverageMeterSet
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
@@ -50,7 +50,7 @@ class BERTTrainer(AbstractTrainer):
         metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
 
-class BERT4NewsCategoricalTrainer(BERTTrainer):
+class BERT4NewsCategoricalTrainer(ExtendedTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
@@ -145,6 +145,7 @@ class BERT4NewsCategoricalTrainer(BERTTrainer):
                 self.log_extra_train_info(log_data)
                 self.logger_service.log_train(log_data)
 
+            # break condition for local debugging
             if self.args.local and batch_idx == 20:
                 break
 

@@ -259,6 +259,107 @@ class AbstractTrainer(metaclass=ABCMeta):
     def _needs_to_log(self, accum_iter):
         return accum_iter % self.log_period_as_iter < self.args.train_batch_size and accum_iter != 0
 
+
+class ExtendedTrainer(AbstractTrainer):
+    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+
+        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+
+    def add_extra_loggers(self):
+        pass
+
+    def log_extra_train_info(self, log_data):
+        pass
+
+    def log_extra_val_info(self, log_data):
+        pass
+
+    def train_one_epoch(self, epoch, accum_iter):
+        self.model.train()
+
+        average_meter_set = AverageMeterSet()
+        tqdm_dataloader = tqdm(self.train_loader)
+
+        for batch_idx, batch in enumerate(tqdm_dataloader):
+
+            batch = self.batch_to_device(batch)
+            batch_size = self.args.train_batch_size
+
+            # forward pass
+            self.optimizer.zero_grad()
+            loss, metrics_train = self.calculate_loss(batch)
+
+            # backward pass
+            loss.backward()
+            self.optimizer.step()
+
+            # update metrics
+            average_meter_set.update('loss', loss.item())
+            average_meter_set.update('lr', self.optimizer.defaults['lr'])
+
+            for k, v in metrics_train.items():
+                average_meter_set.update(k, v)
+
+            tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
+            accum_iter += batch_size
+
+            if self._needs_to_log(accum_iter):
+                tqdm_dataloader.set_description('Logging to Tensorboard')
+                log_data = {
+                    'state_dict': (self._create_state_dict()),
+                    'epoch': epoch+1,
+                    'accum_iter': accum_iter,
+                }
+                log_data.update(average_meter_set.averages())
+                self.log_extra_train_info(log_data)
+                self.logger_service.log_train(log_data)
+
+            # break condition for local debugging
+            if self.args.local and batch_idx == 20:
+                break
+
+        # adapt learning rate
+        if self.args.enable_lr_schedule:
+            self.lr_scheduler.step()
+            if epoch % self.lr_scheduler.step_size == 0:
+                print(self.optimizer.defaults['lr'])
+
+
+        return accum_iter
+
+    def _create_loggers(self):
+        root = Path(self.export_root)
+        writer = SummaryWriter(root.joinpath('logs'))
+        model_checkpoint = root.joinpath('models')
+
+        train_loggers = [
+            MetricGraphPrinter(writer, key='epoch', graph_name='Epoch', group_name='Train'),
+            MetricGraphPrinter(writer, key='loss', graph_name='Loss', group_name='Train'),
+            MetricGraphPrinter(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
+            MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Train'),
+            MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Train')
+        ]
+
+        val_loggers = []
+        for k in self.metric_ks:
+            val_loggers.append(
+                MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
+            val_loggers.append(
+                MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+
+            train_loggers.append(
+                MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Train'))
+            train_loggers.append(
+                MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+
+
+        val_loggers.append(MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Validation'))
+        val_loggers.append(MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Validation'))
+
+        val_loggers.append(RecentModelLogger(model_checkpoint))
+        val_loggers.append(BestModelLogger(model_checkpoint, metric_key=self.best_metric))
+        return writer, train_loggers, val_loggers
+
 def get_metric_descr(metric_set, metric_ks=[5, 10]):
     description_metrics = ['AUC'] + \
                           ['NDCG@%d' % k for k in metric_ks[:3]] + \
