@@ -49,7 +49,7 @@ do
   --num_epochs=100 --bert_num_blocks=2 --bert_max_len=100 \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
-  --experiment_description $exp_descr $POS
+  --experiment_description $exp_descr $POS s$SEED
 
     #2
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
@@ -57,7 +57,7 @@ do
   --num_epochs=50 --bert_num_blocks=1 --bert_max_len=50 \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
-  --experiment_description $exp_descr $POS
+  --experiment_description $exp_descr $POS s$SEED
   done
 
   for TE in "${TEMP_EMBS[@]}"
@@ -69,7 +69,7 @@ do
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
   --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
-  --experiment_description $exp_descr $TE
+  --experiment_description $exp_descr $TE s$SEED
 
     #2
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
@@ -78,7 +78,7 @@ do
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
   --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
-  --experiment_description $exp_descr $TE
+  --experiment_description $exp_descr $TE s$SEED
   done
 
 done

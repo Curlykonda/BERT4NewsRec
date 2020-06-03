@@ -106,6 +106,8 @@ class AbstractTrainer(metaclass=ABCMeta):
 
             # update metrics
             average_meter_set.update('loss', loss.item())
+            average_meter_set.update('lr', self.optimizer.defaults['lr'])
+
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
@@ -228,6 +230,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         train_loggers = [
             MetricGraphPrinter(writer, key='epoch', graph_name='Epoch', group_name='Train'),
             MetricGraphPrinter(writer, key='loss', graph_name='Loss', group_name='Train'),
+            MetricGraphPrinter(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
         ]
 
         val_loggers = []
@@ -236,6 +239,10 @@ class AbstractTrainer(metaclass=ABCMeta):
                 MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
             val_loggers.append(
                 MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+
+        # val_loggers.append(MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Validation'))
+        # val_loggers.append(MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Validation'))
+
         val_loggers.append(RecentModelLogger(model_checkpoint))
         val_loggers.append(BestModelLogger(model_checkpoint, metric_key=self.best_metric))
         return writer, train_loggers, val_loggers

@@ -132,6 +132,8 @@ def set_template(args):
         args.device = 'cuda'
         args.num_epochs = 10
 
+        args.log_period_as_iter=20
+
         args.pt_news_encoder = 'BERTje'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
