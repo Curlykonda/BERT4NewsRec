@@ -1,15 +1,6 @@
-import pickle
-import torch.nn as nn
-from pathlib import Path
-
-
 from .base import *
 from source.modules.bert_modules.bert import BERT
-from source.preprocessing.utils_news_prep import get_word_embs_from_pretrained_ft
 
-
-
-from ..modules.click_predictor import LinLayer
 from ..modules.news_encoder import *
 from ..modules.bert_modules.embedding.token import *
 
@@ -36,20 +27,22 @@ def make_bert4news_model(args):
     vocab_size = args.max_vocab_size  # account for all items including PAD token
     # load pretrained embeddings
 
-    if args.fix_pt_art_emb:
-        # fix pre-computed article embs - no need for Word Embs or vocab
-        token_embedding = None
-    else:
-        # compute article embs end-to-end using vocab + Word Embs + News Encoder
-        # load vocab
-        with Path(args.vocab_path).open('rb') as fin:
-            data = pickle.load(fin)
-            vocab = data['vocab']
+    # if args.fix_pt_art_emb:
+    #     # fix pre-computed article embs - no need for Word Embs or vocab
+    #     token_embedding = None
+    # else:
+    #     # compute article embs end-to-end using vocab + Word Embs + News Encoder
+    #     # load vocab
+    #     with Path(args.vocab_path).open('rb') as fin:
+    #         data = pickle.load(fin)
+    #         vocab = data['vocab']
+    #
+    #     # load pre-trained Word Embs, if exists
+    #     pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
+    #     # intialise Token (Word) Embs either with pre-trained or random
+    #     token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
 
-        # load pre-trained Word Embs, if exists
-        pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
-        # intialise Token (Word) Embs either with pre-trained or random
-        token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
+    token_embedding = get_token_embeddings(args)
 
     # article embeddings
     if args.rel_pc_art_emb_path is not None:

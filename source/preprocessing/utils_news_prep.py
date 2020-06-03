@@ -1,10 +1,6 @@
-import argparse
 import json
-import csv
-import itertools
 import random
 import os
-import nltk
 from nltk.tokenize import word_tokenize
 #nltk.download('punkt')
 from collections import defaultdict, Counter, OrderedDict
@@ -13,17 +9,10 @@ import numpy as np
 import pickle
 
 import torch
-import torch.nn as nn
-
-import fasttext
-from transformers import BertTokenizer
 
 from source.preprocessing.bert_feature_extractor import BertFeatureExtractor
-from source.utils import get_art_id_from_dpg_history, build_vocab_from_word_counts, pad_sequence, reverse_mapping_dict
+from source.utils import build_vocab_from_word_counts, pad_sequence
 from source.modules import NEWS_ENCODER
-from sklearn.model_selection import train_test_split
-import arrow
-
 
 DATA_TYPES = ["NPA", "DPG", "Adressa"]
 
@@ -451,29 +440,6 @@ def preprocess_dpg_news_file(news_file, language, min_counts_for_vocab=2, max_ar
 
     return vocab, news_as_word_ids, art_id2idx
 
-def get_word_embs_from_pretrained_ft(vocab, emb_path, emb_dim=300):
-    if emb_path is None:
-        print("No path to pretrained word embeddings given")
-        return None
-
-    try:
-        ft = fasttext.load_model(emb_path) # load pretrained vectors
-
-        # check & adjust dimensionality
-        if ft.get_dimension() != emb_dim:
-            fasttext.util.reduce_model(ft, emb_dim)
-
-        embedding_matrix = [0] * len(vocab)
-        embedding_matrix[0] = np.zeros(emb_dim, dtype='float32')  # placeholder with zero values for 'PAD'
-
-        for word, idx in vocab.items():
-            embedding_matrix[idx] = ft[word] # how to deal with unknown words?
-
-        return np.array(embedding_matrix, dtype='float32')
-
-    except:
-        print("Could not load word embeddings")
-        return None
 
 def generate_batch_data_test(all_test_pn, all_label, all_test_id, batch_size, all_test_user_pos, news_words):
     inputid = np.arange(len(all_label))

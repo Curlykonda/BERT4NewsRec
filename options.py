@@ -162,6 +162,12 @@ parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help
 
 ###########################################
 
+# NPA #
+parser.add_argument('--dim_u_id_emb', type=int, default=None, help='Dimension of embedded user ID for pers. attn.')
+parser.add_argument('--dim_pref_query', type=int, default=None, help='Dimension for User Preference Query for pers. attn.')
+parser.add_argument('--npa_dropout', type=float, default=None, help='Dropout probability to use for NPA model')
+
+
 # BERT #
 parser.add_argument('--bert_max_len', type=int, default=None, help='Length of sequence for bert')
 parser.add_argument('--bert_num_items', type=int, default=None, help='Number of total items')

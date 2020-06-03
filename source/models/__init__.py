@@ -1,5 +1,5 @@
 from .bert import BERT4RecModel, BERT4NewsRecModel, BERT4NewsRecModel
-from .NPA import VanillaNPA
+from .NPA import NpaBaseModel, VanillaNPA
 from source.utils import init_weights
 
 # from .dae import DAEModel
@@ -7,9 +7,10 @@ from source.utils import init_weights
 
 MODELS = {
     BERT4RecModel.code(): BERT4RecModel,
-    VanillaNPA.code(): VanillaNPA,
     BERT4NewsRecModel.code(): BERT4NewsRecModel,
-    BERT4NewsRecModel.code(): BERT4NewsRecModel
+    BERT4NewsRecModel.code(): BERT4NewsRecModel,
+    NpaBaseModel.code(): NpaBaseModel,
+    VanillaNPA.code(): VanillaNPA,
 }
 
 def model_factory(args):
