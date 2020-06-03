@@ -163,6 +163,9 @@ class AbstractTrainer(metaclass=ABCMeta):
         with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
             json.dump(average_metrics, f, indent=4)
         print(average_metrics)
+        print("\n")
+        print(self.export_root)
+        print("############################################\n")
 
     def eval_one_epoch(self, eval_loader, epoch=None):
 
@@ -189,7 +192,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         if epoch is not None:
             print("\n Epoch {} avg.: {}".format(epoch+1, descr))
         else:
-            print("\n Epoch avg.: {}".format(descr))
+            print("\n")
         #tqdm_dataloader.set_description(descr)
 
         return average_meter_set
