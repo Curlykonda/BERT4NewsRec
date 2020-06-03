@@ -38,7 +38,6 @@ class AbstractDataloader(metaclass=ABCMeta):
             args.n_articles = self.item_count
 
 
-
     @classmethod
     @abstractmethod
     def code(cls):
@@ -46,4 +45,29 @@ class AbstractDataloader(metaclass=ABCMeta):
 
     @abstractmethod
     def get_pytorch_dataloaders(self):
+        train_loader = self._get_train_loader()
+        val_loader = self._get_val_loader()
+        test_loader = self._get_test_loader()
+        return train_loader, val_loader, test_loader
+
+    @abstractmethod
+    def _get_train_loader(self):
+        pass
+
+    @abstractmethod
+    def _get_train_dataset(self):
+        pass
+
+    def _get_val_loader(self):
+        return self._get_eval_loader(mode='val')
+
+    def _get_test_loader(self):
+        return self._get_eval_loader(mode='test')
+
+    @abstractmethod
+    def _get_eval_loader(self, mode):
+        pass
+
+    @abstractmethod
+    def _get_eval_dataset(self, mode):
         pass

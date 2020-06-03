@@ -1,4 +1,3 @@
-from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,7 +5,6 @@ import torch.nn as nn
 from sklearn.preprocessing import OneHotEncoder
 
 from .base import ExtendedTrainer
-
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
 class NpaTrainer(ExtendedTrainer):

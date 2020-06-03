@@ -363,10 +363,6 @@ def prep_dpg_user_file(user_file, news_file, art_id2idx, train_method, test_inte
 
 def preprocess_dpg_news_file(news_file, language, min_counts_for_vocab=2, max_article_len=30, max_vocab_size=30000, lower_case=False):
 
-    vocab = None
-    news_as_word_ids = []
-    art_id2idx = {}
-
     # load data
     if isinstance(news_file, str):
         with open(news_file, 'rb') as f:

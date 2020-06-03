@@ -51,7 +51,7 @@ parser.add_argument('--incl_time_stamp', type=bool, default=False, help="Time st
 parser.add_argument('--incl_u_id', type=bool, default=False, help="User ID passed to model")
 parser.add_argument('--time_threshold', type=str, default="23-11-2019 23:59:59", help='date for splitting train/test. format: "DD-MM-YYYY HH:mm:ss"')
 
-parser.add_argument('--train_method', type=str, default='masked_item', choices=['masked_interest', 'wu', 'pos_cut_off'])
+parser.add_argument('--train_method', type=str, default='cloze', choices=['cloze', 'npa', 'pos_cut_off'])
 parser.add_argument('--n_articles', type=int, help="Number of articles in the dataset")
 parser.add_argument('--n_users', type=int, help="Number of users in the dataset")
 

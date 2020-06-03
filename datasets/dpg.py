@@ -29,6 +29,7 @@ class AbstractDatasetDPG(AbstractDataset):
         self.rnd = random.Random(seed)
 
         self.vocab = None
+        self.art_id2idx = None # mapping article ID -> article index
         self.art_idx2word_ids = None
         self.art_embs = None
 
@@ -79,6 +80,8 @@ class AbstractDatasetDPG(AbstractDataset):
         ###################
         # Preprocess data
         news_data, art_id2idx = self.prep_dpg_news_data()
+
+        self.art_id2idx = art_id2idx
 
         train, val, test, u_id2idx = self.prep_dpg_user_data(news_data, art_id2idx)
 
@@ -197,7 +200,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         else:
             raise NotImplementedError()
 
-    def prep_dpg_user_data(self, news_data, art_id2idx):
+    def prep_dpg_user_data(self, news_data):
 
         user_data = self.load_raw_read_histories()
         u_id2idx = {}
@@ -213,81 +216,68 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         print("> Prepping user data ..")
         for u_id in user_data.keys():
 
-            if 'masked_item' == self.args.train_method:
+            # get train & test dat
+            if 'time_threshold' == self.args.split:
+                train_items, test_items = self.get_train_test_items_from_data(user_data[u_id])
 
-                if 'time_threshold' == self.args.split:
-                    # split user interactions according to certain threshold timestamp
-                    # e.g. first 3 weeks for training, last week for testing
-                    try:
-                        threshold_date = arrow.get(self.args.time_threshold, "DD-MM-YYYY HH:mm:ss").timestamp
-                        #1574639999
-                    except:
-                        raise ValueError("Threshold date must string of format: 'DD-MM-YYYY HH:mm:ss'")
-
-                    # check if data has already been separated into train & test
-                    if 'articles_train' in user_data[u_id].keys():
-                        train_items = [(art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
-                                       in sorted(user_data[u_id]['articles_train'], key=lambda tup: tup[1])
-                                       if art_id in art_id2idx]
-
-                        test_items = [(art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
-                                      in sorted(user_data[u_id]['articles_test'], key=lambda tup: tup[1])
-                                      if art_id in art_id2idx]
-
-
-                        if len(test_items) < 1 or len(train_items) < 2:
-                            continue
-
-                        # confirm time intervals
-                        # if train_items[-1][1] <= threshold_date and test_items[0][1] >= threshold_date:
-                        #     pass
-                        # else:
-                        #     raise ValueError("Split into time intervals incorrect. check preprocessing!")
-
-                        u_id2idx[u_id] = u_idx = len(u_id2idx)  # create mapping from u_id to index
-
-                        if self.w_time_stamp:
-                            train[u_idx] = train_items
-                            test[u_idx] = test_items
-                            all_ts['train'].extend([*list(zip(*train_items))[1]]) # ts: [DD, HH, mm, ss]
-                            all_ts['test'].extend([*list(zip(*test_items))[1]])
-                        else:
-                            train[u_idx] = [*list(zip(*train_items))[0]]
-                            test[u_idx] = [*list(zip(*test_items))[0]]
-
-
-                        # add to validation sample
-                        val[u_idx] = self.select_rnd_item_for_validation(test[u_idx])
-
-                    else:
-                        # split user history according to time stamps. usually this is done in sampling process earlier
-                        full_hist = [(art_id2idx[art_id], time_stamp) for art_id, time_stamp
-                                      in sorted(user_data[u_id]['articles_read'], key=lambda tup: tup[1])]
-                        tmp_test = []
-                        for i, (item, ts) in enumerate(full_hist):
-                            if ts < threshold_date:
-                                train[u_idx].append((item, map_time_stamp_to_vector(ts)) if self.w_time_stamp else item)
-                            else:
-                                if self.w_time_stamp:
-                                    tmp_test = [(item, map_time_stamp_to_vector(ts)) for item, ts in full_hist[i:]]
-                                else:
-                                    tmp_test = [*list(zip(*full_hist[i:]))[0]]
-                                break
-
-                        test[u_idx] = tmp_test
-
-                        # add validation sample
-                        val[u_idx] = self.select_rnd_item_for_validation(test[u_idx])
-                else:
-                    raise NotImplementedError()
-
-            elif 'wu' == self.args.train_method:
-                # create instance for each train impression
-                # create instance for each test impression
-                #
-
-
+                if train_items is None:
+                    print("Reading history of user {} was too short and is excluded".format(u_id))
+                    continue
+            else:
                 raise NotImplementedError()
+
+            if 'cloze' == self.args.train_method:
+
+                u_id2idx[u_id] = u_idx = len(u_id2idx)  # create mapping from u_id to index
+
+                if self.w_time_stamp:
+                    train[u_idx] = train_items
+                    test[u_idx] = test_items
+                    all_ts['train'].extend([*list(zip(*train_items))[1]]) # ts: [DD, HH, mm, ss]
+                    all_ts['test'].extend([*list(zip(*test_items))[1]])
+                else:
+                    train[u_idx] = [*list(zip(*train_items))[0]]
+                    test[u_idx] = [*list(zip(*test_items))[0]]
+
+                # add to validation sample
+                val[u_idx] = self.select_rnd_item_for_validation(test[u_idx])
+
+            elif 'npa' == self.args.train_method:
+                # each instance consists of [u_id, hist, target]
+                # candidates will be sampled in Dataloader and stored
+                # retrieve candidates based on user & target
+
+                u_id2idx[u_id] = u_idx = len(u_id2idx)  # create mapping from u_id to index
+
+                train_arts, train_ts = zip(*train_items)
+
+                if self.w_time_stamp:
+                    all_ts['train'].extend(train_ts)  # ts: [DD, HH, mm, ss]
+
+                # create instance for each train impression
+                for art_id, ts in train_items:
+                    # construct target-specific history
+                    target = art_id
+                    # TODO: extend method to use incorporate time stamps
+                    # subsample unordered, random history for this target
+                    item_set = [a for a in train_arts if a != target]
+                    hist = random.sample(item_set, min(self.args.max_hist_len, len(item_set)))[:self.args.max_hist_len]
+
+                    # add train instance
+                    train[len(train)] = (u_idx, hist, target)
+
+                # same history for all test cases
+                test_hist = random.sample(train_arts, min(self.args.max_hist_len, len(train_arts)))[:self.args.max_hist_len]
+
+                # create instance for each test impression
+                for art_id, ts in test_items:
+                    # randomly sample validation instances
+                    coin_flip = self.rnd.random()
+                    if coin_flip > (1 - self.args.validation_portion):
+                        val[len(val)] = (u_idx, test_hist, art_id)
+                    else:
+                        test[len(test)] = (u_idx, test_hist, art_id)
+
             elif 'pos_cut_off' == self.args.train_method:
                 raise NotImplementedError()
             else:
@@ -332,6 +322,44 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
             return test_items[:val_pos]
         else:
             return []
+
+    def get_train_test_items_from_data(self, u_data):
+        # split user interactions according to certain threshold timestamp
+        # e.g. first 3 weeks for training, last week for testing
+        try:
+            threshold_date = arrow.get(self.args.time_threshold, "DD-MM-YYYY HH:mm:ss").timestamp
+            # 1574639999
+        except:
+            raise ValueError("Threshold date must string of format: 'DD-MM-YYYY HH:mm:ss'")
+
+        # check if data has already been separated into train & test
+        if 'articles_train' in u_data.keys():
+            train_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
+                           in sorted(u_data['articles_train'], key=lambda tup: tup[1])
+                           if art_id in self.art_id2idx]
+
+            test_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
+                          in sorted(u_data['articles_test'], key=lambda tup: tup[1])
+                          if art_id in self.art_id2idx]
+
+        else:
+            # split user history according to time stamps. usually this is done in sampling process earlier
+            full_hist = [(self.art_id2idx[art_id], time_stamp) for art_id, time_stamp
+                         in sorted(u_data['articles_read'], key=lambda tup: tup[1])]
+            train_items = []
+
+            for i, (item, ts) in enumerate(full_hist):
+                if ts < threshold_date:
+                    train_items.append((item, map_time_stamp_to_vector(ts)) if self.w_time_stamp else item)
+                else:
+                    test_items = [(item, map_time_stamp_to_vector(ts)) for item, ts in full_hist[i:]]
+                    break
+
+        if len(test_items) < 1 or len(train_items) < 2:
+            return None, None
+        else:
+            return train_items, test_items
+
 
     def prep_dpg_news_data(self):
         news_data = self.load_raw_news_data()
