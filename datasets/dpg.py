@@ -1,8 +1,9 @@
-import datetime
 import arrow
 import pickle
 import random
 import numpy as np
+from tqdm import tqdm
+
 from pathlib import Path
 from collections import defaultdict
 from abc import *
@@ -32,6 +33,7 @@ class AbstractDatasetDPG(AbstractDataset):
         self.art_id2idx = None # mapping article ID -> article index
         self.art_idx2word_ids = None
         self.art_embs = None
+        self.valid_items = {'train': None, 'test': None}
 
     @property
     def sample_method(self):
@@ -46,8 +48,8 @@ class AbstractDatasetDPG(AbstractDataset):
 
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
-        folder_name = '{}-min_len{}-{}-nenc_{}-time{}' \
-            .format(self.code(), self.min_hist_len, self.split, self.pt_news_encoder, int(self.w_time_stamp))
+        folder_name = '{}-{}-min_len{}-{}-nenc_{}-time{}' \
+            .format(self.code(), self.args.dataloader_code, self.min_hist_len, self.split, self.pt_news_encoder, int(self.w_time_stamp))
         return preprocessed_root.joinpath(folder_name)
 
     def load_dataset(self):
@@ -79,11 +81,9 @@ class AbstractDatasetDPG(AbstractDataset):
 
         ###################
         # Preprocess data
-        news_data, art_id2idx = self.prep_dpg_news_data()
+        news_data = self.prep_dpg_news_data()
 
-        self.art_id2idx = art_id2idx
-
-        train, val, test, u_id2idx = self.prep_dpg_user_data(news_data, art_id2idx)
+        train, val, test, u_id2idx = self.prep_dpg_user_data(news_data)
 
         #train, val, test = self.split_data(user_data, len(u_id2idx))
 
@@ -94,18 +94,20 @@ class AbstractDatasetDPG(AbstractDataset):
                    'val': val,
                    'test': test,
                    'umap': u_id2idx,
-                   'smap': art_id2idx,
+                   'smap': self.art_id2idx,
                    'vocab': self.vocab,
                    'art2words': self.art_idx2word_ids,
                    'art_emb': self.art_embs, # article emb matrix
+                   'valid_items': self.valid_items,
                    'rnd': self.rnd}
 
         # save
         with dataset_path.open('wb') as fout:
             pickle.dump(dataset, fout)
 
-        with pt_art_emb_path.open('wb') as fout:
-            pickle.dump(self.art_embs, fout)
+        if self.art_embs is not None:
+            with pt_art_emb_path.open('wb') as fout:
+                pickle.dump(self.art_embs, fout)
 
 
     def split_data(self, user_data, user_count):
@@ -175,6 +177,7 @@ class AbstractDatasetDPG(AbstractDataset):
         return self.rnd
 
 
+
 class DPG_Nov19Dataset(AbstractDatasetDPG):
     def __init__(self, args):
         super(DPG_Nov19Dataset, self).__init__(args)
@@ -213,12 +216,27 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
         train, val, test = defaultdict(list), defaultdict(list), defaultdict(list)
         all_ts = defaultdict(list)
+
+        self.valid_items = dict()
+        if 'train' in news_data:
+            self.valid_items['train'] = set([self.art_id2idx[a] for a in set(news_data['train'])])
+            self.valid_items['test'] = set([self.art_id2idx[a] for a in set(news_data['test'])])
+            needs_update = False
+        else:
+            self.valid_items['train'] = set()
+            self.valid_items['test'] = set()
+            needs_update = True
+
         print("> Prepping user data ..")
-        for u_id in user_data.keys():
+        u_keys = list(user_data.keys())
+
+        for u_id in tqdm(u_keys):
 
             # get train & test dat
             if 'time_threshold' == self.args.split:
                 train_items, test_items = self.get_train_test_items_from_data(user_data[u_id])
+                # train_items (list): [(art_idx_1, ts_1), ..., (art_idx_N, ts_N)]
+                # list of tuples consisting of article indices (already mapped) and (converted) time_stamps
 
                 if train_items is None:
                     print("Reading history of user {} was too short and is excluded".format(u_id))
@@ -244,6 +262,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
             elif 'npa' == self.args.train_method:
                 # each instance consists of [u_id, hist, target]
+                #train(dict(list)): {u_idx: [[[hist1], target1],..[[histN], targetN]]}
+                #test(dict(list)): {u_idx: [[hist], [targets]]}
                 # candidates will be sampled in Dataloader and stored
                 # retrieve candidates based on user & target
 
@@ -264,24 +284,32 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                     hist = random.sample(item_set, min(self.args.max_hist_len, len(item_set)))[:self.args.max_hist_len]
 
                     # add train instance
-                    train[len(train)] = (u_idx, hist, target)
+                    train[u_idx].append((hist, target))
 
                 # same history for all test cases
                 test_hist = random.sample(train_arts, min(self.args.max_hist_len, len(train_arts)))[:self.args.max_hist_len]
 
-                # create instance for each test impression
+                val_targets, test_targets = [], []
                 for art_id, ts in test_items:
                     # randomly sample validation instances
                     coin_flip = self.rnd.random()
                     if coin_flip > (1 - self.args.validation_portion):
-                        val[len(val)] = (u_idx, test_hist, art_id)
+                        val_targets.append(art_id)
                     else:
-                        test[len(test)] = (u_idx, test_hist, art_id)
+                        test_targets.append(art_id)
 
-            elif 'pos_cut_off' == self.args.train_method:
-                raise NotImplementedError()
+                if len(test_targets) < 1 or len(val_targets) > len(test_targets):
+                    test_targets.append(val_targets.pop())
+
+                test[u_idx] = [test_hist, test_targets]
+                val[u_idx] = [test_hist, val_targets]
+
             else:
                 raise NotImplementedError()
+
+            if needs_update:
+                self.update_valid_items(train_items, key='train')
+                self.update_valid_items(test_items, key='test')
 
         if self.w_time_stamp:
             ## map & transform all time stamps
@@ -360,6 +388,11 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         else:
             return train_items, test_items
 
+    def update_valid_items(self, items, key='train'):
+        if key not in self.valid_items:
+            raise ValueError("Invalid key passed: {}".format(key))
+
+        self.valid_items[key].update([*list(zip(*items))[0]])
 
     def prep_dpg_news_data(self):
         news_data = self.load_raw_news_data()
@@ -398,7 +431,9 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
             for art_id in news_data['all'].keys():
                 art_id2idx[art_id] = len(art_id2idx)  # map article ID -> index
 
-        return news_data, art_id2idx
+        self.art_id2idx = art_id2idx
+
+        return news_data
 
 
 # class DPG_Dec19Dataset(AbstractDatasetDPG):

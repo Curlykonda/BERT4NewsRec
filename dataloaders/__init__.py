@@ -1,12 +1,13 @@
 from datasets import dataset_factory
 from .bert import BertDataloader, BertDataloaderNews
+from .npa import NpaDataloader
 #from .ae import AEDataloader
 
 
 DATALOADERS = {
     BertDataloader.code(): BertDataloader,
     BertDataloaderNews.code(): BertDataloaderNews,
-    #AEDataloader.code(): AEDataloader
+    NpaDataloader.code(): NpaDataloader
 }
 
 

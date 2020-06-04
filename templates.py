@@ -64,7 +64,6 @@ def set_template(args):
         # dataset
         #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-        args.min_hist_len = 6
 
         # preprosessing
         args.n_users = 10000
@@ -156,6 +155,69 @@ def set_template(args):
         args.lower_case = False
         args.cuda_launch_blocking=True
 
+    elif args.template.startswith('train_npa'):
+        # NPA model trained with pseudo categorical prediction
+        args.mode = 'train'
+        args.local = True
+
+        # dataset
+        #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
+        args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
+        #args.min_hist_len = 8
+
+        # preprosessing
+        args.n_users = 10000
+        args.use_article_content = True
+        args.incl_time_stamp = False
+        # args.pt_news_encoder = 'rnd'
+        # args.fix_pt_art_emb_fix = True
+        # args.pd_vocab = True
+
+        args.max_hist_len = 50
+        args.max_article_len = 30
+        args.dim_art_emb = 400
+
+        # split strategy
+        args.split = 'time_threshold'
+
+        # dataloader
+        args.dataloader_code = 'npa'
+        batch = 128 if not args.local else 10
+        args.train_batch_size = batch
+        args.val_batch_size = batch
+        args.test_batch_size = batch
+        #args.eval_method = 'last_as_target'
+
+        # negative sampling
+        args.train_negative_sampler_code = 'random'
+        args.train_negative_sample_size = 5
+        args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
+        args.test_negative_sampler_code = 'random'
+        args.test_negative_sample_size = 9
+        args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
+
+        # training
+        args.trainer_code = 'npa'
+        args.device = 'cuda' if not args.local else 'cpu'
+        # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        args.train_method = 'npa'
+
+        args.num_gpu = 1
+        args.device_idx = '0'
+        args.optimizer = 'Adam'
+        args.lr = 0.001
+        args.enable_lr_schedule = False
+        # args.decay_step = 25
+        # args.gamma = 1.0
+
+        args.num_epochs = 50 if args.dataset_code == 'DPG_nov19' else 100
+        args.metric_ks = [5, 10]
+        args.best_metric = 'NDCG@10'
+
+        # model
+        args.model_code = 'vanilla_npa'
+        args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
+
 
     set_up_gpu(args)
 
@@ -166,7 +228,6 @@ def set_args_bert_pcp(args):
 
     # dataset
     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-    args.min_hist_len = 8
 
     # preprosessing
     args.n_users = 10000

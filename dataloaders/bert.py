@@ -22,7 +22,12 @@ class BertDataloader(AbstractDataloader):
 
         self.split_method = args.split
         self.multiple_eval_items = args.split == "time_threshold"
-        self.valid_items = self.get_valid_items()
+        
+        data = dataset.load_dataset()
+        if 'valid_items' in data:
+            self.valid_items = list(data['valid_items'])
+        else:
+            self.valid_items = self.get_valid_items()
 
         ####################
         # Negative Sampling
@@ -80,7 +85,10 @@ class BertDataloader(AbstractDataloader):
 
     def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
         # sample negative instances for each user
-
+        """
+        param: seq_lengths (dict): how many separate neg samples do we need for this user?
+            E.g. if seq_length[u_id] = 20, we generate 'neg_sample_size' samples for each of the 20 sequence positions
+        """
         if False:
             # use time-sensitive set for neg sampling
             raise NotImplementedError()

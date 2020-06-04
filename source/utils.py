@@ -212,6 +212,7 @@ def save_config_as_json(config, res_path : Path):
         json.dump(config, fout, sort_keys=True, indent=4)
 
 def save_exp_name_label(config, res_path : Path, exp_name : str):
+    # Currently un-used [03.06] -> consider removing
 
     #exp_name.json
     # 'lbl_short' : wu-sin-42

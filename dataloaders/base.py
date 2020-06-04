@@ -7,16 +7,17 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.args = args
 
         self.save_folder = dataset._get_preprocessed_folder_path()
-        dataset = dataset.load_dataset()
-        self.train = dataset['train']
-        self.val = dataset['val']
-        self.test = dataset['test']
-        self.umap = dataset['umap'] # mapping from u_id to index
-        self.smap = dataset['smap'] # mapping from item_id to index
+        data = dataset.load_dataset()
+        self.train = data['train']
+        self.val = data['val']
+        self.test = data['test']
+        self.umap = data['umap'] # mapping from u_id to index
+        self.smap = data['smap'] # mapping from item_id to index
 
-        if dataset['rnd'] is not None:
+
+        if data['rnd'] is not None:
             # re-use Random obj
-            self.rnd = dataset['rnd']
+            self.rnd = data['rnd']
         else:
             # instantiate new Random obj
             seed = args.dataloader_random_seed
@@ -36,6 +37,7 @@ class AbstractDataloader(metaclass=ABCMeta):
             assert args.n_articles == self.item_count
         else:
             args.n_articles = self.item_count
+            #args.num_items = self.item_count
 
 
     @classmethod
@@ -43,7 +45,6 @@ class AbstractDataloader(metaclass=ABCMeta):
     def code(cls):
         pass
 
-    @abstractmethod
     def get_pytorch_dataloaders(self):
         train_loader = self._get_train_loader()
         val_loader = self._get_val_loader()

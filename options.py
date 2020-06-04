@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='local_bert_pcp', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp'])
+parser.add_argument('--template', type=str, default='train_npa', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp', 'train_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -42,7 +42,7 @@ parser.add_argument('--min_counts_for_vocab', type=int, default=2, help='Include
 parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max number of words in the vocabulary')
 parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
 parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
-parser.add_argument('--min_test_len', type=int, default=1, help='minimum number of articles in test interval')
+parser.add_argument('--min_test_len', type=int, default=2, help='minimum number of articles in test interval')
 
 parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")
 parser.add_argument('--precompute_art_emb', type=bool, default=False, help="Precompute article embeddings in preprocessing step and use fixed embeddings for training")

@@ -20,7 +20,7 @@ class NpaTrainer(ExtendedTrainer):
     def calculate_loss(self, batch):
 
         cat_labels = batch['lbls']
-        self.model.set_train_mode(True)
+        #self.model.set_train_mode(True)
         # forward pass
         logits = self.model(**batch['input']) # L x N_c
 
@@ -47,10 +47,10 @@ class NpaTrainer(ExtendedTrainer):
 
     def calculate_metrics(self, batch):
 
-        input = batch['input'].items()
+        #hist, cands, u_idx = batch['input']
         lbls = batch['lbls']
-        self.model.set_train_mode(False)
-        logits = self.model(None, **batch['input']) # (L x N_c)
+
+        logits = self.model(**batch['input']) # (L x N_c)
 
         scores = nn.functional.softmax(logits, dim=1)
 

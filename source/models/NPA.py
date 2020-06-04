@@ -37,8 +37,6 @@ class NpaBaseModel(NewsRecBaseModel):
         # if available, load pre-trained token embeddings
         token_embedding = get_token_embeddings(args)
 
-        self.user_id_embeddings = nn.Embedding(args.n_users, args.dim_u_id_emb)
-
         news_encoder = NpaCNN(n_filters=args.dim_art_emb, word_emb_dim=args.dim_word_emb,
                                     dim_pref_q=args.dim_pref_query, dropout_p=args.npa_dropout)
 
@@ -47,6 +45,8 @@ class NpaBaseModel(NewsRecBaseModel):
         prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
 
         super(NpaBaseModel, self).__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
+
+        self.user_id_embeddings = nn.Embedding(args.n_users, args.dim_u_id_emb)
 
         # preference queries
         self.pref_q_word = PrefQueryWu(self.d_pref_q, args.dim_u_id_emb)
@@ -62,7 +62,7 @@ class NpaBaseModel(NewsRecBaseModel):
     def code(cls):
         return 'npa'
 
-    def forward(self, user_index, brows_hist_as_ids, candidates_as_ids):
+    def forward(self, **kwargs):
         """
         Descr:
             Encode articles from reading history. Articles are usually represented as sequenes of word IDs
@@ -80,13 +80,17 @@ class NpaBaseModel(NewsRecBaseModel):
 
         """
 
-        brows_hist_reps = self.encode_news(user_index, brows_hist_as_ids) # encode browsing history
+        u_idx = kwargs['u_idx']
+        read_hist = kwargs['hist']
+        candidates = kwargs['cands']
+
+        brows_hist_reps = self.encode_news(u_idx, read_hist) # encode browsing history
         self.brows_hist_reps = brows_hist_reps
 
-        candidate_reps = self.encode_news(user_index, candidates_as_ids) # encode candidate articles
+        candidate_reps = self.encode_news(u_idx, candidates) # encode candidate articles
         self.candidate_reps = candidate_reps
 
-        user_rep = self.create_user_rep(user_index, brows_hist_reps) # create user representation
+        user_rep = self.create_user_rep(u_idx, brows_hist_reps) # create user representation
 
         raw_scores = self.prediction_layer(user_rep, candidate_reps) # compute raw click score
         self.click_scores = raw_scores
@@ -96,13 +100,13 @@ class NpaBaseModel(NewsRecBaseModel):
         return raw_scores
 
 
-    def encode_news(self, user_id, news_articles_as_ids):
+    def encode_news(self, u_idx, articles):
 
         # (B x hist_len x art_len) -> (vocab_len x emb_dim_word)
         # => (B x hist_len x art_len x emb_dim_word)
-        emb_news = self.word_embeddings(news_articles_as_ids) # assert dtype == 'long'
+        emb_news = self.token_embedding(articles) # assert dtype == 'long'
 
-        pref_q_word = self.pref_q_word(self.user_id_embeddings(user_id))
+        pref_q_word = self.pref_q_word(self.user_id_embeddings(u_idx))
 
         encoded_articles = self.news_encoder(emb_news, pref_q_word)
 
