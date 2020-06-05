@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=npa_vanilla
 #SBATCH -n 8
-#SBATCH -t 6:00:00
-#SBATCH -p gpu_shared
+#SBATCH -t 1:00:00
+#SBATCH -p gpu_short
 #SBATCH --mem=60000M
 
 
