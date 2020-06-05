@@ -158,24 +158,20 @@ def set_template(args):
     elif args.template.startswith('train_npa'):
         # NPA model trained with pseudo categorical prediction
         args.mode = 'train'
-        args.local = True
+        #args.local = True
+        args.cuda_launch_blocking = True
 
         # dataset
-        #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-        #args.min_hist_len = 8
 
         # preprosessing
         args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
-        # args.pt_news_encoder = 'rnd'
-        # args.fix_pt_art_emb_fix = True
-        # args.pd_vocab = True
 
-        args.max_hist_len = 50
-        args.max_article_len = 30
-        args.dim_art_emb = 400
+        args.max_hist_len = 50 if args.max_hist_len is not None else args.max_hist_len
+        args.max_article_len = 30 if args.max_article_len is not None else args.max_article_len
+        args.dim_art_emb = 400 if args.dim_art_emb is not None else args.dim_art_emb
 
         # split strategy
         args.split = 'time_threshold'
@@ -186,7 +182,7 @@ def set_template(args):
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
-        #args.eval_method = 'last_as_target'
+
 
         # negative sampling
         args.train_negative_sampler_code = 'random'
@@ -198,19 +194,18 @@ def set_template(args):
 
         # training
         args.trainer_code = 'npa'
-        args.device = 'cuda' if not args.local else 'cpu'
-        # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        args.device = 'cuda' #if not args.local else 'cpu'
         args.train_method = 'npa'
 
         args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
-        args.lr = 0.001
+        #args.lr = 0.001
         args.enable_lr_schedule = False
         # args.decay_step = 25
         # args.gamma = 1.0
 
-        args.num_epochs = 50 if args.dataset_code == 'DPG_nov19' else 100
+        args.num_epochs = 50 if args.num_epochs is None else args.num_epochs
         args.metric_ks = [5, 10]
         args.best_metric = 'NDCG@10'
 

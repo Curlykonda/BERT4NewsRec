@@ -58,7 +58,7 @@ class NpaNewsEncoder(nn.Module):
 
         self.news_encoder = NpaCNN(dim_articles, dim_pref_q, dim_word_emb, kernel_size, dropout_p)
         self.user_id_embeddings = nn.Embedding(n_users, self.d_u_id)
-        self.pref_q_word = PrefQueryWu(self.d_pref, self.d_u_id)
+        self.pref_q_word = PrefQueryWu(self.d_u_id, self.d_pref)
 
     def forward(self, embedd_words, u_id):
         u_id_emb = self.user_id_embeddings(u_id)
@@ -88,11 +88,15 @@ class NpaCNN(nn.Module):
 
     def forward(self, embedded_news, pref_query):
         contextual_rep = []
-        # embedded_news.shape = (B x L_art x D_we)
+        # (B x L_art x D_we)
         embedded_news = self.dropout_in(embedded_news)
-        # encode each browsed news article and concatenate
 
-        return self.pers_attn_word(self.cnn_encoder(embedded_news.unsqueeze(1)).squeeze(-1), pref_query)
+        # contextualise words
+        # (B x L_art x D_we) -> (B x D_art x L_art)
+        cnn_out = self.cnn_encoder(embedded_news.unsqueeze(1)).squeeze(-1)
+
+        # -> (B x D_art)
+        return self.pers_attn_word(cnn_out, pref_query)
 
         # for n_news in range(embedded_news.shape[1]):
         #

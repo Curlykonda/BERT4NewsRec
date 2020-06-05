@@ -49,8 +49,8 @@ class NpaBaseModel(NewsRecBaseModel):
         self.user_id_embeddings = nn.Embedding(args.n_users, args.dim_u_id_emb)
 
         # preference queries
-        self.pref_q_word = PrefQueryWu(self.d_pref_q, args.dim_u_id_emb)
-        self.pref_q_article = PrefQueryWu(self.d_pref_q, args.dim_u_id_emb)
+        self.pref_q_word = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q, )
+        self.pref_q_article = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q, )
 
         #representations
         self.user_rep = None
@@ -80,9 +80,9 @@ class NpaBaseModel(NewsRecBaseModel):
 
         """
 
-        u_idx = kwargs['u_idx']
-        read_hist = kwargs['hist']
-        candidates = kwargs['cands']
+        u_idx = kwargs['u_idx'][:, 0] # (B x 1)
+        read_hist = kwargs['hist'] # (B x L_hist x L_art)
+        candidates = kwargs['cands'] # (B x N_c x L_art)
 
         brows_hist_reps = self.encode_news(u_idx, read_hist) # encode browsing history
         self.brows_hist_reps = brows_hist_reps
@@ -95,32 +95,40 @@ class NpaBaseModel(NewsRecBaseModel):
         raw_scores = self.prediction_layer(user_rep, candidate_reps) # compute raw click score
         self.click_scores = raw_scores
 
-        #self.get_representation_shapes()
-
+        # (B x N_c)
         return raw_scores
 
+    def encode_hist(self, u_idx, hist):
+        pass
+
+    def encode_candidates(self, u_idx, cands):
+        pass
 
     def encode_news(self, u_idx, articles):
 
         # (B x hist_len x art_len) -> (vocab_len x emb_dim_word)
-        # => (B x hist_len x art_len x emb_dim_word)
+        # => (B x L_hist x L_art x D_we)
         emb_news = self.token_embedding(articles) # assert dtype == 'long'
 
-        pref_q_word = self.pref_q_word(self.user_id_embeddings(u_idx))
+        # (B x 1) -> (B x D_u) -> (B x D_q)
+        pref_query = self.pref_q_word(self.user_id_embeddings(u_idx))
 
-        encoded_articles = self.news_encoder(emb_news, pref_q_word)
+        # -> (B x D_article x L_hist)
+        encoded_arts = []
+        for x_i in torch.unbind(emb_news, dim=1):
+            encoded_arts.append(self.news_encoder(x_i, pref_query))
 
-        return encoded_articles
+        encoded_arts = torch.stack(encoded_arts, dim=2)
+
+        # -> (B x D_art x L_hist)
+        return encoded_arts
 
     def create_user_rep(self, user_id, encoded_brows_hist):
 
-        pref_q_article = self.pref_q_article(self.user_id_embeddings(user_id))
+        pref_query = self.pref_q_article(self.user_id_embeddings(user_id))
 
-        if self.interest_extractor is not None:
-            in_shape = encoded_brows_hist.shape
-            encoded_brows_hist = torch.stack(self.interest_extractor(encoded_brows_hist), dim=2)
-
-        self.user_rep = self.user_encoder(encoded_brows_hist, pref_q_article)
+        # (B x D_art x L_hist) & (B x D_q) -> (B x D_art)
+        self.user_rep = self.user_encoder(encoded_brows_hist, pref_query)
 
         return self.user_rep
 

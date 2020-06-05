@@ -6,7 +6,7 @@ class PrefQueryWu(nn.Module):
     Given an embedded user id, create a preference query vector (that is used in personalised attention)
 
     '''
-    def __init__(self, dim_pref_query=200, dim_emb_u_id=50, activation='relu', device='cpu'):
+    def __init__(self, dim_emb_u_id=50, dim_pref_query=200, activation='relu', device='cpu'):
         super(PrefQueryWu, self).__init__()
 
         self.dim_pref_query = dim_pref_query

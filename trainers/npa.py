@@ -19,29 +19,29 @@ class NpaTrainer(ExtendedTrainer):
 
     def calculate_loss(self, batch):
 
-        cat_labels = batch['lbls']
-        #self.model.set_train_mode(True)
+        lbls = batch['lbls']
         # forward pass
-        logits = self.model(**batch['input']) # L x N_c
+        logits = self.model(**batch['input']) # (L x N_c)
 
         # categorical labels indicate which candidate is the correct one C = [0, N_c]
         # for positions where label is unequal -1
-        lbls = cat_labels[cat_labels != -1]
+        #lbls = cat_labels[cat_labels != -1]
 
         # calculate a separate loss for each class label per observation and sum the result.
-        loss = self.ce(logits, lbls)
+        loss = self.ce(logits, lbls.argmax(dim=1))
 
         ### calc metrics ###
-        # one-hot encode lbls
-        enc = OneHotEncoder(sparse=False)
-        enc.fit(np.array(range(logits.shape[1])).reshape(-1, 1))
-        oh_lbls = torch.LongTensor(enc.transform(lbls.cpu().reshape(len(lbls), 1)))
-        scores = nn.functional.softmax(logits, dim=1)
+        # # one-hot encode lbls
+        # enc = OneHotEncoder(sparse=False)
+        # enc.fit(np.array(range(logits.shape[1])).reshape(-1, 1))
+        # oh_lbls = torch.LongTensor(enc.transform(lbls.cpu().reshape(len(lbls), 1)))
 
+        # softmax probabilities
+        scores = nn.functional.softmax(logits, dim=1)
         scores = scores.cpu().detach()
 
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, oh_lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, oh_lbls))
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls.cpu(), self.metric_ks)
+        metrics.update(calc_auc_and_mrr(scores, lbls.cpu()))
 
         return loss, metrics
 

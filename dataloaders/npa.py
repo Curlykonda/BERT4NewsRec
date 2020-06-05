@@ -212,18 +212,15 @@ class NpaTrainDataset(data_utils.Dataset):
         return len(self.idx2instance)
 
     def __getitem__(self, index):
-        # generate model input
-        u_idx, hist, target = self.idx2instance[index]
-
-        # retrieve neg samples
-        neg_samples = self.train_neg_samples[index]
+        # retrieve prepped data
+        u_idx, hist, target, neg_samples = self.idx2instance[index]
 
         return self.gen_train_instance(u_idx, hist, target, neg_samples)
 
     def gen_train_instance(self, u_idx, hist, target, neg_samples):
 
         # shuffle candidates
-        candidates = target + neg_samples
+        candidates = [target] + neg_samples
         self.rnd.shuffle(candidates)
         # construct labels
         labels = [0] * len(candidates)
@@ -237,7 +234,7 @@ class NpaTrainDataset(data_utils.Dataset):
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
                        max_article_len=(self.max_article_len if self.art2words is not None else None))
 
-        #labels = pad_seq(labels, pad_token=0, max_hist_len=self.max_hist_len)
+        # labels = pad_seq(labels, pad_token=0, max_hist_len=self.max_hist_len)
 
         assert len(hist) == self.max_hist_len
 
@@ -245,7 +242,7 @@ class NpaTrainDataset(data_utils.Dataset):
 
         inp = {'hist': torch.LongTensor(hist), 'cands': torch.LongTensor(candidates)}
 
-        if self.w_time_stamps:
+        if self.w_time_stamp:
             # len_time_vec = len(time_stamps[0])
             # time_stamps = pad_seq(time_stamps, pad_token=0,
             #                       max_hist_len=self.max_hist_len, n=len_time_vec)
@@ -253,7 +250,8 @@ class NpaTrainDataset(data_utils.Dataset):
             raise NotImplementedError()
 
         if u_idx is not None:
-            inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len)  # need tensors of equal lenght for collate function
+            inp['u_idx'] = torch.LongTensor([u_idx] * self.max_hist_len)
+            # need tensors of equal length for collate function
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
 

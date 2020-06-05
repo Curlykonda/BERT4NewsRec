@@ -388,10 +388,8 @@ def preprocess_dpg_news_file(news_file, language, min_counts_for_vocab=2, max_ar
     vocab_raw = Counter({'PAD': 999999})
 
     for art_id in article_ids:
-        if "snippet" in article_ids[art_id]:
-            text = article_ids[art_id]["snippet"]
-        else:
-            text = article_ids[art_id]['text'][:max_article_len+10]
+
+        text = article_ids[art_id]['text'][:max_article_len+10]
 
         tokens = word_tokenize(text.lower(), language=language) if lower_case \
             else word_tokenize(text, language=language)

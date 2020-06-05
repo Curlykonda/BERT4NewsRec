@@ -409,7 +409,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                                                                                language=self.args.language,
                                                                                min_counts_for_vocab=self.args.min_counts_for_vocab,
                                                                                max_article_len=self.args.max_article_len,
-                                                                               max_vocab_size=self.args.max_vocab_size)
+                                                                               max_vocab_size=self.args.max_vocab_size,
+                                                                               lower_case=self.args.lower_case)
                 self.art_idx2word_ids = news_as_word_ids
                 self.vocab = vocab
 
