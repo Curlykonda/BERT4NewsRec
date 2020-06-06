@@ -32,10 +32,9 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
             elif isinstance(self.train[user][0], tuple):
                 # TE case (art_id, [time_vector])
                 seen = set(x[0] for x in self.train[user])
-                seen.update(x for x in self.val[user][0])
-                seen.update(x for x in self.val[user][1])
-                seen.update(x for x in self.test[user][0])
-                seen.update(x for x in self.test[user][1])
+                seen.update(x[0] for x in self.val[user])
+                seen.update(x[0] for x in self.test[user])
+
             else:
                 seen = set(self.train[user])
                 seen.update(self.val[user])
