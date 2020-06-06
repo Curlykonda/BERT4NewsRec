@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_te
 #SBATCH -n 8
-#SBATCH -t 08:00:00
+#SBATCH -t 12:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -42,6 +42,7 @@ do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
+  --num_epochs=100 --bert_num_blocks=2 --max_hist_len=100 \
   --max_article_len=$art_len --bert_feature_method $method $N \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cuda" \
   --experiment_description $exp_descr $TE s$SEED
@@ -49,12 +50,11 @@ do
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-  --num_epochs=50 --bert_num_blocks=1 --bert_max_len=50 \
+  --num_epochs=50 --bert_num_blocks=1 --max_hist_len=50 \
   --max_article_len=$art_len --bert_feature_method $method $N \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
   --experiment_description $exp_descr $TE s$SEED
 
   done
 done
-wait
 
