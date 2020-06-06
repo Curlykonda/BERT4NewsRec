@@ -2,7 +2,8 @@ import os
 from abc import ABCMeta, abstractmethod
 
 import torch
-
+import json
+from collections import defaultdict
 
 def save_state_dict(state_dict, path, filename):
     torch.save(state_dict, os.path.join(path, filename))
@@ -12,6 +13,13 @@ class LoggerService(object):
     def __init__(self, train_loggers=None, val_loggers=None):
         self.train_loggers = train_loggers if train_loggers else []
         self.val_loggers = val_loggers if val_loggers else []
+
+        self.train_keys = [log.key for log in self.train_loggers]
+        self.val_keys = [log.key for log in self.val_loggers if isinstance(log, MetricGraphPrinter)]
+
+        self.metrics = {'train': defaultdict(list),
+                        'val': defaultdict(list),
+                        'test': defaultdict(list)}
 
     def complete(self, log_data):
         for logger in self.train_loggers:
@@ -23,9 +31,25 @@ class LoggerService(object):
         for logger in self.train_loggers:
             logger.log(**log_data)
 
+        for k, v in log_data.items():
+            if k in self.train_keys:
+                self.metrics['train'][k].append(v)
+
     def log_val(self, log_data):
         for logger in self.val_loggers:
             logger.log(**log_data)
+
+        for k, v in log_data.items():
+            if k in self.val_keys:
+                self.metrics['val'][k].append(v)
+
+    def log_test(self, log_data):
+        for k, v in log_data.items():
+            self.metrics['test'][k] = v
+
+    def save_metric_dicts(self, export_path=None):
+        with open(os.path.join(export_path, 'logs', 'metrics.json'), 'w') as f:
+            json.dump(self.metrics, f, indent=4)
 
 
 class AbstractBaseLogger(metaclass=ABCMeta):
@@ -85,9 +109,9 @@ class MetricGraphPrinter(AbstractBaseLogger):
 
     def log(self, *args, **kwargs):
         if self.key in kwargs:
-            self.writer.add_scalar(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['accum_iter'])
+            self.writer.add_scalar(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['epoch'])
         else:
-            self.writer.add_scalar(self.group_name + '/' + self.graph_label, 0, kwargs['accum_iter'])
+            self.writer.add_scalar(self.group_name + '/' + self.graph_label, 0, kwargs['epoch'])
 
     def complete(self, *args, **kwargs):
         self.writer.close()

@@ -25,7 +25,8 @@ class BertDataloader(AbstractDataloader):
         
         data = dataset.load_dataset()
         if 'valid_items' in data:
-            self.valid_items = list(data['valid_items'])
+            self.valid_items = data['valid_items']
+            # list(data['valid_items'])
         else:
             self.valid_items = self.get_valid_items()
 

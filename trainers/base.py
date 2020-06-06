@@ -1,6 +1,6 @@
 from loggers import *
 from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
-from utils import AverageMeterSet
+from utils import AverageMeterSet, get_hyper_params
 
 import torch
 import torch.nn as nn
@@ -67,7 +67,7 @@ class AbstractTrainer(metaclass=ABCMeta):
 
     def train(self):
         accum_iter = 0
-        self.validate(0, accum_iter)
+        #self.validate(0, accum_iter)
         print("\n > Start training")
         t0 = time.time()
         for epoch in range(self.num_epochs):
@@ -79,10 +79,10 @@ class AbstractTrainer(metaclass=ABCMeta):
             t3 = time.time()
             print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
 
-        self.logger_service.complete({
-            'state_dict': (self._create_state_dict()),
-        })
-        self.writer.close()
+        self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": accum_iter})
+        self.logger_service.complete({'state_dict': (self._create_state_dict()),})
+
+        #self.writer.close()
         print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
 
     def train_one_epoch(self, epoch, accum_iter):
@@ -111,19 +111,21 @@ class AbstractTrainer(metaclass=ABCMeta):
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
-            if self._needs_to_log(accum_iter):
-                tqdm_dataloader.set_description('Logging to Tensorboard')
-                log_data = {
-                    'state_dict': (self._create_state_dict()),
-                    'epoch': epoch+1,
-                    'accum_iter': accum_iter,
-                }
-                log_data.update(average_meter_set.averages())
-                self.log_extra_train_info(log_data)
-                self.logger_service.log_train(log_data)
+            #if self._needs_to_log(accum_iter):
+
 
             if self.args.local and batch_idx == 20:
                 break
+
+        tqdm_dataloader.set_description('Logging to Tensorboard')
+        log_data = {
+            'state_dict': (self._create_state_dict()),
+            'epoch': epoch + 1,
+            'accum_iter': accum_iter,
+        }
+        log_data.update(average_meter_set.averages())
+        self.log_extra_train_info(log_data)
+        self.logger_service.log_train(log_data)
 
         # adapt learning rate
         if self.args.enable_lr_schedule:
@@ -160,8 +162,13 @@ class AbstractTrainer(metaclass=ABCMeta):
         average_meter_set = self.eval_one_epoch(self.test_loader)
 
         average_metrics = average_meter_set.averages()
+
+        self.logger_service.log_test(average_metrics)
+        self.logger_service.save_metric_dicts(self.export_root)
+
         with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
             json.dump(average_metrics, f, indent=4)
+
         print(average_metrics)
         print("\n")
         print(self.export_root)
@@ -303,20 +310,22 @@ class ExtendedTrainer(AbstractTrainer):
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
-            if self._needs_to_log(accum_iter):
-                tqdm_dataloader.set_description('Logging to Tensorboard')
-                log_data = {
-                    'state_dict': (self._create_state_dict()),
-                    'epoch': epoch+1,
-                    'accum_iter': accum_iter,
-                }
-                log_data.update(average_meter_set.averages())
-                self.log_extra_train_info(log_data)
-                self.logger_service.log_train(log_data)
+            #if self._needs_to_log(accum_iter):
+
 
             # break condition for local debugging
             if self.args.local and batch_idx == 20:
                 break
+
+        tqdm_dataloader.set_description('Logging to Tensorboard')
+        log_data = {
+            'state_dict': (self._create_state_dict()),
+            'epoch': epoch + 1,
+            'accum_iter': accum_iter,
+        }
+        log_data.update(average_meter_set.averages())
+        self.log_extra_train_info(log_data)
+        self.logger_service.log_train(log_data)
 
         # adapt learning rate
         if self.args.enable_lr_schedule:

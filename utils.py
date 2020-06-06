@@ -13,6 +13,21 @@ import torch.backends.cudnn as cudnn
 from torch import optim as optim
 
 
+def get_hyper_params(args):
+    params = {}
+    for k, v in vars(args).items():
+        if v is None:
+            continue
+
+        if isinstance(v, list):
+            v = " ".join(str(v))
+        elif isinstance(v, Path):
+            v = str(v)
+
+        params[k] = v
+
+    return params
+
 def setup_train(args):
 
     export_root = create_experiment_export_folder(args)
