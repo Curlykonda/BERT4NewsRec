@@ -17,14 +17,14 @@ python --version
 #data=("../Data/DPG_nov19/medium_time_split_most_common/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 #pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
-art_len=(30 128)
+art_len=(30)
 SEEDS=(113 42)
 
 d_art=400
 
 lr=0.001
 #decay_step=25
-batch=64
+batch=128
 
 exp_descr="npa_vanilla"
 
