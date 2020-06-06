@@ -14,7 +14,7 @@ class BertDataloader(AbstractDataloader):
         super().__init__(args, dataset)
 
         args.num_items = len(self.smap)
-        self.max_hist_len = args.bert_max_len
+        self.max_hist_len = args.max_hist_len
         self.mask_prob = args.bert_mask_prob
 
         self.mask_token = self.item_count + 1

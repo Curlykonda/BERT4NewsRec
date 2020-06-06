@@ -41,7 +41,7 @@ parser.add_argument('--min_hist_len', type=int, default=8, help='Only keep users
 parser.add_argument('--min_counts_for_vocab', type=int, default=2, help='Include word in vocabulary with this minimal occurrences')
 parser.add_argument('--max_vocab_size', type=int, default=30000, help='Max number of words in the vocabulary')
 parser.add_argument('--max_article_len', type=int, default=30, help='Max number of words per article')
-parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
+parser.add_argument('--max_hist_len', type=int, default=100, help='max number of articles in reading history')
 parser.add_argument('--min_test_len', type=int, default=2, help='minimum number of articles in test interval')
 
 parser.add_argument('--use_article_content', type=bool, default=False, help="Indicate whether to create contextualised article embeddings or randomly initialised ones")

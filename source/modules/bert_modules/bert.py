@@ -12,7 +12,7 @@ class BERT(nn.Module):
         #fix_random_seed_as(args.model_init_seed)
         # self.init_weights()
 
-        max_len = args.bert_max_len
+        max_len = args.max_hist_len
         num_items = args.num_items
         n_layers = args.bert_num_blocks
         heads = args.bert_num_heads

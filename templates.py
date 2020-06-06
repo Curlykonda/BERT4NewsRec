@@ -56,75 +56,73 @@ def set_template(args):
     elif args.template.startswith('train_bert_pcp'):
         set_args_bert_pcp(args)
 
-    elif args.template.startswith('train_bert_nie'):
-        # Bert4News with the Next-Item Embedding objective
-        args.mode = 'train'
-        args.local = True
+    # elif args.template.startswith('train_bert_nie'):
+    #     # Bert4News with the Next-Item Embedding objective
+    #     args.mode = 'train'
+    #     args.local = True
+    #
+    #     # dataset
+    #     #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
+    #     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
+    #
+    #     # preprosessing
+    #     args.n_users = 10000
+    #     args.use_article_content = True
+    #     args.incl_time_stamp = False
+    #     args.pt_news_encoder = 'rnd'
+    #     args.fix_pt_art_emb_fix = True
+    #     args.pd_vocab = True
+    #
+    #     args.max_article_len = 128
+    #     args.dim_art_emb = 256
+    #
+    #     # split strategy
+    #     args.split = 'time_threshold'
+    #
+    #     # dataloader
+    #     args.dataloader_code = 'bert_news'
+    #     batch = 128 if not args.local else 10
+    #     args.train_batch_size = batch
+    #     args.val_batch_size = batch
+    #     args.test_batch_size = batch
+    #     args.eval_method = 'last_as_target'
+    #
+    #     # negative sampling
+    #     args.train_negative_sampler_code = 'random'
+    #     args.train_negative_sample_size = 5
+    #     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
+    #     args.test_negative_sampler_code = 'random'
+    #     args.test_negative_sample_size = 99
+    #     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
+    #
+    #     # training
+    #     args.trainer_code = 'bert_news_dist'
+    #     args.device = 'cuda' if not args.local else 'cpu'
+    #     # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #     args.train_method = 'masked_item'
+    #
+    #     args.num_gpu = 1
+    #     args.device_idx = '0'
+    #     args.optimizer = 'Adam'
+    #     args.lr = 0.001
+    #     args.enable_lr_schedule = True
+    #     args.decay_step = 25
+    #     args.gamma = 1.0
+    #
+    #     args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+    #     args.metric_ks = [5, 10, 50]
+    #     args.best_metric = 'NDCG@10'
+    #
+    #     # model
+    #     args.model_code = 'bert4nie'
+    #     args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
+    #
+    #     args.bert_dropout = 0.1
+    #     args.bert_hidden_units = 256
+    #     args.bert_mask_prob = 0.15
 
-        # dataset
-        #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-        args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-
-        # preprosessing
-        args.n_users = 10000
-        args.use_article_content = True
-        args.incl_time_stamp = False
-        args.pt_news_encoder = 'rnd'
-        args.fix_pt_art_emb_fix = True
-        args.pd_vocab = True
-
-        args.max_article_len = 128
-        args.dim_art_emb = 256
-
-        # split strategy
-        args.split = 'time_threshold'
-
-        # dataloader
-        args.dataloader_code = 'bert_news'
-        batch = 128 if not args.local else 10
-        args.train_batch_size = batch
-        args.val_batch_size = batch
-        args.test_batch_size = batch
-        args.eval_method = 'last_as_target'
-
-        # negative sampling
-        args.train_negative_sampler_code = 'random'
-        args.train_negative_sample_size = 5
-        args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
-        args.test_negative_sampler_code = 'random'
-        args.test_negative_sample_size = 99
-        args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
-
-        # training
-        args.trainer_code = 'bert_news_dist'
-        args.device = 'cuda' if not args.local else 'cpu'
-        # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        args.train_method = 'masked_item'
-
-        args.num_gpu = 1
-        args.device_idx = '0'
-        args.optimizer = 'Adam'
-        args.lr = 0.001
-        args.enable_lr_schedule = True
-        args.decay_step = 25
-        args.gamma = 1.0
-
-        args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
-        args.metric_ks = [5, 10, 50]
-        args.best_metric = 'NDCG@10'
-
-        # model
-        args.model_code = 'bert4nie'
-        args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
-
-        args.bert_dropout = 0.1
-        args.bert_hidden_units = 256
-        args.bert_mask_prob = 0.15
-        args.bert_max_len = 100
-        args.bert_num_blocks = 2
-        args.bert_num_heads = 4
-
-        #assert args.bert_max_len == args.max_article_len
+    #     args.bert_num_blocks = 2
+    #     args.bert_num_heads = 4
 
     elif args.template.startswith("local_bert_pcp"):
         args.local = True
@@ -279,7 +277,6 @@ def set_args_bert_pcp(args):
     args.bert_dropout = 0.1
     args.bert_hidden_units = args.dim_art_emb
     args.bert_mask_prob = 0.15
-    args.bert_max_len = 100 if args.bert_max_len is None else args.bert_max_len
     args.bert_num_blocks = 2 if args.bert_num_blocks is None else args.bert_num_blocks
     args.bert_num_heads = 4 if args.bert_num_heads is None else args.bert_num_heads
 
