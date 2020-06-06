@@ -146,8 +146,8 @@ def set_template(args):
         args.incl_time_stamp = False
 
         # args.temp_embs = 'lte'
-        # # args.temp_embs_hidden_units = [256, 768]
-        # # args.temp_embs_act_func = "relu"
+        # args.temp_embs_hidden_units = [256, 768]
+        # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
 
         args.lower_case = False

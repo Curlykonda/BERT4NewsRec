@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='local_bert_pcp', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp', 'train_npa'])
+parser.add_argument('--template', type=str, default='train_npa', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp', 'train_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################

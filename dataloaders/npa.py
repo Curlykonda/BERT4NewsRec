@@ -177,7 +177,7 @@ class NpaDataloader(AbstractDataloader):
         # sample negative instances for each user
 
         # use item set for simple neg sampling
-        negative_sampler = negative_sampler_factory(mode, code, self.train, self.val, self.test,
+        negative_sampler = negative_sampler_factory(self.args.train_method, mode, code, self.train, self.val, self.test,
                                                     self.user_count, item_set, neg_sample_size,
                                                     seed, seq_lengths, self.save_folder)
         return negative_sampler

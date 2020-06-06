@@ -5,7 +5,7 @@ import random
 
 
 class AbstractNegativeSampler(metaclass=ABCMeta):
-    def __init__(self, mode, train, val, test, user_count, item_set, sample_size, seed, seq_lengths, save_folder):
+    def __init__(self, train_method, mode, train, val, test, user_count, item_set, sample_size, seed, seq_lengths, save_folder):
         self.train = train
         self.val = val
         self.test = test
@@ -19,6 +19,7 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
         random.seed(self.seed)
 
         self.save_folder = save_folder
+        self.train_method = train_method
 
     @classmethod
     @abstractmethod

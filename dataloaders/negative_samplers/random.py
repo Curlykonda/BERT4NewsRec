@@ -20,7 +20,7 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         print('Sampling negative items')
         for user in trange(self.user_count):
             # determine the items already seen by the user
-            if isinstance(self.train[user][0], tuple):
+            if "npa" == self.train_method and isinstance(self.train[user][0], tuple):
                 #train (dict(list)): {u_idx: [([hist1], target1), .. ([histN], targetN])}
                 #test (dict(list)): {u_idx: ([hist], [targets])}
                 seen = set(list(itertools.chain(*[hist for (hist, tgt) in self.train[user]])))
@@ -28,17 +28,14 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
                 seen.update(x for x in self.val[user][1])
                 seen.update(x for x in self.test[user][0])
                 seen.update(x for x in self.test[user][1])
-                # seen = set(x[0] for x in self.train[user])
-                # seen.update(x[0] for x in self.val[user])
-                # seen.update(x[0] for x in self.test[user])
-            # elif isinstance(self.train[user][0], tuple):
-            #     #train (dict(list)): {u_idx: [([hist1], target1), .. ([histN], targetN])}
-            #     #test (dict(list)): {u_idx: ([hist], [targets])}
-            #     seen = set(x[0] for x in self.train[user])
-            #     seen.update(x for x in self.val[user][0])
-            #     seen.update(x for x in self.val[user][1])
-            #     seen.update(x for x in self.test[user][0])
-            #     seen.update(x for x in self.test[user][1])
+
+            elif isinstance(self.train[user][0], tuple):
+                # TE case (art_id, [time_vector])
+                seen = set(x[0] for x in self.train[user])
+                seen.update(x for x in self.val[user][0])
+                seen.update(x for x in self.val[user][1])
+                seen.update(x for x in self.test[user][0])
+                seen.update(x for x in self.test[user][1])
             else:
                 seen = set(self.train[user])
                 seen.update(self.val[user])
