@@ -195,3 +195,4 @@ experiments/
 /BertModelsPT/
 /pc_article_embeddings/*
 /pc_word_embeddings/*
+/logs/
