@@ -22,6 +22,7 @@ class AbstractDatasetDPG(AbstractDataset):
         super(AbstractDatasetDPG, self).__init__(args)
         self.args = args
         self.min_hist_len = self.args.min_hist_len
+
         self.use_content = args.use_article_content
         self.pt_news_encoder = args.pt_news_encoder
         self.w_time_stamp = args.incl_time_stamp
@@ -48,8 +49,8 @@ class AbstractDatasetDPG(AbstractDataset):
 
     def _get_preprocessed_folder_path(self):
         preprocessed_root = self._get_preprocessed_root_path()
-        folder_name = '{}-{}-min_len{}-{}-nenc_{}-time{}' \
-            .format(self.code(), self.args.dataloader_code, self.min_hist_len, self.split, self.pt_news_encoder, int(self.w_time_stamp))
+        folder_name = '{}-{}-artl{}-histl{}-nenc_{}-time{}' \
+            .format(self.code(), self.args.dataloader_code, self.args.max_article_len, self.args.max_hist_len, self.pt_news_encoder, int(self.w_time_stamp))
         return preprocessed_root.joinpath(folder_name)
 
     def load_dataset(self):
