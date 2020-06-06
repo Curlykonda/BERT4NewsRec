@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=npa_vanilla
-#SBATCH -n 8
+#SBATCH -n 4
 #SBATCH -t 1:00:00
 #SBATCH -p gpu_short
 #SBATCH --mem=60000M
@@ -39,7 +39,7 @@ do
   --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
   --num_epochs=100 \
   --max_article_len=$LEN \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
+  --lr $lr --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
   --experiment_description $exp_descr l$LEN s$SEED
 
   done
