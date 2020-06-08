@@ -38,7 +38,7 @@ def set_template(args):
         args.enable_lr_schedule = True
         args.decay_step = 25
         args.gamma = 1.0
-        # num_epochs = 100
+
         args.num_epochs = 10 if args.dataset_code == 'ml-1m' else 200
         args.metric_ks = [1, 5, 10, 20, 50, 100]
         args.best_metric = 'NDCG@10'
@@ -109,7 +109,7 @@ def set_template(args):
     #     args.decay_step = 25
     #     args.gamma = 1.0
     #
-    #     args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+
     #     args.metric_ks = [5, 10, 50]
     #     args.best_metric = 'NDCG@10'
     #
@@ -265,7 +265,7 @@ def set_args_bert_pcp(args):
     args.enable_lr_schedule = True
     args.decay_step = 25 if args.decay_step is None else args.decay_step
     args.gamma = 0.1
-    #args.num_epochs = 100 if args.dataset_code == 'DPG_nov19' else 100
+
     # evaluation
     args.metric_ks = [5, 10]
     args.best_metric = 'NDCG@10'

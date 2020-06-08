@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_vanilla
-#SBATCH -n 4
-#SBATCH -t 08:00:00
+#SBATCH -n 8
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -37,7 +37,7 @@ do
     #1
   python -u main.py --template train_npa --model_init_seed=$SEED \
   --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
-  --num_epochs=100 --max_article_len=$LEN \
+  --num_epochs=50 --max_article_len=$LEN \
   --lr $lr --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
   --experiment_description $exp_descr l$LEN s$SEED
   done

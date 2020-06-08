@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_te
 #SBATCH -n 8
-#SBATCH -t 12:00:00
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -28,7 +28,7 @@ N=0
 d_model=768
 t_act_func="relu"
 
-lr=0.002
+lr=0.001
 decay_step=25
 exp_descr="pcp"
 
@@ -39,21 +39,34 @@ do
   echo "$SEED"
   for TE in "${TEMP_EMBS[@]}"
   do
+   #1
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
   --num_epochs=100 --bert_num_blocks=2 --max_hist_len=100 \
   --max_article_len=$art_len --bert_feature_method $method $N \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cuda" \
-  --experiment_description $exp_descr $TE s$SEED
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $TE l$art_len s$SEED
 
+  echo "bert block = 1"
+   #2
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-  --num_epochs=100 --bert_num_blocks=3 --max_hist_len=100 \
+  --num_epochs=100 --bert_num_blocks=1 --max_hist_len=100 \
   --max_article_len=$art_len --bert_feature_method $method $N \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $TE s$SEED
+  --experiment_description $exp_descr $TE l$art_len s$SEED
+
+  echo "hist len 50"
+   #2
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
+  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+  --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
+  --num_epochs=100 --bert_num_blocks=2 --max_hist_len=50 \
+  --max_article_len=$art_len --bert_feature_method $method $N \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $TE l$art_len s$SEED
 
   done
 done

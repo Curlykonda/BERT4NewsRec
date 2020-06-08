@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe
 #SBATCH -n 8
-#SBATCH -t 10:00:00
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -27,7 +27,7 @@ N=0
 
 nie="lin"
 #LR=(0.01, 0.001, 0.0001)
-lr=0.002
+lr=0.001
 decay_step=25
 
 exp_descr="pcp"
@@ -43,19 +43,29 @@ do
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
   --num_epochs=100 --bert_num_blocks=2 --max_hist_len=100 \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cuda" \
-  --experiment_description $exp_descr $POS s$SEED
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $POS l$art_len s$SEED
 
+  echo "bert block 1"
     #2
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
-  --num_epochs=100 --bert_num_blocks=3 --max_hist_len=100 \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --device="cuda" \
-  --experiment_description $exp_descr $POS s$SEED
+  --num_epochs=100 --bert_num_blocks=1 --max_hist_len=100 \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $POS l$art_len s$SEED
+
+  echo "hist len 50"
+    #2
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
+  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+  --pos_embs=$POS --max_article_len=$art_len --bert_feature_method $method $N --nie_layer $nie \
+  --num_epochs=100 --bert_num_blocks=2 --max_hist_len=50 \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $POS l$art_len s$SEED
 
   done
 done
-wait
+
 
 
