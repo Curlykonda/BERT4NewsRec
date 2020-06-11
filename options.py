@@ -76,11 +76,11 @@ parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'rando
 ################
 parser.add_argument('--train_negative_sampler_code', type=str, default='random', choices=['popular', 'random'],
                     help='Method to sample negative items for training. Not used in bert')
-parser.add_argument('--train_negative_sample_size', type=int, default=100)
+parser.add_argument('--train_negative_sample_size', type=int, default=None)
 parser.add_argument('--train_negative_sampling_seed', type=int, default=None)
 parser.add_argument('--test_negative_sampler_code', type=str, default='random', choices=['popular', 'random'],
                     help='Method to sample negative items for evaluation')
-parser.add_argument('--test_negative_sample_size', type=int, default=100)
+parser.add_argument('--test_negative_sample_size', type=int, default=None)
 parser.add_argument('--test_negative_sampling_seed', type=int, default=None)
 
 ################

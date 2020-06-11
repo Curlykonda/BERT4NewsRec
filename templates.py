@@ -180,14 +180,15 @@ def set_template(args):
         args.train_batch_size = batch
         args.val_batch_size = batch
         args.test_batch_size = batch
-
+        args.dataloader_random_seed = args.model_init_seed
 
         # negative sampling
         args.train_negative_sampler_code = 'random'
-        args.train_negative_sample_size = 5
+        args.train_negative_sample_size = 5 if args.train_negative_sample_size is None else args.train_negative_sample_size
         args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
+
         args.test_negative_sampler_code = 'random'
-        args.test_negative_sample_size = 9
+        args.test_negative_sample_size = 9 if args.test_negative_sample_size is None else args.test_negative_sample_size
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
         # training
@@ -205,7 +206,7 @@ def set_template(args):
 
         args.num_epochs = 50 if args.num_epochs is None else args.num_epochs
         args.metric_ks = [5, 10]
-        args.best_metric = 'NDCG@10'
+        args.best_metric = 'AUC'
 
         # model
         args.model_code = 'vanilla_npa'
@@ -223,7 +224,7 @@ def set_args_bert_pcp(args):
     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
 
     # preprosessing
-    args.n_users = 10000
+    #args.n_users = 10000
     args.use_article_content = True
 
     if 'BERTje' == args.pt_news_encoder:
@@ -245,13 +246,15 @@ def set_args_bert_pcp(args):
     args.train_batch_size = batch
     args.val_batch_size = batch
     args.test_batch_size = batch
+    args.dataloader_random_seed = args.model_init_seed
 
     # negative sampling
     args.train_negative_sampler_code = 'random'
-    args.train_negative_sample_size = 5
+    args.train_negative_sample_size = 5 if args.train_negative_sample_size is None else args.train_negative_sample_size
     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
+
     args.test_negative_sampler_code = 'random'
-    args.test_negative_sample_size = 9
+    args.test_negative_sample_size = 9 if args.test_negative_sample_size is None else args.test_negative_sample_size
     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  # 98765
 
     # training
@@ -268,7 +271,7 @@ def set_args_bert_pcp(args):
 
     # evaluation
     args.metric_ks = [5, 10]
-    args.best_metric = 'NDCG@10'
+    args.best_metric = 'AUC'
 
     # model
     args.model_code = 'bert4news'
