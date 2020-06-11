@@ -125,15 +125,16 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
             # remove unknown articles from reading history
             if remove_unk_arts:
                 history = []
+                time_stamps = []
                 # check if article ID is present in our set of valid IDs
                 for entry in user['articles_read']:
                     if len(entry) == 3: ## december 19 data has 3 fields for each interaction
-                        _, art_id, time_stamp = entry
+                        _, art_id, ts = entry
 
                     elif len(entry) == 5: ## november 19 data has 5
                         art_id, ts = entry[-2:]
                         # convert time_stamp to UNIX
-                        time_stamp = time_stamp2unix(ts)
+                        ts = time_stamp2unix(ts)
 
 
                     if art_id not in valid_item_ids:
@@ -142,21 +143,25 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
                         # if replace_with_unk:
                         #     entry[1] = unk_art_id
                         #     history.append(entry)
+                    elif art_id in history:
+                        # remove duplicate reads
+                        pass
                     else:
                         if test_time_thresh is not None:
                             if 'articles_train' not in user.keys():
                                 user['articles_train'] = []
                                 user['articles_test'] = []
 
-                            if time_stamp < test_time_thresh:
-                                user['articles_train'].append([art_id, time_stamp])
+                            if ts < test_time_thresh:
+                                user['articles_train'].append([art_id, ts])
                             else:
-                                user['articles_test'].append([art_id, time_stamp])
+                                user['articles_test'].append([art_id, ts])
 
-                        history.append([art_id, time_stamp])
+                        history.append(art_id)
+                        time_stamps.append(ts)
                         c_articles_raw.update([art_id])
 
-                user['articles_read'] = history
+                user['articles_read'] = list(zip(history, time_stamps))
 
             # evaluate length reading history
             if len(user['articles_read']) >= min_hist_len \
@@ -442,7 +447,7 @@ if __name__ == "__main__":
     parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
     parser.add_argument('--size', type=str, default='medium', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
-    parser.add_argument('--n_users', type=int, default=2000, help='number of users')
+    parser.add_argument('--n_users', type=int, default=20000, help='number of users')
     parser.add_argument('--ratio_user_items', type=int, default=USER_ITEM_RATIO, help='ratio of user to items, e.g. 1 : 10')
 
     #parser.add_argument('--vocab_size', type=int, default=30000, help='vocab')
@@ -453,7 +458,7 @@ if __name__ == "__main__":
     parser.add_argument('--news_len', type=int, default=30, help='number of words from news body')
     parser.add_argument('--min_hist_len', type=int, default=8, help='minimum number of articles in reading history')
     parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
-    parser.add_argument('--min_test_len', type=int, default=1, help='minimum number of articles in test interval')
+    parser.add_argument('--min_test_len', type=int, default=2, help='minimum number of articles in test interval')
 
 
     config = parser.parse_args()
