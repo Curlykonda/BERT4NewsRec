@@ -551,8 +551,8 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
             os.makedirs(bert_export_path)
 
         if feature_method is None:
-            print('No BERTje method specified, using default "last_cls"')
-            methods = [('last_cls', 0), ('sum_last_n', 4)]
+            print('No BERTje method specified, using default "cls_sum_last_n"')
+            methods = [('last_cls', 0), ('cls_sum_last_n', 4)]
             feature_method = methods[1]
         else:
             if not isinstance(feature_method, list):

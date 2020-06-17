@@ -53,7 +53,7 @@ class BertFeatureExtractor():
         self.bert_model.resize_token_embeddings(len(self.bert_tokenizer))
         self.bert_model.to(self.device)
 
-        self._feat_methods = ['pooled_out', 'last_cls', 'pool_all_last', 'pool_cls_n', 'pool_last_n', 'sum_last_n',
+        self._feat_methods = ['pooled_out', 'last_cls', 'pool_all_last', 'pool_cls_n', 'pool_last_n', 'cls_sum_last_n', 'sum_last_n',
                               'sum_all']
         self._naive_feat_methods = ['naive_mean', 'naive_sum']
 
@@ -119,7 +119,7 @@ class BertFeatureExtractor():
         elif 'pool_last_n' == method and n_layers:
             # average embeddings of last N hidden modules of all tokens
             x_out = torch.mean(torch.cat(hidden_outs[-n_layers:], dim=1), dim=1)
-        elif 'cls_sum_last_n'== method and n_layers:
+        elif 'cls_sum_last_n' == method and n_layers:
             # sum embeddings of last N layers of CLS token
             x_out = torch.sum(torch.cat([hidden[:, 0, :].unsqueeze(1) for hidden
                                          in hidden_outs[-n_layers:]], dim=1), dim=1)
