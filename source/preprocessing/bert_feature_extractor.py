@@ -113,11 +113,17 @@ class BertFeatureExtractor():
             # average embeddings of last hidden layer of all tokens
             x_out = torch.mean(last_hidden, dim=1)
         elif 'pool_cls_n' == method and n_layers:
+            # average of last N layers for CLS token
             x_out = torch.mean(torch.cat([hidden[:, 0, :].unsqueeze(1) for hidden in hidden_outs[-n_layers:]], dim=1),
                                dim=1)
         elif 'pool_last_n' == method and n_layers:
             # average embeddings of last N hidden modules of all tokens
             x_out = torch.mean(torch.cat(hidden_outs[-n_layers:], dim=1), dim=1)
+        elif 'cls_sum_last_n'== method and n_layers:
+            # sum embeddings of last N layers of CLS token
+            x_out = torch.sum(torch.cat([hidden[:, 0, :].unsqueeze(1) for hidden
+                                         in hidden_outs[-n_layers:]], dim=1), dim=1)
+            # sum last four hidden => 95.9 F1 on dev set for NER
         elif 'sum_last_n' == method and n_layers:
             # sum embeddings of last N hidden modules of all tokens
             x_out = torch.sum(torch.cat(hidden_outs[-n_layers:], dim=1), dim=1)
