@@ -36,7 +36,7 @@ def compute_bert_embeddings(data_path, path_to_pt_model, feature_method, max_art
     print("encode news articles ...")
 
     if feature_method is None:
-        print('No BERTje method specified, using default "last_cls"')
+        print('No BERTje method specified, using defaults "last_cls" and "cls_sum_last_n"')
         methods = [('last_cls', None), ('cls_sum_last_n', 4)]
         feature_method = methods[1]
     else:

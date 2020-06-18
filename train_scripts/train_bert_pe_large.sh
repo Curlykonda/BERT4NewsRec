@@ -14,7 +14,7 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("../Data/DPG_nov19/medium_time_split_most_common/")
+data=("../Data/DPG_nov19/large_time_split_most_common/")
 #embeddings="../embeddings/cc.nl.300.bin"
 pt_news_enc="BERTje"
 pt_news_enc_path = "./BertModelsPT/bert-base-dutch-cased"
@@ -30,7 +30,6 @@ nie="lin"
 lr=0.001
 decay_step=25
 
-exp_descr="medium"
 
 echo "$data"
 echo "$SEED"
@@ -45,7 +44,7 @@ do
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+  --experiment_description large $POS al$art_len k$K s$SEED
   done
 
 #      #2

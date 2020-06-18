@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=npa_vanilla
+#SBATCH --job-name=npa
 #SBATCH -n 8
 #SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
@@ -14,32 +14,29 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-#data=("../Data/DPG_nov19/medium_time_split_most_common/")
+data=("../Data/DPG_nov19/medium_time_split_most_common/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 #pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
-art_len=(30)
-SEEDS=(113 42)
+art_len=(30 128)
+SEED=$SLURM_ARRAY_TASK_ID
 
 d_art=400
 
 lr=0.001
 #decay_step=25
-batch=128
 
-exp_descr="npa_vanilla"
+exp_descr="npa"
 
 echo "$datapath"
-for SEED in "${SEEDS[@]}"
+
+echo "$SEED"
+for LEN in "${art_len[@]}"
 do
-  echo "$SEED"
-  for LEN in "${art_len[@]}"
-  do
     #1
-  python -u main.py --template train_npa --model_init_seed=$SEED \
+  python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
   --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
-  --num_epochs=50 --max_article_len=$LEN \
-  --lr $lr --cuda_launch_blocking=1 --train_batch_size=$batch --device="cuda" \
+  --num_epochs=100 --max_article_len=$LEN \
+  --lr $lr --cuda_launch_blocking=1 \
   --experiment_description $exp_descr l$LEN s$SEED
-  done
 done
 
