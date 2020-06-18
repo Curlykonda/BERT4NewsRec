@@ -129,27 +129,28 @@ def set_template(args):
         args.device = 'cuda'
         args.num_epochs = 10
 
-        args.log_period_as_iter=20
+        args.log_period_as_iter=200
 
-        # args.pt_news_encoder = 'BERTje'
+        args.pt_news_encoder = 'BERTje'
         # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         # args.language = "dutch"
 
-        args.bert_num_blocks = 2
+        #args.bert_num_blocks = 2
         set_args_bert_pcp(args)
 
-        args.news_encoder = "wucnn"
-        args.dim_art_emb = 400
-        set_args_npa_cnn(args)
+        # args.news_encoder = "wucnn"
+        # args.dim_art_emb = 400
+        # set_args_npa_cnn(args)
 
         args.max_article_len = 30
-        # args.pos_embs = 'tpe'
-        # args.incl_time_stamp = False
 
-        args.temp_embs = 'nte'
-        args.temp_embs_hidden_units = [256, args.dim_art_emb]
-        args.temp_embs_act_func = "relu"
-        args.incl_time_stamp = True
+        args.pos_embs = 'tpe'
+        args.incl_time_stamp = False
+
+        # args.temp_embs = 'nte'
+        # args.temp_embs_hidden_units = [256, args.dim_art_emb]
+        # args.temp_embs_act_func = "relu"
+        # args.incl_time_stamp = True
 
         args.lower_case = False
         args.cuda_launch_blocking=True

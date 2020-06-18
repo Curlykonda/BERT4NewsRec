@@ -183,7 +183,10 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
     def __init__(self, args):
         super(DPG_Nov19Dataset, self).__init__(args)
 
-        self.sampledata_folder_path = "./Data/DPG_nov19/medium_time_split_n_rnd_users"
+        if args.dataset_path is not None:
+            self.data_dir_path = args.dataset_path #"./Data/DPG_nov19/medium_time_split_n_rnd_users"
+        else:
+            raise ValueError("Need path to dataset folder! None was given")
 
     @classmethod
     def code(cls):

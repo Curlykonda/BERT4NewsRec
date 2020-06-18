@@ -26,6 +26,7 @@ parser.add_argument('--test_model_path', type=str, default=None)
 # Dataset
 ################
 parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DATASETS.keys())
+parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/medium_time_split_n_rnd_users")
 
 ## MovieLens
 parser.add_argument('--min_rating', type=int, default=None, help='Only keep ratings greater than equal to this value')
@@ -65,7 +66,7 @@ parser.add_argument('--language', type=str, default=None, choices=['dutch'])
 ################
 parser.add_argument('--dataloader_code', type=str, default='bert', choices=DATALOADERS.keys())
 parser.add_argument('--dataloader_random_seed', type=float, default=0.0)
-parser.add_argument('--train_batch_size', type=int, default=128)
+parser.add_argument('--train_batch_size', type=int, default=100)
 parser.add_argument('--val_batch_size', type=int, default=64)
 parser.add_argument('--test_batch_size', type=int, default=64)
 parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'random_as_target'])
@@ -104,15 +105,16 @@ parser.add_argument('--gamma', type=float, default=0.1, help='Gamma for StepLR')
 # epochs #
 parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs for training') #100
 # logger #
-parser.add_argument('--log_period_as_iter', type=int, default=1280)
+parser.add_argument('--log_period_as_iter', type=int, default=10000)
 # evaluation #
 parser.add_argument('--metric_ks', nargs='+', type=int, default=[10, 20, 50], help='ks for Metric@k')
-parser.add_argument('--best_metric', type=str, default='NDCG@10', help='Metric for determining the best model')
+parser.add_argument('--best_metric', type=str, default='AUC', help='Metric for determining the best model')
+
 # Finding optimal beta for VAE #
-parser.add_argument('--find_best_beta', type=bool, default=False, 
-                    help='If set True, the trainer will anneal beta all the way up to 1.0 and find the best beta')
-parser.add_argument('--total_anneal_steps', type=int, default=2000, help='The step number when beta reaches 1.0')
-parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit of increasing beta. Set this as the best beta found')
+# parser.add_argument('--find_best_beta', type=bool, default=False,
+#                     help='If set True, the trainer will anneal beta all the way up to 1.0 and find the best beta')
+# parser.add_argument('--total_anneal_steps', type=int, default=2000, help='The step number when beta reaches 1.0')
+# parser.add_argument('--anneal_cap', type=float, default=0.2, help='Upper limit of increasing beta. Set this as the best beta found')
 
 ################
 # Pretrained Embeddings
@@ -124,7 +126,7 @@ parser.add_argument('--pt_art_emb_path', type=str, default=None, help='Path to p
 parser.add_argument('--dim_art_emb', type=int, default=300, help='Dimension of word embedding vectors')
 
 parser.add_argument('--rel_pc_art_emb_path', type=str, default=None, help='Path to relevant precomputed article embeddings')
-parser.add_argument('--bert_feature_method', type=str, default=['last_cls', '0'], nargs=2, help='Method for BERT-based article embs')
+parser.add_argument('--bert_feature_method', type=str, default=None, nargs=2, help='Method for BERT-based article embs')
 
 
 ################
