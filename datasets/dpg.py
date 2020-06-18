@@ -36,6 +36,11 @@ class AbstractDatasetDPG(AbstractDataset):
         self.art_embs = None
         self.valid_items = {'train': None, 'test': None}
 
+        if args.dataset_path is not None:
+            self.data_dir_path = args.dataset_path #"./Data/DPG_nov19/medium_time_split_n_rnd_users"
+        else:
+            raise ValueError("Need path to dataset folder! None was given")
+
     @property
     def sample_method(self):
         return self.args.data_sample_method
@@ -135,7 +140,7 @@ class AbstractDatasetDPG(AbstractDataset):
         return user_data
 
     def _get_sampledata_folder_path(self):
-        return Path(self.sampledata_folder_path)
+        return Path(self.data_dir_path)
 
     def sample_dpg_data(self):
         m = self.sample_method
