@@ -51,6 +51,10 @@ class LoggerService(object):
         with open(os.path.join(export_path, 'logs', 'metrics.json'), 'w') as f:
             json.dump(self.metrics, f, indent=4)
 
+    def get_metrics_at_epoch(self, epoch):
+        return_str = []
+        pass
+
 
 class AbstractBaseLogger(metaclass=ABCMeta):
     @abstractmethod

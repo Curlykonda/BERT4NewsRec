@@ -79,6 +79,11 @@ class AbstractTrainer(metaclass=ABCMeta):
             t3 = time.time()
             print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
 
+            if self._reached_max_iterations(accum_iter):
+                break
+
+        print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch, self.num_epochs))
+
         self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": accum_iter})
         self.logger_service.complete({'state_dict': (self._create_state_dict()),})
 
@@ -266,6 +271,21 @@ class AbstractTrainer(metaclass=ABCMeta):
     def _needs_to_log(self, accum_iter):
         return accum_iter % self.log_period_as_iter < self.args.train_batch_size and accum_iter != 0
 
+    def _reached_max_iterations(self, accum_iter):
+        return (self.num_epochs * self.log_period_as_iter) <= accum_iter
+
+    def print_final(self):
+
+        # get relevant hyper params
+
+        # get loss & metrics at certain epochs
+
+        # get test metrics
+
+        # print string
+
+        pass
+
 
 class ExtendedTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
@@ -310,22 +330,24 @@ class ExtendedTrainer(AbstractTrainer):
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
-            #if self._needs_to_log(accum_iter):
+            if self._needs_to_log(accum_iter):
+                tqdm_dataloader.set_description('Logging to Tensorboard')
+                log_data = {
+                    'state_dict': (self._create_state_dict()),
+                    'epoch': epoch + 1,
+                    'accum_iter': accum_iter,
+                }
+                log_data.update(average_meter_set.averages())
+                self.log_extra_train_info(log_data)
+                self.logger_service.log_train(log_data)
+
+                if self._reached_max_iterations(accum_iter):
+                    return accum_iter
 
 
             # break condition for local debugging
-            if self.args.local and batch_idx == 20:
+            if self.args.local and batch_idx > 20:
                 break
-
-        tqdm_dataloader.set_description('Logging to Tensorboard')
-        log_data = {
-            'state_dict': (self._create_state_dict()),
-            'epoch': epoch + 1,
-            'accum_iter': accum_iter,
-        }
-        log_data.update(average_meter_set.averages())
-        self.log_extra_train_info(log_data)
-        self.logger_service.log_train(log_data)
 
         # adapt learning rate
         if self.args.enable_lr_schedule:
