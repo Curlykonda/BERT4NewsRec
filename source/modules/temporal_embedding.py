@@ -52,7 +52,7 @@ class NeuralFunc(nn.Module):
     def __init__(self, d_in, d_model, hidden_units=[256, 768], act_func="relu"):
         super(NeuralFunc, self).__init__()
 
-        assert d_model == hidden_units[-1], "Last layer with {} units must match embedding dimension {}".format(hidden_units[-1], d_model)
+        assert d_model == hidden_units[-1], "Last Temp. Emb. layer with {} units must match embedding dimension {}".format(hidden_units[-1], d_model)
 
         self.lin_layers = nn.ModuleList()
 

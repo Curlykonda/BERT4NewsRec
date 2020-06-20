@@ -193,6 +193,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         else:
             raise ValueError("Need path to dataset folder! None was given")
 
+        self.size = self._get_dataset_size()
+
     @classmethod
     def code(cls):
         return 'DPG_nov19'
@@ -201,6 +203,20 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
     def all_raw_file_names(cls):
         return ['items',
                 'users']
+
+    def _get_dataset_size(self):
+        sizes = ["medium", "large"]
+        for s in sizes:
+            if s in self.data_dir_path:
+                return s
+
+        raise NotImplementedError("Dataset size not found")
+
+    def _get_preprocessed_folder_path(self):
+        preprocessed_root = self._get_preprocessed_root_path()
+        folder_name = '{}_{}-{}-artl{}-histl{}-nenc_{}-time{}' \
+            .format(self.code(), self.size, self.args.dataloader_code, self.args.max_article_len, self.args.max_hist_len, self.pt_news_encoder, int(self.w_time_stamp))
+        return preprocessed_root.joinpath(folder_name)
 
     def sample_dpg_data(self):
         m = self.sample_method

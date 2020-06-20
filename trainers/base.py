@@ -144,9 +144,7 @@ class AbstractTrainer(metaclass=ABCMeta):
     def validate(self, epoch, accum_iter):
         self.model.eval()
 
-        #average_meter_set = AverageMeterSet()
-
-        average_meter_set = self.eval_one_epoch(self.val_loader)
+        average_meter_set = self.eval_one_epoch(self.val_loader, epoch)
 
         log_data = {
             'state_dict': (self._create_state_dict()),
@@ -196,16 +194,16 @@ class AbstractTrainer(metaclass=ABCMeta):
                 if self.args.local and batch_idx > 20:
                     break
 
-                if batch_idx % 10 == 0 and batch_idx > 0:
-                    descr = get_metric_descr(average_meter_set, self.metric_ks)
-                    tqdm_dataloader.set_description(descr)
+                # if batch_idx % 10 == 0 and batch_idx > 0:
+                #     descr = get_metric_descr(average_meter_set, self.metric_ks)
+                #     tqdm_dataloader.set_description(descr)
 
         descr = get_metric_descr(average_meter_set, self.metric_ks)
-        if epoch is not None:
-            print("\n Epoch {} avg.: {}".format(epoch+1, descr))
-        else:
-            print("\n")
-        #tqdm_dataloader.set_description(descr)
+        tqdm_dataloader.set_description(descr)
+        # if epoch is not None:
+        #     print("\n Epoch {} avg.: {}".format(epoch+1, descr))
+        # else:
+        #     print("\n")
 
         return average_meter_set
 
@@ -301,6 +299,31 @@ class ExtendedTrainer(AbstractTrainer):
     def log_extra_val_info(self, log_data):
         pass
 
+    def train(self):
+        accum_iter = 0
+        #self.validate(0, accum_iter)
+        print("\n > Start training")
+        t0 = time.time()
+        for epoch in range(self.num_epochs):
+            t1 = time.time()
+            accum_iter = self.train_one_epoch(epoch, accum_iter)
+            t2 = time.time()
+            print("> Train epoch {} in {:.3f} min".format(epoch+1, (t2-t1)/60))
+            self.validate(epoch, accum_iter)
+            t3 = time.time()
+            print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
+
+            if self._reached_max_iterations(accum_iter):
+                break
+
+        print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch, self.num_epochs))
+
+        self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": accum_iter})
+        self.logger_service.complete({'state_dict': (self._create_state_dict()),})
+
+        #self.writer.close()
+        print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
+
     def train_one_epoch(self, epoch, accum_iter):
         self.model.train()
 
@@ -341,8 +364,12 @@ class ExtendedTrainer(AbstractTrainer):
                 self.log_extra_train_info(log_data)
                 self.logger_service.log_train(log_data)
 
+                self.validate(epoch, accum_iter)
+
                 if self._reached_max_iterations(accum_iter):
                     return accum_iter
+                else:
+                    self.model.train()
 
 
             # break condition for local debugging
