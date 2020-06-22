@@ -9,7 +9,7 @@ from pathlib import Path
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--local", type=bool, default=True)
+    parser.add_argument("--local", type=int, default=1)
 
     args = parser.parse_args()
 
