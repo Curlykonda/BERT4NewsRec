@@ -33,14 +33,14 @@ COUNTER=0
 
 
 echo "$data"
-echo "$SEED"
+#echo "$SEED"
 
 for POS in "${POS_EMBS[@]}"
 do
   for K in "${neg_ratios[@]}"
   do
     #1
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
+  python -u main.py --template train_bert_pcp --model_init_seed=42 \
   --dataset_path=$data --train_negative_sample_size=$K \
   --num_epochs=5 \
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
