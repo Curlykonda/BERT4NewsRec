@@ -30,6 +30,8 @@ nie="lin"
 lr=0.001
 decay_step=25
 
+exp_descr="large"
+COUNTER=0
 
 echo "$data"
 echo "$SEED"
@@ -44,7 +46,11 @@ do
   --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
-  --experiment_description large $POS al$art_len k$K s$SEED
+  --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+
+  ((COUNTER++))
+  echo "Exp counter: $COUNTER"
+
   done
 
 #      #2

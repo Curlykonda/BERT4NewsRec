@@ -26,6 +26,7 @@ lr=0.001
 #decay_step=25
 
 exp_descr="npa"
+COUNTER=0
 
 echo "$datapath"
 
@@ -38,5 +39,7 @@ do
   --num_epochs=100 --max_article_len=$LEN \
   --lr $lr --cuda_launch_blocking=1 \
   --experiment_description $exp_descr l$LEN s$SEED
+  ((COUNTER++))
+  echo "$COUNTER"
 done
 

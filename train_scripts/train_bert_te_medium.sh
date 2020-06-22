@@ -31,8 +31,9 @@ t_act_func="relu"
 
 lr=0.001
 decay_step=25
-exp_descr="medium"
 
+exp_descr="medium"
+COUNTER=0
 
 echo "$datapath"
 
@@ -49,6 +50,8 @@ do
   --max_article_len=$art_len  --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
   --experiment_description $exp_descr $TE al$art_len k$K s$SEED
+  ((COUNTER++))
+  echo "Exp counter: $COUNTER"
   done
 done
 

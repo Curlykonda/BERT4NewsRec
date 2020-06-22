@@ -31,6 +31,7 @@ lr=0.001
 decay_step=25
 
 exp_descr="NpaCNN_medium"
+COUNTER=0
 
 echo "$data"
 
@@ -46,6 +47,10 @@ do
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
   --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch \
   --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+
+  ((COUNTER++))
+  echo "Exp counter: $COUNTER"
+
   done
 done
 

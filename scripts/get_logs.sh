@@ -1,8 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=get_logs
-#SBATCH -n 2
+#SBATCH -n 4
 #SBATCH -t 01:00:00
-#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
