@@ -308,10 +308,10 @@ class ExtendedTrainer(AbstractTrainer):
             t1 = time.time()
             accum_iter = self.train_one_epoch(epoch, accum_iter)
             t2 = time.time()
-            print("> Train epoch {} in {:.3f} min".format(epoch+1, (t2-t1)/60))
-            self.validate(epoch, accum_iter)
-            t3 = time.time()
-            print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
+            print("> Train epoch {} in {:.3f} min \n".format(epoch+1, (t2-t1)/60))
+
+            # t3 = time.time()
+            # print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
 
             if self._reached_max_iterations(accum_iter):
                 break
@@ -328,9 +328,9 @@ class ExtendedTrainer(AbstractTrainer):
         self.model.train()
 
         average_meter_set = AverageMeterSet()
-        tqdm_dataloader = tqdm(self.train_loader)
+        #tqdm_dataloader = tqdm(self.train_loader)
 
-        for batch_idx, batch in enumerate(tqdm_dataloader):
+        for batch_idx, batch in enumerate(self.train_loader):
 
             batch = self.batch_to_device(batch)
             batch_size = self.args.train_batch_size
@@ -350,11 +350,13 @@ class ExtendedTrainer(AbstractTrainer):
             for k, v in metrics_train.items():
                 average_meter_set.update(k, v)
 
-            tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
+            #tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
             if self._needs_to_log(accum_iter):
-                tqdm_dataloader.set_description('Logging to Tensorboard')
+                print('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
+                print('Logging to Tensorboard')
+                #tqdm_dataloader.set_description('Logging to Tensorboard')
                 log_data = {
                     'state_dict': (self._create_state_dict()),
                     'epoch': epoch + 1,
@@ -384,6 +386,33 @@ class ExtendedTrainer(AbstractTrainer):
 
 
         return accum_iter
+
+    def eval_one_epoch(self, eval_loader, epoch=None):
+
+        average_meter_set = AverageMeterSet()
+
+        with torch.no_grad():
+
+            for batch_idx, batch in enumerate(eval_loader):
+                batch = self.batch_to_device(batch)
+
+                metrics = self.calculate_metrics(batch)
+
+                for k, v in metrics.items():
+                    average_meter_set.update(k, v)
+
+                if self.args.local and batch_idx > 20:
+                    break
+
+                # if batch_idx % 10 == 0 and batch_idx > 0:
+                #     descr = get_metric_descr(average_meter_set, self.metric_ks)
+                #     tqdm_dataloader.set_description(descr)
+
+        descr = get_metric_descr(average_meter_set, self.metric_ks)
+        print(descr)
+
+        return average_meter_set
+
 
     def _create_loggers(self):
         root = Path(self.export_root)
