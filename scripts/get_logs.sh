@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=get_logs
 #SBATCH -n 4
-#SBATCH -t 01:00:00
+#SBATCH -t 00:05:00
 #SBATCH --mem=60000M
 
 

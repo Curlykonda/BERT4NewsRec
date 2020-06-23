@@ -14,9 +14,9 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/medium_time_split_most_common/")
+data=("./Data/DPG_nov19/medium_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
-#pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
+
 art_len=(30 128)
 SEED=$SLURM_ARRAY_TASK_ID
 
@@ -28,7 +28,7 @@ lr=0.001
 exp_descr="npa"
 COUNTER=0
 
-echo "$datapath"
+echo "$exp_descr $datapath"
 
 echo "$SEED"
 for LEN in "${art_len[@]}"
