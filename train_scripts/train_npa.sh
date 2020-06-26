@@ -35,7 +35,7 @@ for LEN in "${art_len[@]}"
 do
     #1
   python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
-  --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
+  --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
   --num_epochs=100 --max_article_len=$LEN \
   --lr $lr --cuda_launch_blocking=1 \
   --experiment_description $exp_descr l$LEN s$SEED
