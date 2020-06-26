@@ -178,10 +178,9 @@ def set_template(args):
 
         # dataloader
         args.dataloader_code = 'npa'
-        batch = 128 if not args.local else 10
-        args.train_batch_size = batch
-        args.val_batch_size = batch
-        args.test_batch_size = batch
+
+        args.val_batch_size = args.train_batch_size
+        args.test_batch_size = args.train_batch_size
         args.dataloader_random_seed = args.model_init_seed
 
         # negative sampling

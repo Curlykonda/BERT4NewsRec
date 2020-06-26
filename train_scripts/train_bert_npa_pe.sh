@@ -45,7 +45,7 @@ do
   --dataset_path=$data --train_negative_sample_size=$K \
   --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
   --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch \
+  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 \
   --experiment_description $exp_descr $POS al$art_len k$K s$SEED
 
   ((COUNTER++))
