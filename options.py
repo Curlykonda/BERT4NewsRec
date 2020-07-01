@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='local_bert_pcp', choices=['train_bert_pcp', 'train_bert_nie', 'train_bert', 'train_bert_ml', 'local_bert_pcp', 'train_npa'])
+parser.add_argument('--template', type=str, default='train_mod_npa', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -168,7 +168,7 @@ parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help
 parser.add_argument('--dim_u_id_emb', type=int, default=None, help='Dimension of embedded user ID for pers. attn.')
 parser.add_argument('--dim_pref_query', type=int, default=None, help='Dimension for User Preference Query for pers. attn.')
 parser.add_argument('--npa_dropout', type=float, default=None, help='Dropout probability to use for NPA model')
-
+parser.add_argument('--npa_variant', type=str, default='vanilla', choices=['vanilla', 'custom'])
 
 # BERT #
 parser.add_argument('--bert_max_len', type=int, default=100, help='Length of sequence for bert')

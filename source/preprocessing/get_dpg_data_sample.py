@@ -445,9 +445,9 @@ if __name__ == "__main__":
     parser.add_argument('--overwrite_existing', type=bool, default=True)
 
     parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
-    parser.add_argument('--size', type=str, default='medium', choices=["dev", "medium", "custom"], help='size of dataset')
+    parser.add_argument('--size', type=str, default='40k', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
-    parser.add_argument('--n_users', type=int, default=20000, help='number of users')
+    parser.add_argument('--n_users', type=int, default=40000, help='number of users')
     parser.add_argument('--ratio_user_items', type=int, default=USER_ITEM_RATIO, help='ratio of user to items, e.g. 1 : 10')
 
     #parser.add_argument('--vocab_size', type=int, default=30000, help='vocab')
@@ -466,11 +466,10 @@ if __name__ == "__main__":
 
     if config.size in DATA_SIZES.keys():
         n_news, n_users = DATA_SIZES[config.size]
-    elif "custom" == config.size:
+    else:
         n_users = config.n_users
         n_news = config.n_articles
-    else:
-        raise NotImplementedError()
+
 
     delim = "_"
     sample_name = config.size + delim + "time_split" + delim + config.item_sample_method

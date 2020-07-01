@@ -124,35 +124,36 @@ def set_template(args):
     #     args.bert_num_blocks = 2
     #     args.bert_num_heads = 4
 
-    elif args.template.startswith("local_bert_pcp"):
+    elif args.template.startswith("local_test"):
         args.local = True
         args.device = 'cuda'
         args.num_epochs = 10
 
         args.log_period_as_iter=200
 
-        args.pt_news_encoder = 'BERTje'
+        # args.pt_news_encoder = 'BERTje'
         # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         # args.language = "dutch"
 
         #args.bert_num_blocks = 2
-        set_args_bert_pcp(args)
+        # set_args_bert_pcp(args)
 
-        # args.news_encoder = "wucnn"
-        # args.dim_art_emb = 400
-        # set_args_npa_cnn(args)
+        args.news_encoder = "wucnn"
+        args.dim_art_emb = 400
+        set_args_npa_cnn(args)
 
-        args.max_article_len = 30
-
-        args.pos_embs = 'tpe'
-        args.incl_time_stamp = False
+        # args.max_article_len = 30
+        #
+        # args.pos_embs = 'lpe'
+        # args.incl_time_stamp = False
 
         # args.temp_embs = 'nte'
         # args.temp_embs_hidden_units = [256, args.dim_art_emb]
         # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
 
-        args.lower_case = False
+        # args.lower_case=False
+
         args.cuda_launch_blocking=True
 
     elif args.template.startswith('train_npa'):
@@ -213,6 +214,72 @@ def set_template(args):
         args.model_code = 'vanilla_npa'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
+    elif args.template.startswith('train_mod_npa'):
+        # local
+        args.local = True
+        args.device = 'cuda'
+        args.num_epochs = 10
+        args.train_batch_size = 10
+        args.log_period_as_iter=200
+
+        # Modified NPA model trained with pseudo categorical prediction
+        args.mode = 'train'
+
+        args.cuda_launch_blocking = True
+
+        # dataset
+        args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
+
+        # preprosessing
+        #args.n_users = 10000
+        args.use_article_content = True
+        args.incl_time_stamp = False
+
+        args.max_hist_len = 50 if args.max_hist_len is not None else args.max_hist_len
+        args.max_article_len = 30 if args.max_article_len is not None else args.max_article_len
+        args.dim_art_emb = 400 if args.dim_art_emb is not None else args.dim_art_emb
+
+        # split strategy
+        args.split = 'time_threshold'
+
+        # dataloader
+        args.dataloader_code = 'npa_mod'
+
+        args.val_batch_size = args.train_batch_size
+        args.test_batch_size = args.train_batch_size
+        args.dataloader_random_seed = args.model_init_seed
+
+        # negative sampling
+        args.train_negative_sampler_code = 'random'
+        args.train_negative_sample_size = 5 if args.train_negative_sample_size is None else args.train_negative_sample_size
+        args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
+
+        args.test_negative_sampler_code = 'random'
+        args.test_negative_sample_size = 9 if args.test_negative_sample_size is None else args.test_negative_sample_size
+        args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
+
+        # training
+        args.trainer_code = 'npa_mod'
+        args.device = 'cuda' #if not args.local else 'cpu'
+        args.train_method = 'cloze'
+
+        args.num_gpu = 1
+        args.device_idx = '0'
+        args.optimizer = 'Adam'
+        #args.lr = 0.001
+        args.enable_lr_schedule = False
+        # args.decay_step = 25
+        # args.gamma = 1.0
+
+        #50
+        args.num_epochs = 10 if args.num_epochs is None else args.num_epochs
+        args.metric_ks = [5, 10]
+        args.best_metric = 'AUC'
+
+        # model
+        args.model_code = 'npa_mod'
+        args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
+        args.cuda_launch_blocking = True
 
     set_up_gpu(args)
 
@@ -252,12 +319,12 @@ def set_args_bert_pcp(args):
     # negative sampling
     args.train_negative_sampler_code = 'random'
     #5
-    args.train_negative_sample_size = 20 if args.train_negative_sample_size is None else args.train_negative_sample_size
+    args.train_negative_sample_size = 24 if args.train_negative_sample_size is None else args.train_negative_sample_size
     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
     args.test_negative_sampler_code = 'random'
     # 9
-    args.test_negative_sample_size = 20 if args.test_negative_sample_size is None else args.test_negative_sample_size
+    args.test_negative_sample_size = args.train_negative_sample_size
     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  # 98765
 
     # training
