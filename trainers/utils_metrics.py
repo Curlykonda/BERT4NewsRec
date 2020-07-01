@@ -32,7 +32,7 @@ def mrr_score(scores, labels):
     scores = scores.float().cpu()
     labels = labels.float().cpu() # (B x N_c)
 
-    rank = (-scores).argsort(dim=1)
+    rank = scores.argsort(dim=1, descending=True)
     hits = labels.gather(1, rank)
     recpr_rank = hits / (torch.arange(hits.size(1)) + 1)
     mrr = torch.sum(recpr_rank) / torch.sum(hits)
@@ -70,12 +70,12 @@ def calc_recalls_and_ndcgs_for_ks(scores, labels, ks):
     """
     metrics = {}
 
-    scores = scores
-    labels = labels
+    # scores = scores
+    # labels = labels
     answer_count = labels.sum(1)
 
     labels_float = labels.float()
-    rank = (-scores).argsort(dim=1) # largest score comes first; larger means better
+    rank = scores.argsort(dim=1, descending=True) # largest score comes first; larger means better
     cut = rank
     for k in sorted(ks, reverse=True):
         if k <= scores.shape[1]:
