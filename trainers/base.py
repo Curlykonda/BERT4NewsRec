@@ -1,3 +1,6 @@
+import numpy as np
+from sklearn.preprocessing import OneHotEncoder
+
 from loggers import *
 from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
 from utils import AverageMeterSet, get_hyper_params
@@ -316,7 +319,7 @@ class ExtendedTrainer(AbstractTrainer):
             if self._reached_max_iterations(accum_iter):
                 break
 
-        print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch, self.num_epochs))
+        print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch+1, self.num_epochs))
 
         self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": accum_iter})
         self.logger_service.complete({'state_dict': (self._create_state_dict()),})
@@ -446,6 +449,14 @@ class ExtendedTrainer(AbstractTrainer):
         val_loggers.append(RecentModelLogger(model_checkpoint))
         val_loggers.append(BestModelLogger(model_checkpoint, metric_key=self.best_metric))
         return writer, train_loggers, val_loggers
+
+    def one_hot_encode_lbls(self, cat_lbls, n_classes):
+        # # one-hot encode lbls
+        enc = OneHotEncoder(sparse=False)
+        enc.fit(np.array(range(n_classes)).reshape(-1, 1))
+        oh_lbls = torch.LongTensor(enc.transform(cat_lbls.cpu().reshape(len(cat_lbls), 1)))
+
+        return oh_lbls
 
 def get_metric_descr(metric_set, metric_ks=[5, 10]):
     description_metrics = ['AUC'] + \

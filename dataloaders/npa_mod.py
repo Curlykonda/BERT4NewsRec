@@ -124,8 +124,9 @@ class NpaModDataloader(AbstractDataloader):
             idx2val_items = self.test
             neg_samples = self.test_negative_samples
 
-        dataset = NpaEvalDataset(self.train, idx2val_items, neg_samples, self.art_index2word_ids,
-                                    self.max_hist_len, self.max_article_len, self.target_prob, self.rnd)
+        # idx2val_items, neg_samples, art2words, max_hist_len, max_article_len, rnd, pad_token=0, w_time_stamp=False):
+        dataset = NpaEvalDataset(idx2val_items, neg_samples, self.art_index2word_ids,
+                                    self.max_hist_len, self.max_article_len, self.rnd)
         return dataset
 
     def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
@@ -167,6 +168,7 @@ class NpaTrainDataset(data_utils.Dataset):
         self.rnd = rnd
 
         self.w_time_stamp = w_time_stamp
+        self.n_cands = None
 
     def __len__(self):
         return len(self.idx2hist)
@@ -182,11 +184,9 @@ class NpaTrainDataset(data_utils.Dataset):
 
         hist = []
         labels = []
-
         candidates = []
         time_stamps = []
 
-        n_cands = None
         pos_irrelevant_lbl = -1  # label to indicate irrelevant position to avoid confusion with other categorical labels
 
         for idx, entry in enumerate(org_hist):
@@ -203,8 +203,8 @@ class NpaTrainDataset(data_utils.Dataset):
                 self.rnd.shuffle(cands)  # shuffle candidates so model cannot trivially guess target position
                 candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
 
-                if n_cands is None:
-                    n_cands = len(cands)
+                if self.n_cands is None:
+                    self.n_cands = len(cands)
 
                 # add categorical label [0, N_C]
                 labels.append(cands.index(art_id))
@@ -220,12 +220,14 @@ class NpaTrainDataset(data_utils.Dataset):
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
                        max_article_len=(self.max_article_len if self.art2words is not None else None))
 
-        candidates = pad_seq(candidates, self.pad_token, self.max_hist_len, n=n_cands,
+        candidates = pad_seq(candidates, self.pad_token, self.max_hist_len, n=self.n_cands,
                              max_article_len=(self.max_article_len if self.art2words is not None else None))
 
         labels = pad_seq(labels, pos_irrelevant_lbl, self.max_hist_len)
 
         assert len(hist) == self.max_hist_len
+        assert len(labels) == self.max_hist_len
+        assert len(candidates) == self.max_hist_len
 
         ### Output ####
 
@@ -245,9 +247,9 @@ class NpaTrainDataset(data_utils.Dataset):
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
 
 class NpaEvalDataset(data_utils.Dataset):
-    def __init__(self, idx2hist, idx2val_items, neg_samples, art2words, max_hist_len, max_article_len, rnd, pad_token=0, w_time_stamp=False):
-        self.idx2hist = idx2hist
-        self.idx2val_items = idx2val_items
+    def __init__(self, idx2val_items, neg_samples, art2words, max_hist_len, max_article_len, rnd, pad_token=0, w_time_stamp=False):
+        self.idx2hist = idx2val_items # contains hist + val_items
+
         self.neg_samples = neg_samples
         self.art2words = art2words
 
@@ -257,27 +259,31 @@ class NpaEvalDataset(data_utils.Dataset):
         self.rnd = rnd
 
         self.w_time_stamp = w_time_stamp
+        self.n_cands = None
 
     def __len__(self):
-        return len(self.idx2val_items)
+        return len(self.idx2hist)
 
     def __getitem__(self, u_idx):
         # generate model input
-        return self.gen_eval_instance(u_idx, self.idx2hist[u_idx], self.idx2val_items[u_idx], self.neg_samples[u_idx])
+        return self.gen_eval_instance(u_idx, self.idx2hist[u_idx], self.neg_samples[u_idx])
 
-    def gen_eval_instance(self, u_idx, hist, test_items, neg_samples):
+    def gen_eval_instance(self, u_idx, hist, neg_samples):
         # apply leave-one-out strategy
-        target = test_items.pop(-1)
+        target = hist.pop(-1)
         # shuffle candidates
-        candidates = [target] + neg_samples
+        candidates = [target] + neg_samples[-1]
         self.rnd.shuffle(candidates)
-        candidates = [art_idx2word_ids(art, self.art2words) for art in candidates] # map to words
+
+        self.n_cands = len(candidates) if self.n_cands is None else self.n_cands
+
         # construct labels
         labels = [0] * len(candidates)
         labels[candidates.index(target)] = 1
 
+        candidates = [art_idx2word_ids(art, self.art2words) for art in candidates]  # map to words
+
         # sub sample history
-        hist = hist + test_items # combine train & test items
         hist = [art_idx2word_ids(art, self.art2words) for art
                     in self.rnd.sample(hist, min(len(hist), self.max_hist_len))] # subsample & map to words
 

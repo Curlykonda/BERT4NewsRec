@@ -187,17 +187,19 @@ class NpaModModel(NpaBaseModel):
         u_idx = kwargs['u_idx'][:, 0] # (B x 1)
         read_hist = kwargs['hist'] # (B x L_hist x L_art)
         candidates = kwargs['cands'] # (B x N_c x L_art)
-        cand_mask = kwargs['lbls']
+        cand_mask = kwargs['cand_mask']
 
-        brows_hist_reps = self.encode_hist(u_idx, read_hist)  # encode browsing history
+        brows_hist_reps = self.encode_hist(u_idx, read_hist) # encode browsing history
+        # (B x D_A x L_hist)
 
-        candidate_reps = self.encode_candidates(u_idx, candidates) # encode candidate articles
+        candidate_reps = self.encode_candidates(u_idx, candidates, cand_mask) # encode candidate articles
+        # (N_T x N_C x D_A)
 
         user_rep = self.create_user_rep(u_idx, brows_hist_reps) # create user representation
 
-        logits = self.compute_scores(user_rep, candidate_reps)
+        logits = self.compute_scores(user_rep, candidate_reps, cand_mask)
 
-        # (B x N_c)
+        # (N_T x N_C)
         return logits
 
 
@@ -214,9 +216,9 @@ class NpaModModel(NpaBaseModel):
                 rel_u_idx = u_idx.unsqueeze(1).repeat(1, cand_mask.shape[1])[cand_mask != -1]
             else:
                 rel_u_idx = None
-            # select candidate subset (N_T x N_c)
+
             try:
-                #
+                # select candidate subset (N_T x N_c)
                 rel_cands = cands[cand_mask != -1]
             except:
                 print(cands.shape)
@@ -231,13 +233,36 @@ class NpaModModel(NpaBaseModel):
 
 
         # create article embeddings
-        rel_enc_cands = torch.stack([self.encode_news(x_i, rel_u_idx) for x_i
-                                     in torch.unbind(rel_cands, dim=1)], dim=2)
-
+        rel_enc_cands = self.encode_news(rel_u_idx, rel_cands)
+        # rel_enc_cands = torch.stack([self.encode_news(rel_u_idx[i], x_i) for i, x_i
+        #                              in enumerate(torch.unbind(rel_cands, dim=0))], dim=2)
+        # (N_T x D_art x N_C)
         return rel_enc_cands
 
 
         # return := (B x N_T x N_C x D_A)
 
-    def compute_scores(self, user_rep, cand_rep):
-        pass
+    def compute_scores(self, user_rep, cand_rep, cand_mask=None):
+        """
+        Given the user and candidate representation, compute unnormalised similarity scores
+        Since each history could have multiple predictions, we first repeat the required user rep
+        to form a matrix
+
+        Input:
+        cand_rep := (N_T x D_art x N_C)
+        user_rep := (B x D_user)
+        cand_mask := (B x L_hist)
+
+        """
+        if cand_mask is not None:
+            # select and repeat relevant user representations
+            # for each user-specific target we need the corresponding user rep to compute scores
+            rel_user_rep = user_rep.unsqueeze(1).repeat(1, cand_mask.shape[1], 1)[cand_mask != -1]
+            # (N_T x D_user)
+        else:
+            rel_user_rep = user_rep
+
+        raw_scores = self.prediction_layer(rel_user_rep, cand_rep)  # compute raw click score
+
+        # (N_T x N_C)
+        return raw_scores
