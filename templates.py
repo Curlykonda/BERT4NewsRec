@@ -218,7 +218,7 @@ def set_template(args):
         # local
         args.local = True
         args.device = 'cuda'
-        args.num_epochs = 10
+        args.num_epochs = 5
         args.train_batch_size = 10
         args.log_period_as_iter=200
 
