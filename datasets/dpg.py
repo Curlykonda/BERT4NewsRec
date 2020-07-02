@@ -283,7 +283,10 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                     test[u_idx] = [*list(zip(*test_items))[0]]
 
                 # add to validation sample
-                val[u_idx], test[u_idx] = self.select_rnd_item_for_validation(test[u_idx])
+                val_items, test_items = self.select_rnd_item_for_validation(test[u_idx])
+
+                val[u_idx] = train[u_idx] + val_items
+                test[u_idx] = val[u_idx] + test_items
 
             elif 'npa' == self.args.train_method:
                 # each instance consists of [u_id, hist, target]
@@ -370,11 +373,15 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         # select random portion of test items as subset for validation
         # exclude possibility to use last test interaction for validation because it's reserved for testing
         val_pos = self.rnd.choice(range(len(test_items) - 1)) if len(test_items) > 1 else None
-        coin_flip = self.rnd.random()
-        if val_pos is not None and coin_flip > (1 - self.args.validation_portion):
+        #coin_flip = self.rnd.random()
+        if val_pos is not None:
             return test_items[:val_pos], test_items[val_pos:]
         else:
-            return [], test_items
+            raise ValueError("Number of test items insufficient to creat validation instance")
+
+        # is not None and coin_flip > (1 - self.args.validation_portion):
+        # else:
+        #     return [], test_items
 
     def get_train_test_items_from_data(self, u_data):
         # split user interactions according to certain threshold timestamp
