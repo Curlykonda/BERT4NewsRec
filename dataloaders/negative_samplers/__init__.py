@@ -1,9 +1,9 @@
-from .popular import PopularNegativeSampler
+from .popular import PopularNaiveNegativeSampler
 from .random import RandomNegativeSamplerPerUser
 
 
 NEGATIVE_SAMPLERS = {
-    PopularNegativeSampler.code(): PopularNegativeSampler,
+    PopularNaiveNegativeSampler.code(): PopularNaiveNegativeSampler,
     RandomNegativeSamplerPerUser.code(): RandomNegativeSamplerPerUser,
 }
 

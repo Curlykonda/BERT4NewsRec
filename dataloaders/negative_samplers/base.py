@@ -1,4 +1,6 @@
+import itertools
 from abc import *
+from collections import Counter
 from pathlib import Path
 import pickle
 import random
@@ -17,6 +19,7 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
         self.mode = mode
         assert self.seed is not None, 'Specify seed for random sampling'
         random.seed(self.seed)
+        self.rnd = random.random()
 
         self.save_folder = save_folder
         self.train_method = train_method
@@ -50,3 +53,47 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
     @abstractmethod
     def get_naive_random_samples(self, sample_size, item_set):
         pass
+
+    def determine_seen_items(self, user):
+        # determine the items already seen by the user
+        popularity = Counter()
+        seen = set()
+        if "npa" == self.train_method and isinstance(self.train[user][0], tuple):
+            # train (dict(list)): {u_idx: [([hist1], target1), .. ([histN], targetN])}
+            # test (dict(list)): {u_idx: ([hist], [targets])}
+            chained_items = list(itertools.chain(*[hist for (hist, tgt) in self.train[user]]))
+            seen.update(chained_items)
+            popularity.update(chained_items)
+
+            for items in (self.val[user][0], self.val[user][1], self.test[user][0], self.test[user][1]):
+                chained_items = [x for x in items]
+                seen.update(chained_items)
+                popularity.update(chained_items)
+
+            # chained_items = [x for x in self.val[user][0]]
+            #
+            # seen.update(x for x in self.val[user][1])
+            # seen.update(x for x in self.test[user][0])
+            # seen.update(x for x in self.test[user][1])
+
+        elif isinstance(self.train[user][0], tuple):
+            # TE case (art_id, [time_vector])
+            for items in (self.train[user], self.val[user], self.test[user]):
+                chained_items = [x[0] for x in items]
+                seen.update(chained_items)
+                popularity.update(chained_items)
+
+            # seen = set(x[0] for x in self.train[user])
+            # seen.update(x[0] for x in self.val[user])
+            # seen.update(x[0] for x in self.test[user])
+
+        else:
+            for items in (self.train[user], self.val[user], self.test[user]):
+                seen.update(items)
+                popularity.update(items)
+            #
+            # seen = set(self.train[user])
+            # seen.update(self.val[user])
+            # seen.update(self.test[user])
+
+        return seen, popularity

@@ -1,11 +1,7 @@
 import itertools
 
 from .base import AbstractNegativeSampler
-
 from tqdm import trange
-
-import numpy as np
-import random
 
 
 class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
@@ -19,28 +15,10 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         negative_samples = {}
         print('Sampling negative items')
         for user in trange(self.user_count):
-            # determine the items already seen by the user
-            if "npa" == self.train_method and isinstance(self.train[user][0], tuple):
-                #train (dict(list)): {u_idx: [([hist1], target1), .. ([histN], targetN])}
-                #test (dict(list)): {u_idx: ([hist], [targets])}
-                seen = set(list(itertools.chain(*[hist for (hist, tgt) in self.train[user]])))
-                seen.update(x for x in self.val[user][0])
-                seen.update(x for x in self.val[user][1])
-                seen.update(x for x in self.test[user][0])
-                seen.update(x for x in self.test[user][1])
 
-            elif isinstance(self.train[user][0], tuple):
-                # TE case (art_id, [time_vector])
-                seen = set(x[0] for x in self.train[user])
-                seen.update(x[0] for x in self.val[user])
-                seen.update(x[0] for x in self.test[user])
+            seen, _ = self.determine_seen_items(user)
 
-            else:
-                seen = set(self.train[user])
-                seen.update(self.val[user])
-                seen.update(self.test[user])
-
-            # sample random unseen items from the full set
+            # sample uniform random unseen items from the full set
             # note: for 'time_split' need to separate into train and test intervals
             if self.seq_lengths is None:
                 # one set of neg samples for each user
@@ -61,9 +39,9 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
     def get_rnd_samples_for_position(self, seen):
         samples = []
         for _ in range(self.sample_size):
-            item = random.choice(self.valid_items)
+            item = self.rnd.choice(self.valid_items)
             while item in seen or item in samples:
-                item = random.choice(self.valid_items)
+                item = self.rnd.choice(self.valid_items)
             samples.append(item)
 
         return samples
@@ -72,7 +50,7 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         if sample_size is None:
             sample_size = self.sample_size
 
-        naive_sample = random.sample(item_set, sample_size)
+        naive_sample = self.rnd.sample(item_set, sample_size)
 
         return naive_sample
 
