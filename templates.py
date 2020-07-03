@@ -127,25 +127,25 @@ def set_template(args):
     elif args.template.startswith("local_test"):
         args.local = True
         args.device = 'cuda'
-        args.num_epochs = 10
+        args.num_epochs = 5
 
         args.log_period_as_iter=200
 
-        # args.pt_news_encoder = 'BERTje'
+        args.pt_news_encoder = 'BERTje'
         # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         # args.language = "dutch"
 
         #args.bert_num_blocks = 2
-        # set_args_bert_pcp(args)
+        set_args_bert_pcp(args)
 
-        args.news_encoder = "wucnn"
-        args.dim_art_emb = 400
-        set_args_npa_cnn(args)
+        # args.news_encoder = "wucnn"
+        # args.dim_art_emb = 400
+        # set_args_npa_cnn(args)
 
-        # args.max_article_len = 30
-        #
-        # args.pos_embs = 'lpe'
-        # args.incl_time_stamp = False
+        args.max_article_len = 30
+
+        args.pos_embs = 'lpe'
+        args.incl_time_stamp = False
 
         # args.temp_embs = 'nte'
         # args.temp_embs_hidden_units = [256, args.dim_art_emb]
@@ -335,9 +335,10 @@ def set_args_bert_pcp(args):
     args.device_idx = '0'
     args.optimizer = 'Adam'
     args.lr = 0.001 if args.lr is None else args.lr
-    args.enable_lr_schedule = True
-    args.decay_step = 25 if args.decay_step is None else args.decay_step
-    args.gamma = 0.1
+
+    if args.lr_schedule:
+        args.decay_step = 25 if args.decay_step is None else args.decay_step
+        args.gamma = 0.1
 
     # evaluation
     args.metric_ks = [5, 10]

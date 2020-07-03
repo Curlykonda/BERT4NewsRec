@@ -29,7 +29,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         self.val_loader = val_loader
         self.test_loader = test_loader
         self.optimizer = self._create_optimizer()
-        if args.enable_lr_schedule:
+        if args.lr_schedule:
             # Decays the learning rate of each parameter group by gamma every step_size epochs
             self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=args.decay_step, gamma=args.gamma)
 
