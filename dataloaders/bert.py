@@ -277,7 +277,6 @@ class BertTrainDataset(data_utils.Dataset):
         return torch.LongTensor(pad_seq(tokens, self.max_hist_len, pad_token=self.pad_token)), \
                torch.LongTensor(pad_seq(labels, self.max_hist_len, pad_token=self.pad_token))
 
-
 class BertEvalDataset(data_utils.Dataset):
     def __init__(self, u2seq, u2answer, max_hist_len, mask_token, neg_samples, rnd, pad_token=0, u_idx=False):
         self.u2hist = u2seq
@@ -327,8 +326,7 @@ class BertEvalDataset(data_utils.Dataset):
     def concat_ints(self, a, b):
         return str(f"{a}{b}")
 
-
-
+### NEWS ###
 class BertTrainDatasetNews(BertTrainDataset):
     def __init__(self, u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng,
                  w_time_stamps=False, w_u_id=False):
@@ -466,21 +464,21 @@ class BertTrainDatasetNews(BertTrainDataset):
 
 class BertEvalDatasetNews(BertEvalDataset):
 
-    def __init__(self, u2seq, u2answer, art2words, neg_samples, max_hist_len, max_article_len, mask_token,
+    def __init__(self, u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_token,
                  rnd, w_time_stamps=False, u_idx=False):
-        super(BertEvalDatasetNews, self).__init__(u2seq, u2answer, max_hist_len, mask_token, neg_samples, rnd, u_idx=u_idx)
+        super(BertEvalDatasetNews, self).__init__(u2seq, None, max_hist_len, mask_token, neg_samples, rnd, u_idx=u_idx)
 
         self.art2words = art2words
         self.max_article_len = max_article_len # len(next(iter(art2words.values())))
         self.eval_mask = [1] * (max_hist_len-1) + [0]  # insert mask token at the end
         self.w_time_stamps = w_time_stamps
 
-    def gen_eval_instance(self, hist, test_items, negs, u_idx=None):
+    def gen_eval_instance(self, hist, _, negs, u_idx=None):
         # hist = train + test[:-1]
         if self.w_time_stamps:
             hist, time_stamps = zip(*hist)
-            test_items, test_time_stamps = zip(*test_items)
-            time_stamps = list(time_stamps + test_time_stamps)[-self.max_hist_len:]
+            #test_items, test_time_stamps = zip(*test_items)
+            #time_stamps = list(time_stamps + test_time_stamps)[-self.max_hist_len:]
             # time vectors
             #time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
             #args.len_time_vec
@@ -492,21 +490,20 @@ class BertEvalDatasetNews(BertEvalDataset):
             time_stamps = None
             test_time_stamps = None
 
-        target = [test_items[-1]]
-        candidates = target + negs # candidates as article indices
+        target = hist[-1]
+        candidates = [target] + negs # candidates as article indices
         # shuffle to avoid trivial guessing
         self.rnd.shuffle(candidates)
         labels = [0] * len(candidates)
-        labels[candidates.index(*target)] = 1
+        labels[candidates.index(target)] = 1
 
         candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
 
         # extend train history with new test interactions
-        hist = hist + test_items[:-1]
-        hist = [art_idx2word_ids(art, self.art2words) for art in hist[-(self.max_hist_len- 1):]]
-        # append a target to history which will be masked off
-        # alternatively we could put a random item. does not really matter because it's gonna be masked off anyways
-        hist = hist + [art_idx2word_ids(*target, self.art2words)]  # predict only the next/last token in seq
+        #hist = hist + test_items[:-1]
+        hist = [art_idx2word_ids(art, self.art2words) for art in hist[-self.max_hist_len:]]
+        # note: target will be masked off by model
+        #hist = hist + [art_idx2word_ids(*target, self.art2words)]  # predict only the next/last token in seq
 
         ## apply padding
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
