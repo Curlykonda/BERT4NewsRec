@@ -166,19 +166,12 @@ class BertDataloaderNews(BertDataloader):
 
     def _get_eval_dataset(self, mode):
         if 'val' == mode:
-            test_items = {}
-            u2hist = {}
-            # filter out user without validation instance
-            for u_idx, items in self.val.items():
-                if len(items) >= 1:
-                    test_items[u_idx] = items
-                    u2hist[u_idx] = self.train[u_idx]
+            u2hist = self.val
         else:
-            test_items = self.test
-            u2hist = self.train
+            u2hist = self.test
 
         # for now, we just assume to always use 'last_as_target'
-        dataset = BertEvalDatasetNews(u2hist, test_items, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len,
+        dataset = BertEvalDatasetNews(u2hist, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len,
                                       self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id)
         return dataset
 
@@ -473,7 +466,16 @@ class BertEvalDatasetNews(BertEvalDataset):
         self.eval_mask = [1] * (max_hist_len-1) + [0]  # insert mask token at the end
         self.w_time_stamps = w_time_stamps
 
-    def gen_eval_instance(self, hist, _, negs, u_idx=None):
+    def __getitem__(self, u_idx):
+        hist = self.u2hist[u_idx]
+        negs = self.neg_samples[u_idx] # get negative samples
+
+        if not self.w_u_id:
+            u_idx = None
+        return self.gen_eval_instance(hist, negs, u_idx)
+
+
+    def gen_eval_instance(self, hist, negs, u_idx=None):
         # hist = train + test[:-1]
         if self.w_time_stamps:
             hist, time_stamps = zip(*hist)

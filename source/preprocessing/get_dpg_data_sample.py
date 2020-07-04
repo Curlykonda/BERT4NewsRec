@@ -456,8 +456,8 @@ if __name__ == "__main__":
                         help="Specify the format for the time threshold if it defiates from ISO 8601, e.g. >> 2013-09-30T15:34:00.000-07:00 <<")
 
     parser.add_argument('--news_len', type=int, default=30, help='number of words from news body')
-    parser.add_argument('--min_hist_len', type=int, default=8, help='minimum number of articles in reading history')
-    parser.add_argument('--max_hist_len', type=int, default=300, help='max number of articles in reading history')
+    parser.add_argument('--min_hist_len', type=int, default=10, help='minimum number of articles in reading history')
+    parser.add_argument('--max_hist_len', type=int, default=400, help='max number of articles in reading history')
     parser.add_argument('--min_test_len', type=int, default=2, help='minimum number of articles in test interval')
 
 

@@ -128,8 +128,8 @@ def set_template(args):
         args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
-
         args.log_period_as_iter=200
+        args.n_users = 10000
 
         args.pt_news_encoder = 'BERTje'
         # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
@@ -137,6 +137,9 @@ def set_template(args):
 
         #args.bert_num_blocks = 2
         set_args_bert_pcp(args)
+
+        args.train_negative_sampler_code = 'random_common' # random_common
+        args.test_negative_sampler_code = 'random_common'
 
         # args.news_encoder = "wucnn"
         # args.dim_art_emb = 400
@@ -166,7 +169,7 @@ def set_template(args):
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
 
         # preprosessing
-        args.n_users = 10000
+        #args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
 

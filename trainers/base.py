@@ -376,13 +376,12 @@ class ExtendedTrainer(AbstractTrainer):
                 else:
                     self.model.train()
 
-
             # break condition for local debugging
             if self.args.local and batch_idx > 20:
                 break
 
         # adapt learning rate
-        if self.args.enable_lr_schedule:
+        if self.args.lr_schedule:
             self.lr_scheduler.step()
             if epoch % self.lr_scheduler.step_size == 0:
                 print(self.optimizer.defaults['lr'])
