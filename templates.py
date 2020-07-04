@@ -319,12 +319,12 @@ def set_args_bert_pcp(args):
     args.dataloader_random_seed = args.model_init_seed
 
     # negative sampling
-    args.train_negative_sampler_code = 'random'
+    args.train_negative_sampler_code = 'random' if args.train_negative_sampler_code is None else args.train_negative_sampler_code
     #5
     args.train_negative_sample_size = 24 if args.train_negative_sample_size is None else args.train_negative_sample_size
     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
-    args.test_negative_sampler_code = 'random'
+    args.test_negative_sampler_code = args.train_negative_sampler_code
     # 9
     args.test_negative_sample_size = args.train_negative_sample_size
     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  # 98765

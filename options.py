@@ -75,11 +75,11 @@ parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'rando
 ################
 # NegativeSampler
 ################
-parser.add_argument('--train_negative_sampler_code', type=str, default='random', choices=['popular', 'random'],
+parser.add_argument('--train_negative_sampler_code', type=str, default='random', choices=['popular', 'random', 'random_common'],
                     help='Method to sample negative items for training. Not used in bert')
 parser.add_argument('--train_negative_sample_size', type=int, default=None)
 parser.add_argument('--train_negative_sampling_seed', type=int, default=None)
-parser.add_argument('--test_negative_sampler_code', type=str, default='random', choices=['popular', 'random'],
+parser.add_argument('--test_negative_sampler_code', type=str, default='random', choices=['popular', 'random', 'random_common'],
                     help='Method to sample negative items for evaluation')
 parser.add_argument('--test_negative_sample_size', type=int, default=None)
 parser.add_argument('--test_negative_sampling_seed', type=int, default=None)
@@ -105,7 +105,7 @@ parser.add_argument('--lr_schedule', type=int, default=0, help="Enable lr schedu
 parser.add_argument('--decay_step', type=int, default=None, help='Decay step for StepLR')
 parser.add_argument('--gamma', type=float, default=0.1, help='Gamma for StepLR')
 # epochs #
-parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs for training') #100
+parser.add_argument('--num_epochs', type=int, default=30, help='Number of epochs for training') #100
 # logger #
 parser.add_argument('--log_period_as_iter', type=int, default=10000)
 # evaluation #
