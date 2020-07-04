@@ -15,9 +15,9 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/large_time_split_n_rnd_users/news_data.pkl")
+data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/news_data.pkl")
 pt_model="./BertModelsPT/bert-base-dutch-cased"
-max_len=(128 256 512)
+max_len=(30 128 256 512)
 lower_case=0
 
 #embeddings="../embeddings/cc.nl.300.bin"
