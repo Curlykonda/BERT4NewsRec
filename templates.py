@@ -219,11 +219,11 @@ def set_template(args):
 
     elif args.template.startswith('train_mod_npa'):
         # local
-        args.local = True
-        args.device = 'cuda'
-        args.num_epochs = 5
-        args.train_batch_size = 10
-        args.log_period_as_iter=200
+        # args.local = True
+        # args.device = 'cuda'
+        # args.num_epochs = 5
+        # args.train_batch_size = 10
+        # args.log_period_as_iter=200
 
         # Modified NPA model trained with pseudo categorical prediction
         args.mode = 'train'
@@ -234,7 +234,6 @@ def set_template(args):
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
 
         # preprosessing
-        #args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
 
