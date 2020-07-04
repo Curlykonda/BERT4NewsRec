@@ -270,7 +270,7 @@ class NpaEvalDataset(data_utils.Dataset):
 
     def gen_eval_instance(self, u_idx, hist, neg_samples):
         # apply leave-one-out strategy
-        target = hist.pop(-1)
+        target = hist[-1]
         # shuffle candidates
         candidates = [target] + neg_samples[-1]
         self.rnd.shuffle(candidates)
@@ -285,7 +285,7 @@ class NpaEvalDataset(data_utils.Dataset):
 
         # sub sample history
         hist = [art_idx2word_ids(art, self.art2words) for art
-                    in self.rnd.sample(hist, min(len(hist), self.max_hist_len))] # subsample & map to words
+                    in self.rnd.sample(hist[:-1], min(len(hist), self.max_hist_len))] # subsample & map to words
 
         # padding
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
