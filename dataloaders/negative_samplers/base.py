@@ -18,8 +18,7 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
         self.seed = seed
         self.mode = mode
         assert self.seed is not None, 'Specify seed for random sampling'
-        random.seed(self.seed)
-        self.rnd = random.random()
+        self.rnd = random.Random(self.seed)
 
         self.save_folder = save_folder
         self.train_method = train_method
@@ -50,9 +49,9 @@ class AbstractNegativeSampler(metaclass=ABCMeta):
         filename = '{}-sample_size{}-{}-seed{}.pkl'.format(self.code(), self.sample_size, self.mode, self.seed)
         return folder.joinpath(filename)
 
-    @abstractmethod
-    def get_naive_random_samples(self, sample_size, item_set):
-        pass
+    # @abstractmethod
+    # def get_naive_random_samples(self, sample_size, item_set):
+    #     pass
 
     def determine_seen_items(self, user):
         # determine the items already seen by the user

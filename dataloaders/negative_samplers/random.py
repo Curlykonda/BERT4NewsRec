@@ -1,4 +1,6 @@
+import copy
 import itertools
+from collections import Counter
 
 from .base import AbstractNegativeSampler
 from tqdm import trange
@@ -53,6 +55,72 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         naive_sample = self.rnd.sample(item_set, sample_size)
 
         return naive_sample
+
+
+class RandomFromCommonNegativeSampler(AbstractNegativeSampler):
+    @classmethod
+    def code(cls):
+        return 'random_common'
+
+    def generate_negative_samples(self):
+        popular_items, seens = self.items_by_popularity()
+
+        self.pop_items = sorted(popular_items, key=popular_items.get, reverse=True)
+
+        negative_samples = {}
+        print('Sampling negative items')
+        for user in trange(self.user_count):
+            seen = seens[user]
+
+            # sample uniform random from most common items
+            # note: for 'time_split' need to separate into train and test intervals
+            if self.seq_lengths is None:
+                # one set of neg samples for each user
+                samples = self.get_rnd_samples_for_position(seen)
+            else:
+                # neg samples for each position in each user sequence
+                samples = []
+                for _ in range(self.seq_lengths[user]):
+                    neg_samples = self.get_rnd_samples_for_position(seen)
+                    samples.append(neg_samples)
+
+                assert len(samples) == self.seq_lengths[user]
+
+            negative_samples[user] = samples
+
+        return negative_samples
+
+    def get_rnd_samples_for_position(self, seen, m_common=10000):
+        samples = []
+        # remove seen items from counter
+        #pop_items = [x for x in self.pop_items if x not in seen][:m_common]
+        pop_items = self.pop_items[:m_common]
+
+        while len(samples) < self.sample_size:
+            item = self.rnd.choice(pop_items)
+            if item not in samples and item not in seen and item in self.valid_items:
+                samples.append(item)
+        #samples = self.rnd.sample(pop_items, self.sample_size)
+
+        return samples
+
+    def removeall_inplace(self, l, val):
+        for _ in range(l.count(val)):
+            l.remove(val)
+
+    def items_by_popularity(self):
+        popularity = Counter()
+        seens = {}
+        for user in range(self.user_count):
+            seen, pop = self.determine_seen_items(user)
+            seens[user] = seen
+            popularity.update(pop)
+        #popular_items = sorted(popularity, key=popularity.get, reverse=True)
+        for art_id, cnt in dict(popularity).items():
+            if art_id not in self.valid_items:
+                del popularity[art_id]
+
+        return popularity, seens
 
 # class RandomNegativeSamplerPerPosition(AbstractNegativeSampler):
 #     @classmethod

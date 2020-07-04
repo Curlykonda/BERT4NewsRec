@@ -26,7 +26,7 @@ parser.add_argument('--test_model_path', type=str, default=None)
 # Dataset
 ################
 parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DATASETS.keys())
-parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/medium_time_split_n_rnd_users")
+parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/10k_time_split_n_rnd_users")
 
 ## MovieLens
 parser.add_argument('--min_rating', type=int, default=None, help='Only keep ratings greater than equal to this value')
@@ -83,6 +83,7 @@ parser.add_argument('--test_negative_sampler_code', type=str, default='random', 
                     help='Method to sample negative items for evaluation')
 parser.add_argument('--test_negative_sample_size', type=int, default=None)
 parser.add_argument('--test_negative_sampling_seed', type=int, default=None)
+#parser.add_argument('--most_common', type=int, default=None, help='M most common articles for neg sampling')
 
 ################
 # Trainer

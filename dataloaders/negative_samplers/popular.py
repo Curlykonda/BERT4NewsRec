@@ -45,13 +45,18 @@ class PopularNaiveNegativeSampler(AbstractNegativeSampler):
         return popular_items
 
 
+
+
 class PopularLikelihoodNegativeSampler(AbstractNegativeSampler):
     @classmethod
     def code(cls):
-        return 'popular_naive'
+        return 'popular_rnd'
 
     def generate_negative_samples(self):
         popular_items, seens = self.items_by_popularity()
+
+        # for x in self.valid_items:
+        #     del popular_items[x]
 
         self.pop_items = popular_items
 
@@ -85,12 +90,20 @@ class PopularLikelihoodNegativeSampler(AbstractNegativeSampler):
         for x in seen:
             del pop_items[x]
 
+        pop_items = list(pop_items.elements())
+
         while len(samples) < self.sample_size:
             item = self.rnd.choice(pop_items)
             if item not in samples and item in self.valid_items:
                 samples.append(item)
+                pop_items = [x for x in pop_items if x != item]
+                #self.removeall_inplace(pop_items, item)
 
         return samples
+
+    def removeall_inplace(self, l, val):
+        for _ in range(l.count(val)):
+            l.remove(val)
 
     def items_by_popularity(self):
         popularity = Counter()
@@ -99,5 +112,9 @@ class PopularLikelihoodNegativeSampler(AbstractNegativeSampler):
             seen, pop = self.determine_seen_items(user)
             seens[user] = seen
             popularity.update(pop)
-        popular_items = sorted(popularity, key=popularity.get, reverse=True)
-        return popular_items
+        #popular_items = sorted(popularity, key=popularity.get, reverse=True)
+        for art_id, cnt in dict(popularity).items():
+            if art_id not in self.valid_items:
+                del popularity[art_id]
+
+        return popularity, seens
