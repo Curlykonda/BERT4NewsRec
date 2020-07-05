@@ -28,12 +28,13 @@ d_art=400
 nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.001
-decay_step=25
+#decay_step=25
 
 exp_descr="40k_NpaCNN"
 COUNTER=0
 
 echo "$data"
+echo "$exp_descr"
 
 echo "$SEED"
 for POS in "${POS_EMBS[@]}"
