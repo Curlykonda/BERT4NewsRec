@@ -284,8 +284,9 @@ class NpaEvalDataset(data_utils.Dataset):
         candidates = [art_idx2word_ids(art, self.art2words) for art in candidates]  # map to words
 
         # sub sample history
+        hist = hist[:-1]
         hist = [art_idx2word_ids(art, self.art2words) for art
-                    in self.rnd.sample(hist[:-1], min(len(hist), self.max_hist_len))] # subsample & map to words
+                    in self.rnd.sample(hist, min(len(hist), self.max_hist_len))] # subsample & map to words
 
         # padding
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
