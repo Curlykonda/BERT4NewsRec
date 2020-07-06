@@ -18,7 +18,7 @@ data=("./Data/DPG_nov19/40k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 #pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
 art_len=30
-SEED=$SLURM_ARRAY_TASK_ID
+SEED=42
 POS_EMBS=("tpe" "lpe")
 neg_ratios=(4 24 49 99)
 
