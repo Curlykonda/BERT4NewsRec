@@ -42,7 +42,7 @@ do
   for K in "${neg_ratios[@]}"
   do
 
-    echo "$exp_descr $TE al$art_len k$K s$SEED neg $neg_sampler"
+    echo "$exp_descr $POS al$art_len k$K s$SEED neg $neg_sampler"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sampler_code random --train_negative_sample_size=$K \
