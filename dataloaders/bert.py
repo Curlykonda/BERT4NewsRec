@@ -205,7 +205,7 @@ def pad_seq(seq, pad_token, max_hist_len, max_article_len=None, n=None):
     n (int): number of candidates; for each position we could have N candidates
 
     """
-    seq = seq[-max_hist_len:]
+    seq = list(seq[-max_hist_len:])
     pad_len = max_hist_len - len(seq)
 
     if pad_len > 0:
