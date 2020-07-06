@@ -30,6 +30,7 @@ nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.001
 
+n_users=40000
 exp_descr="40k_NpaCNN"
 COUNTER=0
 

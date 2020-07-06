@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
 #SBATCH -n 8
-#SBATCH -t 28:00:00
-#SBATCH -p gpu_shared
+#SBATCH -t 1:00:00
+#SBATCH -p gpu_short
 #SBATCH --mem=60000M
 
 
@@ -21,6 +21,7 @@ art_len=30
 SEEDS=(113 42)
 
 enc="wucnn"
+neg_sampler="random"
 
 TEMP_EMBS=("lte" "nte")
 t_act_func="relu"
@@ -30,14 +31,12 @@ d_art=400
 nie="lin"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.001
-decay_step=25
 
 n_users=40000
 exp_descr="40k_NpaCNN"
 COUNTER=0
 
 echo "$datapath"
-echo "$exp_descr"
 echo "$SEED"
 
 for TE in "${TEMP_EMBS[@]}"
@@ -45,17 +44,19 @@ do
   #1
   for K in "${neg_ratios[@]}"
   do
-  #1
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-  --train_negative_sampler_code random --train_negative_sample_size=$K \
-  --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-  --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
-  --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
-  --lr $lr --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $TE al$art_len k$K s$SEED
+    #1
+    echo "$exp_descr $TE al$art_len k$K s$SEED neg $neg_sampler"
 
-  ((COUNTER++))
-  echo "Exp counter: $COUNTER"
+    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    --train_negative_sampler_code=$neg_sampler --train_negative_sample_size=$K \
+    --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+    --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
+    --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
+    --lr=$lr --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $TE al$art_len k$K s$SEED
+
+    ((COUNTER++))
+    echo "Exp counter: $COUNTER"
 
   done
 done
