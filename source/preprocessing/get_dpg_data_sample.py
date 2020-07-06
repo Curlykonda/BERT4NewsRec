@@ -426,12 +426,26 @@ def get_data_n_rnd_users(data_dir, n_users, news_len, min_hist_len, max_hist_len
                                         n_news=-1, news_len=news_len,
                                         test_time_thresh=test_time_thresh)
     news_data['all'] = article_data['all']
+    # dict := "art_id": {'text': val, 'pub_data' .. }
 
     if len(news_data['all']) != len(valid_article_ids):
         print("Article mismatch. Filter in subsequent preprocessing step")
     # Mismatch can occur when a read article has no content. In this case, the article will be removed from user interactions
     #
     assert len(user_data) == n_users, "Not enough users sampled"
+
+    # save relevant item ids
+    rel_items_path = Path(data_dir + "rel_item_ids.pkl")
+    if rel_items_path.is_file():
+        with rel_items_path.open('rb') as fin:
+            rel_item_ids = set(pickle.load(fin))
+    else:
+        rel_item_ids = set()
+
+    rel_item_ids.update(news_data['all'].keys())
+
+    with rel_items_path.open('wb') as fout:
+        pickle.dump(rel_item_ids, fout)
 
     return news_data, user_data, logging_dates
 
@@ -445,9 +459,9 @@ if __name__ == "__main__":
     parser.add_argument('--overwrite_existing', type=bool, default=True)
 
     parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
-    parser.add_argument('--size', type=str, default='40k', choices=["dev", "medium", "custom"], help='size of dataset')
+    parser.add_argument('--size', type=str, default='10k', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
-    parser.add_argument('--n_users', type=int, default=40000, help='number of users')
+    parser.add_argument('--n_users', type=int, default=10000, help='number of users')
     parser.add_argument('--ratio_user_items', type=int, default=USER_ITEM_RATIO, help='ratio of user to items, e.g. 1 : 10')
 
     #parser.add_argument('--vocab_size', type=int, default=30000, help='vocab')

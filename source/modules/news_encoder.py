@@ -4,7 +4,29 @@ import transformers
 
 from source.modules.attention import PersonalisedAttentionWu
 from source.modules.preference_query import PrefQueryWu
+from source.modules.bert_modules.bert import BERT
 
+
+class TransformerEncoder(BERT):
+    def __init__(self, args, cls_pos=0, max_len=None, n_items=None, n_layers=2, n_heads=4, n_hidden=300, dropout=0.1, req_mask=True, token_emb='new', pos_emb='lpe'):
+
+        super(TransformerEncoder, self).__init__(args, max_len, n_items, n_layers, n_heads, n_hidden, dropout, req_mask, token_emb, pos_emb)
+
+        self.cls_pos=cls_pos
+
+    def forward(self, x, mask=None):
+        # embedding the indexed sequence to sequence of vectors
+        # combine token & positional embeddings
+        x = self.embedding(x)
+        # (B x L x D_model)
+
+        # running over multiple transformer blocks
+        for transformer in self.transformer_blocks:
+            x = transformer.forward(x, mask)
+            # (B x seq_len x d_bert)
+
+        # return only [CLS] token as sequence representation
+        return x[:, self.cls_pos]
 
 class BERTje(transformers.BertModel):
 

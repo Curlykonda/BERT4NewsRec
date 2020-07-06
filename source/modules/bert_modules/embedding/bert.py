@@ -28,6 +28,7 @@ class BERTEmbedding(nn.Module):
         :param dropout: dropout rate
         """
         super().__init__()
+        self.args = args
         self.vocab_size = vocab_size
         self.max_seq_len = max_len
         self.embed_size = embed_size
@@ -66,8 +67,7 @@ class BERTEmbedding(nn.Module):
         if 'new' == self.token_code:
             return TokenEmbedding(vocab_size=self.vocab_size, token_embed_size=self.embed_size)
         elif 'pt' == self.token_code:
-            # load pretrained embeddings
-            return None
+            return get_token_embeddings(self.args)
         else:
             return None
 

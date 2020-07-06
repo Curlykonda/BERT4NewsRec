@@ -9,7 +9,7 @@ class BERT4RecModel(BaseModel):
     def __init__(self, args):
         super().__init__(args)
         self.bert = BERT(args)
-        self.out = nn.Linear(self.bert.hidden, args.num_items + 1) # + 1 for the mask token
+        self.out = nn.Linear(self.bert.n_hidden, args.num_items + 1) # + 1 for the mask token
 
     @classmethod
     def code(cls):
@@ -58,6 +58,12 @@ def make_bert4news_model(args):
         # get news_encoder from code
         if "wucnn" == args.news_encoder:
             news_encoder = NpaNewsEncoder(args.n_users, args.dim_art_emb)
+        elif "transf" == args.news_encoder:
+            news_encoder = TransformerEncoder(args, max_len=args.max_article_len, n_items=vocab_size,
+                                n_layers=args.transf_enc_num_layers,
+                                n_heads=args.tranf_enc_num_heads,
+                                n_hidden=args.dim_art_emb,
+                                req_mask=False, token_emb=None, pos_emb='lpe')
         else:
             raise NotImplementedError("Selected invalid News Encoder!")
 
@@ -71,7 +77,7 @@ def make_bert4news_model(args):
         raise ValueError("Can't use positional and temporal embedding! Use one or none")
 
     # initialise BERT user encoder
-    user_encoder = BERT(args, token_emb=None, pos_emb=pos_emb)
+    user_encoder = BERT(args, n_hidden=args.bert_hidden_units, token_emb=None, pos_emb=pos_emb)
 
     # output layer: return the predicted and candidate embeddings
     if args.pred_layer is None:

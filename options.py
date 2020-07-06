@@ -26,7 +26,7 @@ parser.add_argument('--test_model_path', type=str, default=None)
 # Dataset
 ################
 parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DATASETS.keys())
-parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/10k_time_split_n_rnd_users")
+parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/40k_time_split_n_rnd_users")
 
 ## MovieLens
 parser.add_argument('--min_rating', type=int, default=None, help='Only keep ratings greater than equal to this value')
@@ -149,6 +149,12 @@ parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab 
 
 # end-to-end
 parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn"], help='Model to use as News Encoder')
+
+# Transformer Encoder #
+parser.add_argument('--transf_hidden_units', type=int, default=None, help='Size of hidden vectors (d_model)')
+parser.add_argument('--transf_enc_num_layers', type=int, default=1, help='Number of transformer layers')
+parser.add_argument('--tranf_enc_num_heads', type=int, default=2, help='Number of heads for multi-attention')
+parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropout probability to use throughout the model')
 
 
 # Positional Embeddings #

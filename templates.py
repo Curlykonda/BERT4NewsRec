@@ -128,18 +128,21 @@ def set_template(args):
         args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
+        args.train_negative_sample_size = 4
         args.log_period_as_iter=200
-        args.n_users = 10000
+        args.n_users=10000
+        args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
-        args.pt_news_encoder = 'BERTje'
+        # args.pt_news_encoder = 'BERTje'
         # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         # args.language = "dutch"
 
-        #args.bert_num_blocks = 2
+        args.news_encoder = "transf"
+
         set_args_bert_pcp(args)
 
-        args.train_negative_sampler_code = 'random_common' # random_common
-        args.test_negative_sampler_code = 'random_common'
+        args.train_negative_sampler_code = 'random' # random_common
+        args.test_negative_sampler_code = args.train_negative_sampler_code
 
         # args.news_encoder = "wucnn"
         # args.dim_art_emb = 400
@@ -286,6 +289,7 @@ def set_template(args):
     set_up_gpu(args)
 
 
+
 def set_args_bert_pcp(args):
     # pseudo categorical prediction
     args.mode = 'train'
@@ -304,6 +308,9 @@ def set_args_bert_pcp(args):
 
     elif "wucnn" == args.news_encoder:
         set_args_npa_cnn(args)
+
+    elif "transf" == args.news_encoder:
+        set_args_transf(args)
 
     # args.lower_case = False
 
@@ -362,6 +369,7 @@ def set_args_bert_pcp(args):
 
 
 def set_args_npa_cnn(args):
+    """ Set up NpaCNN as News Encoder """
     args.incl_u_id = True
     args.pt_news_encoder = None  # 'BERTje'
     args.fix_pt_art_emb = False
@@ -372,3 +380,14 @@ def set_args_npa_cnn(args):
 
     args.path_pt_news_enc = None
 
+
+def set_args_transf(args):
+    """ Set up Transformer as News Encoder """
+    args.incl_u_id = False
+    args.pt_news_encoder = None  # 'BERTje'
+    args.fix_pt_art_emb = False
+    args.pd_vocab = True
+
+    args.dim_art_emb = 300 if args.dim_word_emb is None else args.dim_word_emb
+    args.bert_hidden_units = args.dim_art_emb
+    args.path_pt_news_enc = None
