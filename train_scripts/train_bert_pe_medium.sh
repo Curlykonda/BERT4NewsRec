@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=bertje_pe
+#SBATCH --job-name=bertje_pe_m
 #SBATCH -n 8
 #SBATCH -t 28:00:00
 #SBATCH -p gpu_shared
