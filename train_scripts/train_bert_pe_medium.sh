@@ -17,7 +17,7 @@ python --version
 data=("./Data/DPG_nov19/40k_time_split_n_rnd_users/")
 #embeddings="../embeddings/cc.nl.300.bin"
 pt_news_enc="BERTje"
-pt_news_enc_path = "./BertModelsPT/bert-base-dutch-cased"
+pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 
 art_len=30
 #SEEDS=(113 42)
@@ -30,6 +30,7 @@ nie="lin"
 lr=0.001
 #decay_step=25
 
+n_users=40000
 exp_descr="40k_rnd_com"
 COUNTER=0
 
@@ -41,39 +42,39 @@ for POS in "${POS_EMBS[@]}"
 do
   for K in "${neg_ratios[@]}"
   do
-    #1
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-  --train_negative_sampler_code random_common --train_negative_sample_size=$K \
-  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-  --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-  --lr $lr --n_users 40000 --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+    echo "$exp_descr $POS al$art_len k$K s$SEED"
 
-  ((COUNTER++))
-  echo "Exp counter: $COUNTER"
+      #1
+    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    --train_negative_sampler_code random_common --train_negative_sample_size=$K \
+    --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+    --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
+    --lr $lr --n_users=$n_users --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+
+    ((COUNTER++))
+    echo "Exp counter: $COUNTER"
   done
 
 done
 
 exp_descr="40k_rnd"
 
-echo "$data"
-echo "$SEED"
-
 for POS in "${POS_EMBS[@]}"
 do
   for K in "${neg_ratios[@]}"
   do
-    #1
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-  --train_negative_sampler_code random --train_negative_sample_size=$K \
-  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-  --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-  --lr $lr --n_users 40000 --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+    echo "$exp_descr $POS al$art_len k$K s$SEED"
+      #1
+    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    --train_negative_sampler_code random --train_negative_sample_size=$K \
+    --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+    --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
+    --lr $lr --n_users=$n_users --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $POS al$art_len k$K s$SEED
 
-  ((COUNTER++))
-  echo "Exp counter: $COUNTER"
+    ((COUNTER++))
+    echo "Exp counter: $COUNTER"
   done
 
 done
