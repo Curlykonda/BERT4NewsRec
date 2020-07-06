@@ -63,7 +63,7 @@ class NpaModDataloader(AbstractDataloader):
                                                            args.test_negative_sample_size,
                                                            args.test_negative_sampling_seed,
                                                            self.valid_items['test'],
-                                                           self.get_seq_lengths(self.test, mode='eval'))
+                                                           None) # need only 1 set of candidates bc 1 target
 
         self.test_negative_samples = test_neg_sampler.get_negative_samples()
         # (dict): {u_idx: [neg_samples] * test_items[u_idx]}
@@ -73,7 +73,7 @@ class NpaModDataloader(AbstractDataloader):
                                                           args.test_negative_sample_size,
                                                           args.test_negative_sampling_seed,
                                                           self.valid_items['test'],
-                                                          self.get_seq_lengths(self.val, mode='eval'))
+                                                          None)
 
         self.val_neg_samples = val_neg_sampler.get_negative_samples()
 
