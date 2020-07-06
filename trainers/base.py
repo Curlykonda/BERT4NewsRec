@@ -316,8 +316,8 @@ class ExtendedTrainer(AbstractTrainer):
             # t3 = time.time()
             # print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
 
-            # if self._reached_max_iterations(accum_iter):
-            #     break
+            if self._reached_max_iterations(accum_iter):
+                break
 
         print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch+1, self.num_epochs))
 
@@ -371,10 +371,10 @@ class ExtendedTrainer(AbstractTrainer):
 
                 self.validate(epoch, accum_iter)
 
-                # if self._reached_max_iterations(accum_iter):
-                #     return accum_iter
-                # else:
-                self.model.train()
+                if self._reached_max_iterations(accum_iter):
+                    return accum_iter
+                else:
+                    self.model.train()
 
             # break condition for local debugging
             if self.args.local and batch_idx > 20:

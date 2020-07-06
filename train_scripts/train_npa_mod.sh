@@ -22,6 +22,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 d_art=400
 
 lr=0.001
+epochs=100
 #decay_step=25
 n_users=40000
 exp_descr="npa_mod_40k"
@@ -36,7 +37,7 @@ do
     #1
   python -u main.py --template train_mod_npa --model_init_seed=$SEED --dataset_path=$data \
   --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-  --max_article_len=$LEN --n_users=$n_users \
+  --max_article_len=$LEN --n_users=$n_users --num_epochs=$epochs \
   --lr $lr --cuda_launch_blocking=1 \
   --experiment_description $exp_descr l$LEN s$SEED
 
