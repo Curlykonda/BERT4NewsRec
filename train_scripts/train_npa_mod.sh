@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=npa_mod
 #SBATCH -n 8
-#SBATCH -t 01:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 10:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 module load pre2019
