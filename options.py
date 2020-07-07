@@ -105,7 +105,7 @@ parser.add_argument('--lr_schedule', type=int, default=0, help="Enable lr schedu
 parser.add_argument('--decay_step', type=int, default=None, help='Decay step for StepLR')
 parser.add_argument('--gamma', type=float, default=0.1, help='Gamma for StepLR')
 # epochs #
-parser.add_argument('--num_epochs', type=int, default=20, help='Number of epochs for training') #100
+parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs for training') #100
 parser.add_argument('--num_samples', type=float, default=1e6, help='Number of samples for training')
 # logger #
 parser.add_argument('--log_period_as_iter', type=int, default=10000)

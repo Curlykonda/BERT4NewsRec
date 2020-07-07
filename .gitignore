@@ -245,3 +245,4 @@ experiments/
 /source/evaluation/40k_time_split_n_rnd_users/data_info.txt
 /source/evaluation/100k_time_split_n_rnd_users/data_info.txt
 /source/evaluation/100kunfilt_time_split_n_rnd_users/data_info.txt
+/plots/
