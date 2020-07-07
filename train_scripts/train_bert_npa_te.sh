@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 20:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -16,16 +16,17 @@ python --version
 
 data=("./Data/DPG_nov19/40k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
-#pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
-art_len=30
-SEEDS=(113 42)
 
-enc="wucnn"
+art_len=30
+SEED=$SLURM_ARRAY_TASK_ID
+
 neg_sampler="random"
 
 TEMP_EMBS=("lte" "nte")
 t_act_func="relu"
+neg_ratios=(4 24 49 99)
 
+enc="wucnn"
 d_art=400
 
 nie="lin"
