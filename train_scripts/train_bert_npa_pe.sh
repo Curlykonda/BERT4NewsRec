@@ -32,7 +32,7 @@ nie="lin"
 lr=0.001
 
 n_users=40000
-exp_descr="40k_NpaCNN"
+exp_descr="40k_NpaCNN_rnd"
 COUNTER=0
 
 echo "$data"
@@ -58,24 +58,3 @@ do
 
   done
 done
-
-
-#  echo "max hist len 50"
-#    #2
-#  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
-#  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
-#  --num_epochs=100 --bert_num_blocks=2 --max_hist_len=50 \
-#  --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-#  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch \
-#  --experiment_description $exp_descr $POS l$art_len s$SEED
-#
-#  echo "bert blocks 1"
-#    #3
-#  python -u main.py --template train_bert_pcp --model_init_seed=$SEED \
-#  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
-#  --num_epochs=100 --bert_num_blocks=1 --max_hist_len=100 \
-#  --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-#  --lr $lr --decay_step $decay_step --cuda_launch_blocking=1 --train_batch_size=$batch \
-#  --experiment_description $exp_descr $POS l$art_len s$SEED
-#
-#  done

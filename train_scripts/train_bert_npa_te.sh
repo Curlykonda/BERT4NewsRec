@@ -34,7 +34,7 @@ nie="lin"
 lr=0.001
 
 n_users=40000
-exp_descr="40k_NpaCNN"
+exp_descr="40k_NpaCNN_rnd"
 COUNTER=0
 
 echo "$datapath"
