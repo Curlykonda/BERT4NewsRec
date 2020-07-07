@@ -148,7 +148,7 @@ parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined
 parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
 
 # end-to-end
-parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn"], help='Model to use as News Encoder')
+parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn", "transf"], help='Model to use as News Encoder')
 
 # Transformer Encoder #
 parser.add_argument('--transf_hidden_units', type=int, default=None, help='Size of hidden vectors (d_model)')
