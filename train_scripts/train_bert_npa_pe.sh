@@ -21,7 +21,7 @@ art_len=30
 SEED=$SLURM_ARRAY_TASK_ID
 
 POS_EMBS=("tpe" "lpe")
-neg_ratios=(4 24 49 99)
+neg_ratios=(4 24)
 
 enc="wucnn"
 d_art=400

@@ -24,7 +24,7 @@ neg_sampler="random"
 
 TEMP_EMBS=("lte" "nte")
 t_act_func="relu"
-neg_ratios=(4 24 49 99)
+neg_ratios=(4 24 49)
 
 enc="wucnn"
 d_art=400
