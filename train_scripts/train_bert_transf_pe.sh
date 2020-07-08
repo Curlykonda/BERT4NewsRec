@@ -20,7 +20,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 art_len=30
 SEED=42
 POS_EMBS=("tpe" "lpe")
-neg_ratios=(4 24 49 99)
+neg_ratios=(4 24) #  49 99
 
 enc="transf"
 neg_sampler="random"

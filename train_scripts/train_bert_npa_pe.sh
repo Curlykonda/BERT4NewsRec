@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_pe
 #SBATCH -n 8
-#SBATCH -t 20:00:00
+#SBATCH -t 22:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -20,7 +20,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 art_len=30
 SEED=$SLURM_ARRAY_TASK_ID
 
-POS_EMBS=("tpe" "lpe")
+POS_EMBS=("lpe") # "tpe"
 neg_ratios=(4 24)
 
 enc="wucnn"
