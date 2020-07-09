@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import random
 import matplotlib.pyplot as plt
@@ -57,7 +59,7 @@ def plot_simple_run(data, labels, fig_size=(10,5)):
 
     plt.show()
 
-def plot_experiments(exp_data, exp_labels : [str], metric_first_plot : [str], xlabel, metric_exclude : [str], sub_plots=(1, 2), fig_size=(10, 8)):
+def plot_experiments(exp_data, exp_labels : [str], metric_first_plot : [str], xlabel, metric_exclude : [str], title : str, sub_plots=(1, 2), fig_size=(10, 8)):
 
     '''
     input: list of dicts
@@ -65,32 +67,17 @@ def plot_experiments(exp_data, exp_labels : [str], metric_first_plot : [str], xl
     corresponding metrics have same color but test is dashed
 
     data format: list(dict) [exp1, exp2, ... ]
-
-    exp1:
-    {   metric1 : (train, test)},
-        metric2 : (train, test)},
-        ... }
-
-    exp2:
-    {   metric1 : (train, test)},
-        metric2 : (train, test)},
-        ... }
+    e.g.:
+        exp1:
+        {   metric1 : [vals],
+            metric2 : [vals],
+            ... }
 
     - From list of Sequential Colormaps Select n_experiments cmaps
     - each cmap n_metrics colors
 
     :return:
     '''
-    if False:
-        exp_data = []
-        exp_labels = []
-        metrics = ["loss", "acc", "ap"]
-        metric_first_plot = ['loss']
-
-        n = 10
-        for i in range(3):
-            exp_data.append({key: (np.random.rand(n), np.random.rand(n)) for key in metrics})
-            exp_labels.append("exp " + str(i))
 
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=fig_size)
 
@@ -106,15 +93,15 @@ def plot_experiments(exp_data, exp_labels : [str], metric_first_plot : [str], xl
         for key in exp.keys():
             if key not in metric_exclude:
                 c = next(colors)
-                train_vals, test_vals = exp[key]
+                vals = exp[key]
                 lbl = key
                 if key in metric_first_plot:
                     ax = ax1
                 else:
                     ax = ax2
                 lbl = ' '.join([exp_labels[i], lbl])
-                ax.plot(train_vals, label=lbl, color=c, linestyle='-')
-                ax.plot(test_vals, label=lbl + '/test', color=c, linestyle='--')
+                ax.plot(vals, label=lbl, color=c, linestyle='-')
+                #ax.plot(test_vals, label=lbl + '/test', color=c, linestyle='--')
 
     ax1.set_ylabel('loss value')
     ax1.set_xlabel(xlabel)
@@ -126,6 +113,9 @@ def plot_experiments(exp_data, exp_labels : [str], metric_first_plot : [str], xl
 
     plt.tight_layout()
     plt.show()
+
+    fname = "../../plots/" + title + ".png"
+    fig.savefig(fname, dpi=400, bbox_inches='tight')
 
 
 def average_metrics_over_runs(result_metrics, add_var=False):
@@ -179,34 +169,26 @@ if __name__ == "__main__":
         'comment': ""
     }
 
-    res_path = '../results/03-25-20/'
 
-    methods = ['epoch', 'batches']
-    method = methods[0]
-    name = '/metrics_' + method + '.pkl'
-    files = experiments['03-25-20']['files']
+    metrics_to_exclude = {}
+    metrics_to_exclude['train'] = ['Recall@5', 'epoch', 'lr']
+    metrics_to_exclude['val'] = ['Recall@10', 'NDCG@10', 'Recall@5']
 
-    result_met_avg = []
-    result_labels = ['wu-large-avg3', 'wu-large-13', 'wu-large-102']
+    res_path = Path('../../logs/')
+    file_name = "metrics.json"
 
+    exps = ["npa_40k_l30_s1_2020-07-06_0", "npa_mod_40k_l30_s1_2020-07-06_1"]
+
+    result_labels = ['npa_van', 'npa_mod']
+    rel_set = 'train'
+    title = 'npa_van_vs_mod_40k_l30_' + rel_set
     ##
     result_metrics = []
-    for file in ['large-epoch-wu-42-22:03', 'large-epoch-wu-13-02:02', 'large-epoch-wu-102-06:01']:
-        with open(res_path + file + name, 'rb') as fin:
-            result_metrics.append(pickle.load(fin))
+    for ex in exps:
+        with open(res_path.joinpath(ex, file_name)) as fin:
+            metrics = json.load(fin)
+            result_metrics.append(metrics[rel_set])
 
-    result_met_avg.append(average_metrics_over_runs(result_metrics))
-
-    ##
-    #'wu-weight-decay'
-    # res_path = '../results/03-24-20/'
-    # files = ['epoch-wu-102-17:28', 'epoch-wu-42-17:24', 'epoch-wu-13-17:26']
-    # result_metrics = []
-    # for file in files:
-    #     with open(res_path + file + name, 'rb') as fin:
-    #         result_metrics.append(pickle.load(fin))
-    #
-    # result_met_avg.append(average_metrics_over_runs(result_metrics))
-
-    plot_experiments(exp_data=result_met_avg, exp_labels=result_labels,
-                     metric_first_plot=['loss'], xlabel='epoch', metric_exclude=['acc'])
+    plt = plot_experiments(exp_data=result_metrics, exp_labels=result_labels,
+                           metric_first_plot=['loss'], xlabel='epoch', metric_exclude=metrics_to_exclude[rel_set],
+                           title=title)

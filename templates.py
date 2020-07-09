@@ -221,16 +221,16 @@ def set_template(args):
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
     elif args.template.startswith('train_mod_npa'):
-        args.local = True
-        args.device = 'cuda'
-
-        args.max_hist_len = 50
-
-        args.num_epochs = 5
-        args.train_negative_sample_size = 4
-        args.log_period_as_iter = 200
-        args.n_users = 10000
-        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+        # args.local = True
+        # args.device = 'cuda'
+        #
+        # args.max_hist_len = 50
+        #
+        # args.num_epochs = 5
+        # args.train_negative_sample_size = 4
+        # args.log_period_as_iter = 200
+        # args.n_users = 10000
+        # args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
         # args.npa_variant = 'bertje'
 

@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
+parser.add_argument('--template', type=str, default='train_mod_npa', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -141,14 +141,14 @@ parser.add_argument('--model_init_seed', type=int, default=None)
 ## News Encoder #
 
 # pre-trained stuff
-parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje", "WuCNN"], help='Pretrained model to use as News Encoder')
+parser.add_argument('--pt_news_encoder', type=str, default=None, choices=["BERTje"], help='Pretrained model to use as News Encoder')
 parser.add_argument('--path_pt_news_enc', type=str, default=None, help="Path to pre-trained News Encoder")
 parser.add_argument('--fix_pt_art_emb', type=bool, default=None, help='fix pre-computed article embeddings')
 parser.add_argument('--pd_vocab', type=bool, default=None, help='use pre-defined vocabulary')
 parser.add_argument('--vocab_path', type=str, default=None, help='Path to vocab with relevant words')
 
 # end-to-end
-parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn", "transf"], help='Model to use as News Encoder')
+parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn", "transf", 'bertje'], help='Model to use as News Encoder')
 
 # Transformer Encoder #
 parser.add_argument('--transf_hidden_units', type=int, default=None, help='Size of hidden vectors (d_model)')
@@ -177,7 +177,7 @@ parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help
 parser.add_argument('--dim_u_id_emb', type=int, default=None, help='Dimension of embedded user ID for pers. attn.')
 parser.add_argument('--dim_pref_query', type=int, default=None, help='Dimension for User Preference Query for pers. attn.')
 parser.add_argument('--npa_dropout', type=float, default=None, help='Dropout probability to use for NPA model')
-parser.add_argument('--npa_variant', type=str, default='vanilla', choices=['vanilla', 'custom'])
+parser.add_argument('--npa_variant', type=str, default='vanilla', choices=['vanilla', 'bertje', 'custom'])
 
 # BERT #
 parser.add_argument('--bert_max_len', type=int, default=100, help='Length of sequence for bert')
