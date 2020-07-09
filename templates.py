@@ -128,7 +128,7 @@ def set_template(args):
         args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
-        args.train_negative_sample_size = 4
+        args.train_negative_sample_size=4
         args.log_period_as_iter=200
         args.n_users=10000
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
@@ -221,12 +221,29 @@ def set_template(args):
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
     elif args.template.startswith('train_mod_npa'):
-        # local
-        # args.local = True
-        # args.device = 'cuda'
-        # args.num_epochs = 5
-        # args.train_batch_size = 10
-        # args.log_period_as_iter=200
+        args.local = True
+        args.device = 'cuda'
+
+        args.max_hist_len = 50
+
+        args.num_epochs = 5
+        args.train_negative_sample_size = 4
+        args.log_period_as_iter = 200
+        args.n_users = 10000
+        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+
+        # args.npa_variant = 'bertje'
+
+        if 'bertje' == args.npa_variant:
+            args.fix_pt_art_emb = True
+            args.pd_vocab = True
+            args.dim_art_emb = 768
+
+            args.pt_news_encoder = 'BERTje'
+            args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+            args.language = "dutch"
+
+        #######
 
         # Modified NPA model trained with pseudo categorical prediction
         args.mode = 'train'
@@ -240,9 +257,9 @@ def set_template(args):
         args.use_article_content = True
         args.incl_time_stamp = False
 
-        args.max_hist_len = 50 if args.max_hist_len is not None else args.max_hist_len
-        args.max_article_len = 30 if args.max_article_len is not None else args.max_article_len
-        args.dim_art_emb = 400 if args.dim_art_emb is not None else args.dim_art_emb
+        args.max_hist_len = 50 if args.max_hist_len is None else args.max_hist_len
+        args.max_article_len = 30 if args.max_article_len is None else args.max_article_len
+        args.dim_art_emb = 400 if args.dim_art_emb is None else args.dim_art_emb
 
         # split strategy
         args.split = 'time_threshold'
@@ -285,6 +302,10 @@ def set_template(args):
         args.model_code = 'npa_mod'
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
         args.cuda_launch_blocking = True
+
+        args.dim_u_id_emb = 50 if args.dim_u_id_emb is None else args.dim_u_id_emb
+        args.dim_pref_query = 200 if args.dim_pref_query is None else args.dim_pref_query
+        args.npa_dropout = 0.2 if args.npa_dropout is None else args.npa_dropout
 
     set_up_gpu(args)
 

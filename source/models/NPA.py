@@ -8,9 +8,39 @@ from pathlib import Path
 from source.modules.bert_modules.embedding.token import get_token_embeddings
 from source.models.base import NewsRecBaseModel
 from source.modules.click_predictor import SimpleDot
-from source.modules.news_encoder import NpaCNN
+from source.modules.news_encoder import NpaCNN, PrecomputedFixedEmbeddings
 from source.modules.attention import PersonalisedAttentionWu
 from source.modules.preference_query import PrefQueryWu
+
+
+def make_npa_model(args):
+    token_embedding = get_token_embeddings(args) # return 'None' when using fixed BERTje embs
+
+    # article embeddings
+    if args.rel_pc_art_emb_path is not None:
+        # load pre-computed article embs
+        with Path(args.rel_pc_art_emb_path).open('rb') as fin:
+            precomputed_art_embs = pickle.load(fin)
+
+        assert precomputed_art_embs.shape[0] == args.num_items, "Mismatch in number of items!"
+        assert precomputed_art_embs.shape[1] == args.dim_art_emb, "Mismatch in dimension of article embeddings!"
+
+        news_encoder = PrecomputedFixedEmbeddings(precomputed_art_embs)
+    else:
+        # get news_encoder from code
+        if "wucnn" == args.news_encoder:
+            #news_encoder = NpaNewsEncoder(args.n_users, args.dim_art_emb)
+            news_encoder = NpaCNN(n_filters=args.dim_art_emb, word_emb_dim=args.dim_word_emb,
+                                  dim_pref_q=args.dim_pref_query, dropout_p=args.npa_dropout)
+        else:
+            raise NotImplementedError()
+
+
+    user_encoder = PersonalisedAttentionWu(args.dim_pref_query, args.dim_art_emb)
+
+    prediction_layer = SimpleDot(args.dim_art_emb, args.dim_art_emb)
+
+    return token_embedding, news_encoder, user_encoder, prediction_layer
 
 
 class NpaBaseModel(NewsRecBaseModel):
@@ -26,6 +56,9 @@ class NpaBaseModel(NewsRecBaseModel):
             args.dim_u_id_emb = 50
             args.dim_pref_query = 200
 
+            if args.news_encoder is None:
+                args.news_encoder = "wucnn"
+
             args.dim_art_emb = 400
             args.dim_word_emb = 300
 
@@ -33,6 +66,18 @@ class NpaBaseModel(NewsRecBaseModel):
             args.max_art_len = 30
 
             args.npa_dropout = 0.2
+
+        elif 'bertje' == args.npa_variant:
+            if args.dim_art_emb != 768:
+                args.dim_art_emb = 768
+
+
+            #assert 'bertje' == args.news_encoder
+
+
+        token_embedding, news_encoder, user_encoder, prediction_layer = make_npa_model(args)
+
+        super(NpaBaseModel, self).__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
 
         self.d_u_id_emb = args.dim_u_id_emb
         self.d_pref_q = args.dim_pref_query
@@ -42,22 +87,15 @@ class NpaBaseModel(NewsRecBaseModel):
 
         self.dropout_p = args.npa_dropout
 
-        token_embedding = get_token_embeddings(args)
-
-        news_encoder = NpaCNN(n_filters=self.d_art_emb, word_emb_dim=args.dim_word_emb,
-                                    dim_pref_q=args.dim_pref_query, dropout_p=args.npa_dropout)
-
-        user_encoder = PersonalisedAttentionWu(self.d_pref_q, self.d_user_emb)
-
-        prediction_layer = SimpleDot(self.d_art_emb, self.d_user_emb)
-
-        super(NpaBaseModel, self).__init__(token_embedding, news_encoder, user_encoder, prediction_layer, args)
-
         self.user_id_embeddings = nn.Embedding(args.n_users, args.dim_u_id_emb)
 
         # preference queries
-        self.pref_q_word = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q, )
-        self.pref_q_article = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q, )
+        if isinstance(news_encoder, PrecomputedFixedEmbeddings):
+            self.pref_q_word = None
+        else:
+            self.pref_q_word = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q)
+
+        self.pref_q_article = PrefQueryWu(args.dim_u_id_emb, self.d_pref_q)
 
         #representations
         self.user_rep = None
@@ -123,17 +161,25 @@ class NpaBaseModel(NewsRecBaseModel):
 
     def encode_news(self, u_idx, articles):
 
-        # (B x hist_len x L_art) & (vocab_len x emb_dim_word)
-        # => (B x L_hist x L_art x D_we)
-        emb_news = self.token_embedding(articles) # assert dtype == 'long'
+        if self.token_embedding is not None:
+            # (B x hist_len x L_art) & (vocab_len x emb_dim_word)
+            # => (B x L_hist x L_art x D_we)
+            emb_news = self.token_embedding(articles) # assert dtype == 'long'
 
-        # (B x 1) -> (B x D_u) -> (B x D_q)
-        pref_query = self.pref_q_word(self.user_id_embeddings(u_idx))
+        else:
+            emb_news = articles
+
+        if self.pref_q_word is not None:
+            # (B x 1) -> (B x D_u) -> (B x D_q)
+            pref_query = self.pref_q_word(self.user_id_embeddings(u_idx))
 
         # -> (B x D_article x L_hist)
         encoded_arts = []
         for x_i in torch.unbind(emb_news, dim=1):
-            encoded_arts.append(self.news_encoder(x_i, pref_query))
+            if self.pref_q_word is not None:
+                encoded_arts.append(self.news_encoder(x_i, pref_query))
+            else:
+                encoded_arts.append(self.news_encoder(x_i))
 
         encoded_arts = torch.stack(encoded_arts, dim=2)
 
@@ -225,6 +271,10 @@ class NpaModModel(NpaBaseModel):
                 print(cand_mask.shape)
                 print(cands.device)
                 print(cand_mask.device)
+
+        elif isinstance(self.news_encoder, PrecomputedFixedEmbeddings) and len(cands.shape) > 2:
+            rel_cands = cands[cand_mask != -1]
+            rel_u_idx = None
         else:
             # test case
             # (B x N_c x L_art)
