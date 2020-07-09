@@ -28,14 +28,14 @@ lr=0.001
 #decay_step=25
 
 
-nie="lin"
+nie="lin_gelu"
 d_model=768
 
 n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_rnd_none"
+exp_descr="100k_rnd"
 
 for K in "${neg_ratios[@]}"
 do

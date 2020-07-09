@@ -17,7 +17,7 @@ python --version
 data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
 #embeddings="../embeddings/cc.nl.300.bin"
 pt_news_enc="BERTje"
-pt_news_enc_path = "./BertModelsPT/bert-base-dutch-cased"
+pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 
 art_len=30
 #SEEDS=(113 42)

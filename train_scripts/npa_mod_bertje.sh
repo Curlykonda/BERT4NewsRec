@@ -13,7 +13,7 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
+data=("./Data/DPG_nov19/40k_time_split_n_rnd_users/")
 #w_emb="./pc_word_embeddings/cc.nl.300.bin"
 pt_news_enc="BERTje"
 pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
@@ -28,8 +28,8 @@ d_art=768
 lr=0.001
 epochs=100
 
-n_users=100000
-exp_descr="100k_npa_mod_bertje"
+n_users=40000
+exp_descr="40k_npa_mod_bertje"
 COUNTER=0
 ############
 

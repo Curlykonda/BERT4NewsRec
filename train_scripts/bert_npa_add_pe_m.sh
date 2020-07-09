@@ -27,7 +27,7 @@ enc="wucnn"
 d_art=400
 neg_sampler="random"
 
-nie="lin"
+nie="lin_gelu"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.001
 
