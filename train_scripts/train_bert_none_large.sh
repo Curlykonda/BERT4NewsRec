@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=bertje_none_l
+#SBATCH --job-name=l_bertje_none
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 24:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -23,7 +23,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 TE=None
 
 art_len=30
-neg_ratios=(4 49)
+neg_ratios=(4 9 24)
 lr=0.001
 #decay_step=25
 
@@ -36,7 +36,6 @@ COUNTER=0
 #################
 
 exp_descr="100k_rnd_none"
-
 
 for K in "${neg_ratios[@]}"
 do
