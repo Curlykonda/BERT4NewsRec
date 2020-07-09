@@ -354,6 +354,8 @@ class BertTrainDatasetNews(BertTrainDataset):
 
         pos_irrelevant_lbl = -1 # label to indicate irrelevant position to avoid confusion with other categorical labels
 
+        ## create masked input sequence ##
+
         for idx, entry in enumerate(seq):
             if self.w_time_stamps:
                 art_id, ts = entry
@@ -404,13 +406,9 @@ class BertTrainDatasetNews(BertTrainDataset):
 
                 candidates.append(cands)
 
-                # cands = neg_samples[idx] + [art_id]
-                #candidates.append([art_idx2word_ids(art, self.art2words) for art in cands])
+        #################################################
+        ## truncate sequence & apply left-side padding ##
 
-
-
-        # truncate sequence & apply left-side padding
-        ##############################################
         # if art2word mapping is applied, hist is shape (max_article_len x max_hist_len), i.e. sequences of word IDs
         # else, hist is shape (max_hist_len), i.e. sequence of article indices
         hist = pad_seq(hist, self.pad_token, self.max_hist_len, max_article_len=(self.max_article_len if self.art2words is not None else None))
