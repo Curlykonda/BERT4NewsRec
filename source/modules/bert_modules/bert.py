@@ -17,7 +17,7 @@ class BERT(nn.Module):
         self.n_layers = n_layers # args.bert_num_blocks
         self.n_heads = n_heads # args.bert_num_heads
         vocab_size = num_items + 2
-        self.n_hidden = n_hidden if n_hidden is not None else args.bert_hidden_units
+        n_hidden = n_hidden if n_hidden is not None else args.bert_hidden_units
         self.dropout = dropout # args.bert_dropout
         self.req_mask = req_mask
 
@@ -25,7 +25,10 @@ class BERT(nn.Module):
         self.token_embedding = token_emb
         self.pos_embedding = pos_emb
 
-        self.embedding = BERTEmbedding(args, token_emb, pos_emb, vocab_size=vocab_size, embed_size=self.n_hidden, max_len=self.max_len, dropout=self.dropout)
+        self.embedding = BERTEmbedding(args, token_emb, pos_emb, vocab_size=vocab_size,
+                                       tkn_emb_size=n_hidden, pos_emb_size=args.add_emb_size,
+                                       max_len=self.max_len, dropout=self.dropout)
+        self.n_hidden = self.embedding.output_size
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(

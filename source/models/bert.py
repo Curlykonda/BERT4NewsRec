@@ -3,6 +3,7 @@ from source.modules.bert_modules.bert import BERT
 
 from ..modules.news_encoder import *
 from ..modules.bert_modules.embedding.token import *
+from source.modules.bert_modules.utils.gelu import GELU
 
 
 class BERT4RecModel(BaseModel):
@@ -90,9 +91,9 @@ def make_bert4news_model(args):
         # cosine distance
         raise NotImplementedError()
 
-    if args.nie_layer is not None:
+    if 'lin_gelu' == args.nie_layer:
         # project hidden interest representation to next-item embedding
-        nie_layer = nn.Linear(args.bert_hidden_units, args.dim_art_emb)
+        nie_layer = nn.Sequential(nn.Linear(user_encoder.n_hidden, args.dim_art_emb), GELU())
 
     return token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer
 
@@ -145,7 +146,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         # embedding projection
         if self.nie_layer is not None:
             # create next-item embeddings from interest representations
-            interest_reps = self.nie_layer(interest_reps)  # (B x L_hist x D_article)
+            rel_interests = self.nie_layer(rel_interests)  # (B x L_hist x D_article)
 
         # score prediction
         if self.prediction_layer is not None:
@@ -157,7 +158,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             return logits
         else:
             # item embedding case
-            return interest_reps, encoded_cands
+            return rel_interests, encoded_cands
 
     def encode_hist(self, article_seq, u_idx=None):
 

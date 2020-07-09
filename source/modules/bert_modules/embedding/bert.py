@@ -21,17 +21,27 @@ class BERTEmbedding(nn.Module):
         sum of all these features are output of BERTEmbedding
     """
 
-    def __init__(self, args, token_code, pos_code, vocab_size, embed_size, max_len, dropout=0.1, pretrained_tokens=None):
+    def __init__(self, args, token_code, pos_code, vocab_size, tkn_emb_size, max_len, dropout=0.1, pos_emb_size=None, pretrained_tokens=None):
         """
         :param vocab_size: total vocab size
-        :param embed_size: embedding size of token embedding
+        :param tkn_emb_size: embedding size of token embedding
         :param dropout: dropout rate
         """
         super().__init__()
         self.args = args
         self.vocab_size = vocab_size
         self.max_seq_len = max_len
-        self.embed_size = embed_size
+        self.tkn_emb_size = tkn_emb_size
+        self.pos_emb_size = pos_emb_size if pos_emb_size is not None else tkn_emb_size
+
+        self.comb_func = args.add_embs_func # how to combine pos & token emb
+        if 'add' == self.comb_func:
+            assert pos_emb_size == tkn_emb_size
+            self.output_size = self.tkn_emb_size
+        elif 'concat' == self.comb_func:
+            self.output_size = self.tkn_emb_size + self.pos_emb_size
+        else:
+            raise ValueError(args.add_embs_func)
 
         self.temp_embs_hidden_units = args.temp_embs_hidden_units
         self.temp_embs_act_func = args.temp_embs_act_func
@@ -54,18 +64,24 @@ class BERTEmbedding(nn.Module):
         else:
             seq = ts = to_emb
 
-        tkn = self.token_emb(seq) * math.sqrt(self.embed_size) if self.token_emb is not None else seq
+        tkn = self.token_emb(seq) * math.sqrt(self.tkn_emb_size) if self.token_emb is not None else seq
         pos = self.position_emb(ts) if self.position_emb is not None else ts
 
-        #print(pos.norm(2))
-        return self.dropout(tkn + pos)
+        if 'add' == self.comb_func:
+            out = tkn + pos
+        elif 'concat' == self.comb_func:
+            out = torch.cat([tkn, pos], dim=2)
+        else:
+            raise NotImplementedError()
+
+        return self.dropout(out)
 
     def _get_token_emb(self):
         # if self.token_code not in TOKEN_EMBS:
         #     raise KeyError("Unknown Token Embedding")
 
         if 'new' == self.token_code:
-            return TokenEmbedding(vocab_size=self.vocab_size, token_embed_size=self.embed_size)
+            return TokenEmbedding(vocab_size=self.vocab_size, token_embed_size=self.tkn_emb_size)
         elif 'pt' == self.token_code:
             return get_token_embeddings(self.args)
         else:
@@ -82,16 +98,16 @@ class BERTEmbedding(nn.Module):
 
         # pos embs
         if 'tpe' == self.pos_code:
-            return TrigonometricPositionEmbedding(d_model=self.embed_size, max_len=self.max_seq_len)
+            return TrigonometricPositionEmbedding(d_model=self.pos_emb_size, max_len=self.max_seq_len)
         elif 'lpe' == self.pos_code:
-            return LearnablePositionEmbedding(self.embed_size, self.max_seq_len)
+            return LearnablePositionEmbedding(self.pos_emb_size, self.max_seq_len)
         # temp embs
         elif 'lte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.len_time_vec, self.embed_size)
+            return temp_emb(self.len_time_vec, self.pos_emb_size)
         elif 'nte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.len_time_vec, self.embed_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
+            return temp_emb(self.len_time_vec, self.pos_emb_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
         else:
             return None
 

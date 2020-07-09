@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='train_mod_npa', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
+parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -156,8 +156,10 @@ parser.add_argument('--transf_enc_num_layers', type=int, default=1, help='Number
 parser.add_argument('--tranf_enc_num_heads', type=int, default=2, help='Number of heads for multi-attention')
 parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropout probability to use throughout the model')
 
-
 # Positional Embeddings #
+parser.add_argument('--add_emb_size', type=int, default=None, help='Size of additive embedding')
+parser.add_argument('--add_embs_func', type=str, default='add', choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
+
 parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe'], help='Type of positional embedding')
 
 # Temporal Embeddings #
@@ -169,7 +171,7 @@ parser.add_argument('--temp_embs_act_func', type=str, default=None, choices=['re
 
 # Prediction Layer #
 parser.add_argument('--pred_layer', type=str, default=None, choices=['l2', 'cos'], help='Type of prediction layer')
-parser.add_argument('--nie_layer', type=str, default=None, choices=['lin'], help='Type of next-item embedding layer')
+parser.add_argument('--nie_layer', type=str, default=None, choices=['lin_gelu'], help='Type of next-item embedding layer')
 
 ###########################################
 
