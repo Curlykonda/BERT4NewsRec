@@ -18,6 +18,7 @@ class NpaModDataloader(AbstractDataloader):
         self.target_prob = args.bert_mask_prob
         self.max_n_targets = int(self.max_hist_len * self.target_prob)
 
+
         self.split_method = args.split
         self.multiple_eval_items = args.split == "time_threshold"
 
@@ -197,7 +198,7 @@ class NpaTrainDataset(data_utils.Dataset):
                 art_id = entry
 
             prob = self.rnd.random()
-            if prob < self.target_prob and len(candidates) < self.max_n_targets:
+            if prob < self.target_prob or (idx+1 == len(org_hist) and len(candidates) == 0): # and len(candidates) < self.max_n_targets
 
                 cands = neg_samples[idx] + [art_id]
                 self.rnd.shuffle(cands)  # shuffle candidates so model cannot trivially guess target position
@@ -272,7 +273,11 @@ class NpaEvalDataset(data_utils.Dataset):
         # apply leave-one-out strategy
         target = hist[-1]
         # shuffle candidates
-        candidates = [target] + neg_samples[-1]
+        if isinstance(neg_samples[-1], list):
+            candidates = [target] + neg_samples[-1]
+        else:
+            candidates = [target] + neg_samples
+
         self.rnd.shuffle(candidates)
 
         self.n_cands = len(candidates) if self.n_cands is None else self.n_cands
