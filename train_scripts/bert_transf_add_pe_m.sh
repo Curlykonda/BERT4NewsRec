@@ -3,6 +3,7 @@
 #SBATCH -n 8
 #SBATCH -t 1:00:00
 #SBATCH -p gpu_short
+#SBATCH --gres=gpu:2
 #SBATCH --mem=60000M
 
 module load pre2019
