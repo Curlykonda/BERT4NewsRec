@@ -70,6 +70,9 @@ class BERTEmbedding(nn.Module):
         if 'add' == self.comb_func:
             out = tkn + pos
         elif 'concat' == self.comb_func:
+            # for tpe, repeat pos embs over batch
+            if pos.shape[0] != tkn.shape[0]:
+                pos = pos.repeat(tkn.shape[0], 1, 1)
             out = torch.cat([tkn, pos], dim=2)
         else:
             raise NotImplementedError()
