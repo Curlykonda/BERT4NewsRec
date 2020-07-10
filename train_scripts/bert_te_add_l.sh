@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_te_l
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 24:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -37,9 +37,9 @@ COUNTER=0
 
 exp_descr="100k_add"
 
-for TE in "${TEMP_EMBS[@]}"
+for K in "${neg_ratios[@]}"
 do
-  for K in "${neg_ratios[@]}"
+  for TE in "${TEMP_EMBS[@]}"
   do
     echo "$exp_descr $TE al$art_len k$K s$SEED"
       #1
@@ -54,5 +54,4 @@ do
     ((COUNTER++))
     echo "Exp counter: $COUNTER"
   done
-
 done

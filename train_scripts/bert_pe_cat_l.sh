@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 24:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -36,10 +36,11 @@ COUNTER=0
 
 exp_descr="100k_cat"
 
-for POS in "${POS_EMBS[@]}"
+for K in "${neg_ratios[@]}"
 do
-  for K in "${neg_ratios[@]}"
+  for POS in "${POS_EMBS[@]}"
   do
+
     echo "$exp_descr $POS al$art_len k$K s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \

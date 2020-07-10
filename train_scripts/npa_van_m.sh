@@ -16,14 +16,15 @@ python --version
 data=("./Data/DPG_nov19/40k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
-art_len=(30 128)
 SEED=$SLURM_ARRAY_TASK_ID
+
+art_len=(30 128)
+neg_ratios=(4 9 24)
 
 d_art=400
 
 lr=0.001
 epochs=100
-#decay_step=25
 
 n_users=40000
 exp_descr="npa_40k"
@@ -34,14 +35,19 @@ echo "$exp_descr $datapath"
 echo "$SEED"
 for LEN in "${art_len[@]}"
 do
-  echo "$exp_descr l$LEN s$SEED"
-    #1
-  python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
-  --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-  --max_article_len=$LEN --n_users=$n_users --num_epochs=$epochs \
-  --lr $lr --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr l$LEN s$SEED
-  ((COUNTER++))
-  echo "$COUNTER"
+  for K in "${neg_ratios[@]}"
+  do
+    echo "$exp_descr l$LEN k$K s$SEED"
+      #1
+    python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
+    --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+    --max_article_len=$LEN --n_users=$n_users --train_negative_sample_size=$K \
+    --lr $lr --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr l$LEN k$K s$SEED
+    ((COUNTER++))
+    echo "$COUNTER"
+
+  done
 done
+
 

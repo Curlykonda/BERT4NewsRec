@@ -27,7 +27,6 @@ neg_ratios=(4 9 24)
 lr=0.001
 #decay_step=25
 
-
 nie="lin_gelu"
 d_model=768
 
