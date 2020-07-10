@@ -36,7 +36,7 @@ class BERTEmbedding(nn.Module):
 
         self.comb_func = args.add_embs_func # how to combine pos & token emb
         if 'add' == self.comb_func:
-            assert pos_emb_size == tkn_emb_size
+            assert self.pos_emb_size == self.tkn_emb_size
             self.output_size = self.tkn_emb_size
         elif 'concat' == self.comb_func:
             self.output_size = self.tkn_emb_size + self.pos_emb_size
