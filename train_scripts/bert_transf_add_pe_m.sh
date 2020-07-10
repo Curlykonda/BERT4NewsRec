@@ -44,7 +44,7 @@ do
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sample_size=$K --dim_art_emb=$d_model \
-    --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+    --news_encoder $enc --pt_word_emb_path=$w_emb --lower_case=1 \
     --pos_embs=$POS --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
     --lr $lr --cuda_launch_blocking=1 \
     --experiment_description $exp_descr $POS al$art_len k$K s$SEED
