@@ -458,7 +458,7 @@ class ExtendedTrainer(AbstractTrainer):
         return oh_lbls
 
 def get_metric_descr(metric_set, metric_ks=[5, 10]):
-    description_metrics = ['AUC'] + \
+    description_metrics = ['AUC'] + ['MRR'] + \
                           ['NDCG@%d' % k for k in metric_ks[:3]] + \
                           ['Recall@%d' % k for k in metric_ks[:3]]
     description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)

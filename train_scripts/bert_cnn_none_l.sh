@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=bert_cnn_pe
+#SBATCH --job-name=bert_cnn_none
 #SBATCH -n 8
-#SBATCH -t 22:00:00
+#SBATCH -t 37:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -21,7 +21,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 
 
-POS_EMBS=(None) #
+POS=None #
 neg_ratios=(4 9 24)
 
 enc="wucnn"
@@ -40,20 +40,18 @@ echo "$exp_descr"
 echo "$SEED"
 for K in "${neg_ratios[@]}"
 do
-  for POS in "${POS_EMBS[@]}"
-  do
 
-    echo "$exp_descr $POS al$art_len k$K s$SEED neg $neg_sampler"
-      #1
-    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-    --train_negative_sampler_code random --train_negative_sample_size=$K \
-    --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
-    --pos_embs=$POS --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
-    --lr $lr --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+  echo "$exp_descr $POS al$art_len k$K s$SEED"
+    #1
+  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+  --train_negative_sampler_code random --train_negative_sample_size=$K \
+  --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
+  --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
+  --lr $lr --cuda_launch_blocking=1 \
+  --experiment_description $exp_descr $POS al$art_len k$K s$SEED
 
-    ((COUNTER++))
-    echo "Exp counter: $COUNTER"
+  ((COUNTER++))
+  echo "Exp counter: $COUNTER"
 
-  done
+
 done

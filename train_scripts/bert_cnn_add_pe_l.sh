@@ -16,19 +16,18 @@ python --version
 
 data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
-#pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
-art_len=30
+
 SEED=$SLURM_ARRAY_TASK_ID
 
-POS_EMBS=("tpe" "lpe") #
+art_len=30
+
+POS_EMBS=("lpe") # "tpe"
 neg_ratios=(4 9 24)
 
 enc="wucnn"
 d_art=400
-#neg_sampler="random"
 
 nie="lin_gelu"
-#LR=(0.01, 0.001, 0.0001)
 lr=0.001
 
 n_users=100000
@@ -44,7 +43,7 @@ do
   for POS in "${POS_EMBS[@]}"
   do
 
-    echo "$exp_descr $POS al$art_len k$K s$SEED neg $neg_sampler"
+    echo "$exp_descr $POS al$art_len k$K s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sampler_code random --train_negative_sample_size=$K \

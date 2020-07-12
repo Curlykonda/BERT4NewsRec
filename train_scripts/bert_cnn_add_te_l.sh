@@ -20,12 +20,10 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
 
-#neg_sampler="random"
-
-TEMP_EMBS=("lte" "nte") #
+TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"
 
-neg_ratios=(4 24) # 49
+neg_ratios=(4 9 24)
 
 enc="wucnn"
 d_art=400
