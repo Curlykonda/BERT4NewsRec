@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=bertje_te_l
+#SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
 #SBATCH -t 24:00:00
 #SBATCH -p gpu_shared
@@ -22,34 +22,31 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
+
+POS_EMBS=("lpe")
 neg_ratios=(4 9 24)
-lr=0.001
-#decay_step=25
-TEMP_EMBS=("lte" "nte")
-t_act_func="relu"
 
 nie="lin_gelu"
-d_model=768
+lr=0.001
 
 n_users=100000
 COUNTER=0
-#################
+#####
 
 exp_descr="100k_add"
 
 for K in "${neg_ratios[@]}"
 do
-  for TE in "${TEMP_EMBS[@]}"
+  for POS in "${POS_EMBS[@]}"
   do
-    echo "$exp_descr $TE al$art_len k$K s$SEED"
+    echo "$exp_descr $POS al$art_len k$K s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-    --train_negative_sampler_code random_common --train_negative_sample_size=$K \
+    --train_negative_sampler_code random --train_negative_sample_size=$K \
     --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-    --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-    --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
-    --lr $lr --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $TE al$art_len k$K s$SEED
+    --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
+    --lr $lr --n_users=$n_users --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $POS al$art_len k$K s$SEED
 
     ((COUNTER++))
     echo "Exp counter: $COUNTER"
