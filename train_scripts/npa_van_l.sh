@@ -19,14 +19,14 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
-neg_ratios=(4 9 24)
+neg_ratios=(24) # 4 9
 
 d_art=400
 
 lr=0.001
 
 n_users=100000
-exp_descr="npa_100k"
+exp_descr="100k_npa"
 COUNTER=0
 
 echo "$exp_descr $datapath"

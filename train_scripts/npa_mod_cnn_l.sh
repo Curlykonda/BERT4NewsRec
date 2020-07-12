@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=l_npa_mod_cnn
 #SBATCH -n 8
-#SBATCH -t 24:00:00
+#SBATCH -t 34:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -19,7 +19,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
-neg_ratios=(4 9 24)
+neg_ratios=(9 24) # 4
 
 d_art=400
 

@@ -23,7 +23,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 TE=None
 
 art_len=30
-neg_ratios=(4 9 24)
+neg_ratios=(24) # 4 9
 lr=0.001
 #decay_step=25
 
@@ -34,7 +34,7 @@ n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_rnd"
+exp_descr="100k"
 
 for K in "${neg_ratios[@]}"
 do
