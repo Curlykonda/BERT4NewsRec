@@ -44,7 +44,7 @@ do
     python -u main.py --template train_mod_npa --model_init_seed=$SEED --dataset_path=$data \
     --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
     --train_negative_sample_size=$K --max_article_len=$LEN \
-    --max_hist_len=$hist_len --news_encoder=wucnn \
+    --max_hist_len=$hist_len --news_encoder=wucnn --npa_variant=custom \
     --n_users=$n_users --num_epochs=$epochs \
     --lr $lr --cuda_launch_blocking=1 \
     --experiment_description $exp_descr al$LEN hl$hist_len k$K s$SEED
