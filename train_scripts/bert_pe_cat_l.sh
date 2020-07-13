@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 24:00:00
-#SBATCH -p gpu_shared
+#SBATCH -t 1:00:00
+#SBATCH -p gpu_short
 #SBATCH --mem=60000M
 
 
@@ -25,7 +25,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 POS_EMBS=("tpe" "lpe")
 neg_ratios=(4 9 24)
 
-add_emb_size=256
+add_emb_size=768
 
 nie="lin_gelu"
 lr=0.001
