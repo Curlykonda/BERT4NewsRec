@@ -33,7 +33,7 @@ def make_npa_model(args):
             news_encoder = NpaCNN(n_filters=args.dim_art_emb, word_emb_dim=args.dim_word_emb,
                                   dim_pref_q=args.dim_pref_query, dropout_p=args.npa_dropout)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(args.news_encoder)
 
 
     user_encoder = PersonalisedAttentionWu(args.dim_pref_query, args.dim_art_emb)
@@ -63,16 +63,13 @@ class NpaBaseModel(NewsRecBaseModel):
             args.dim_word_emb = 300
 
             args.max_hist_len = 50
-            args.max_art_len = 30
+            args.max_article_len = 30
 
             args.npa_dropout = 0.2
 
         elif 'bertje' == args.npa_variant:
             if args.dim_art_emb != 768:
                 args.dim_art_emb = 768
-
-
-            #assert 'bertje' == args.news_encoder
 
 
         token_embedding, news_encoder, user_encoder, prediction_layer = make_npa_model(args)
@@ -86,6 +83,9 @@ class NpaBaseModel(NewsRecBaseModel):
         self.d_user_emb = args.dim_art_emb
 
         self.dropout_p = args.npa_dropout
+
+        self.hist_len = args.max_hist_len
+        self.art_len = args.max_article_len
 
         self.user_id_embeddings = nn.Embedding(args.n_users, args.dim_u_id_emb)
 

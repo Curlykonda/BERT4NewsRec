@@ -133,11 +133,14 @@ def set_template(args):
         args.n_users=10000
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
-        # args.pt_news_encoder = 'BERTje'
-        # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
-        # args.language = "dutch"
+        args.pt_news_encoder = 'BERTje'
+        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        args.language = "dutch"
 
-        args.news_encoder = "transf"
+        # args.news_encoder = "transf"
+
+        args.add_emb_size=256
+        args.add_embs_func='concat'
 
         set_args_bert_pcp(args)
 
@@ -150,11 +153,14 @@ def set_template(args):
 
         args.max_article_len = 30
 
-        args.pos_embs = 'lpe'
+        # args.pos_embs = None
+        args.pos_embs = 'gnoise'
         args.incl_time_stamp = False
 
-        # args.temp_embs = 'nte'
-        # args.temp_embs_hidden_units = [256, args.dim_art_emb]
+        args.nie_layer = 'lin_gelu'
+
+        # args.temp_embs = 'lte'
+        # args.temp_embs_hidden_units = [128, args.add_emb_size]
         # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
 
@@ -163,6 +169,20 @@ def set_template(args):
         args.cuda_launch_blocking=True
 
     elif args.template.startswith('train_npa'):
+        # local debugging
+        args.local = True
+        args.device = 'cuda'
+
+        args.max_hist_len = 100
+        args.npa_variant = 'custom'
+        args.news_encoder = 'wucnn'
+
+        args.num_epochs = 5
+        args.train_negative_sample_size = 4
+        args.log_period_as_iter = 200
+        args.n_users = 10000
+        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+
         # NPA model trained with pseudo categorical prediction
         args.mode = 'train'
         #args.local = True
@@ -172,13 +192,12 @@ def set_template(args):
         args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
 
         # preprosessing
-        #args.n_users = 10000
         args.use_article_content = True
         args.incl_time_stamp = False
 
-        args.max_hist_len = 50 if args.max_hist_len is not None else args.max_hist_len
-        args.max_article_len = 30 if args.max_article_len is not None else args.max_article_len
-        args.dim_art_emb = 400 if args.dim_art_emb is not None else args.dim_art_emb
+        args.max_hist_len = 50 if args.max_hist_len is None else args.max_hist_len
+        args.max_article_len = 30 if args.max_article_len is None else args.max_article_len
+        args.dim_art_emb = 400 if args.dim_art_emb is None else args.dim_art_emb
 
         # split strategy
         args.split = 'time_threshold'
@@ -195,8 +214,8 @@ def set_template(args):
         args.train_negative_sample_size = 5 if args.train_negative_sample_size is None else args.train_negative_sample_size
         args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
-        args.test_negative_sampler_code = 'random'
-        args.test_negative_sample_size = 9 if args.test_negative_sample_size is None else args.test_negative_sample_size
+        args.test_negative_sampler_code = args.train_negative_sampler_code = 'random'
+        args.test_negative_sample_size = args.train_negative_sample_size if args.test_negative_sample_size is None else args.test_negative_sample_size
         args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
 
         # training
@@ -207,32 +226,41 @@ def set_template(args):
         args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
-        #args.lr = 0.001
+
         args.enable_lr_schedule = False
-        # args.decay_step = 25
-        # args.gamma = 1.0
 
         args.num_epochs = 50 if args.num_epochs is None else args.num_epochs
         args.metric_ks = [5, 10]
         args.best_metric = 'AUC'
 
         # model
-        args.model_code = 'vanilla_npa'
+        if 'vanilla' == args.npa_variant:
+            args.model_code = 'vanilla_npa'
+        elif 'custom' == args.npa_variant:
+            args.model_code = 'npa'
+        else:
+            raise NotImplementedError()
+
         args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
 
-    elif args.template.startswith('train_mod_npa'):
-        # args.local = True
-        # args.device = 'cuda'
-        #
-        # args.max_hist_len = 50
-        #
-        # args.num_epochs = 5
-        # args.train_negative_sample_size = 4
-        # args.log_period_as_iter = 200
-        # args.n_users = 10000
-        # args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+        args.dim_u_id_emb = 50 if args.dim_u_id_emb is None else args.dim_u_id_emb
+        args.dim_pref_query = 200 if args.dim_pref_query is None else args.dim_pref_query
+        args.npa_dropout = 0.2 if args.npa_dropout is None else args.npa_dropout
 
-        # args.npa_variant = 'bertje'
+    elif args.template.startswith('train_mod_npa'):
+        args.local = True
+        args.device = 'cuda'
+
+        args.max_hist_len = 100
+
+        args.num_epochs = 5
+        args.train_negative_sample_size = 4
+        args.log_period_as_iter = 200
+        args.n_users = 10000
+        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+
+        args.news_encoder="wucnn"
+        args.npa_variant = 'custom'
 
         if 'bertje' == args.npa_variant:
             args.fix_pt_art_emb = True

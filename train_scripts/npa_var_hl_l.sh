@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=l_npa_mod_cnn
+#SBATCH --job-name=npa_var_hl
 #SBATCH -n 8
-#SBATCH -t 34:00:00
+#SBATCH -t 24:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -20,17 +20,16 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
 hist_len=100
-neg_ratios=(9 24) # 4
+neg_ratios=(4 9) # 4 9
 
 d_art=400
 
 lr=0.001
-epochs=100
-n_users=100000
 
-exp_descr="100k_npa_mod"
+n_users=100000
+exp_descr="100k_npa"
 COUNTER=0
-#######
+##################
 
 echo "$exp_descr $datapath"
 
@@ -39,18 +38,17 @@ for LEN in "${art_len[@]}"
 do
   for K in "${neg_ratios[@]}"
   do
-    echo "$exp_descr al$LEN hl$hist_len K$K s$SEED"
+    echo "$exp_descr al$LEN hl$hist_len k$K s$SEED"
       #1
-    python -u main.py --template train_mod_npa --model_init_seed=$SEED --dataset_path=$data \
+    python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
     --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-    --train_negative_sample_size=$K --max_article_len=$LEN \
-    --max_hist_len=$hist_len --news_encoder=wucnn \
-    --n_users=$n_users --num_epochs=$epochs \
+    --max_article_len=$LEN --n_users=$n_users --train_negative_sample_size=$K \
+    --max_hist_len=$hist_len --npa_variant=custom --news_encoder=wucnn \
     --lr $lr --cuda_launch_blocking=1 \
     --experiment_description $exp_descr al$LEN hl$hist_len k$K s$SEED
-
     ((COUNTER++))
     echo "$COUNTER"
+
   done
 done
 
