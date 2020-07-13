@@ -50,7 +50,7 @@ do
     --train_negative_sample_size=$K \
     --add_embs_func=concat --add_emb_size=$add_emb_size \
     --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-    --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
+    --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 128 $add_emb_size --temp_embs_act_func $t_act_func \
     --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
     --lr=$lr --cuda_launch_blocking=1 \
     --experiment_description $exp_descr $TE al$art_len k$K s$SEED
