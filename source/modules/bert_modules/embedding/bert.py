@@ -2,13 +2,7 @@ import torch.nn as nn
 from .token import *
 from .position import *
 from source.modules.temporal_embedding import *
-
-
-POS_EMBS = [
-    TrigonometricPositionEmbedding.code(),
-    LearnablePositionEmbedding.code(),
-    None
-]
+from .position import POS_EMBS
 
 #TOKEN_EMBS = [TokenEmbedding.code(), 'pt', None]
 
@@ -104,6 +98,8 @@ class BERTEmbedding(nn.Module):
             return TrigonometricPositionEmbedding(d_model=self.pos_emb_size, max_len=self.max_seq_len)
         elif 'lpe' == self.pos_code:
             return LearnablePositionEmbedding(self.pos_emb_size, self.max_seq_len)
+        elif 'gnoise' == self.pos_code:
+            return GaussNoiseEmb(self.pos_emb_size)
         # temp embs
         elif 'lte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]

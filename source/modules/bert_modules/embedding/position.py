@@ -22,6 +22,26 @@ class LearnablePositionEmbedding(nn.Module):
         batch_size = x.size(0)
         return self.pe.weight.unsqueeze(0).repeat(batch_size, 1, 1)
 
+class GaussNoiseEmb(nn.Module):
+    """ Experimental module to add random noise instead of positional emb """
+
+    def __init__(self, d_emb):
+        super().__init__()
+
+        self.d_emb = d_emb
+
+    @staticmethod
+    def code():
+        return 'gnoise'
+
+    def forward(self, x):
+        b, l, d = x.shape
+        if d == self.d_emb:
+            return torch.rand_like(x).to(x.device)
+        else:
+            return torch.rand([b, l, self.d_emb], requires_grad=False, device=x.device)
+
+
 class TrigonometricPositionEmbedding(nn.Module):
     '''
     Fixed positional embedding with sinusoid functions
@@ -58,5 +78,6 @@ class TrigonometricPositionEmbedding(nn.Module):
 
 POS_EMBS = {
     LearnablePositionEmbedding.code(): LearnablePositionEmbedding,
-    TrigonometricPositionEmbedding.code(): TrigonometricPositionEmbedding
+    TrigonometricPositionEmbedding.code(): TrigonometricPositionEmbedding,
+    GaussNoiseEmb.code(): GaussNoiseEmb
 }

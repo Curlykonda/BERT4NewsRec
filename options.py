@@ -160,7 +160,7 @@ parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropo
 parser.add_argument('--add_emb_size', type=int, default=None, help='Size of additive embedding')
 parser.add_argument('--add_embs_func', type=str, default='add', choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
 
-parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe'], help='Type of positional embedding')
+parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe', 'gnoise'], help='Type of positional embedding')
 
 # Temporal Embeddings #
 parser.add_argument('--normalise_time_stamps', type=str, default='standard', help="specify scaler for time stamps")
@@ -171,7 +171,7 @@ parser.add_argument('--temp_embs_act_func', type=str, default=None, choices=['re
 
 # Prediction Layer #
 parser.add_argument('--pred_layer', type=str, default=None, choices=['l2', 'cos'], help='Type of prediction layer')
-parser.add_argument('--nie_layer', type=str, default=None, choices=['lin_gelu'], help='Type of next-item embedding layer')
+parser.add_argument('--nie_layer', type=str, default=None, choices=['lin_gelu', 'lin'], help='Type of next-item embedding layer')
 
 ###########################################
 
