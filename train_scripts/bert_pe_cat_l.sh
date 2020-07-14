@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 4:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -19,9 +19,10 @@ data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
 pt_news_enc="BERTje"
 pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 
-art_len=30
-#SEEDS=(113 42)
 SEED=$SLURM_ARRAY_TASK_ID
+
+art_len=30
+
 POS_EMBS=("tpe" "lpe")
 neg_ratios=(4 9 24)
 

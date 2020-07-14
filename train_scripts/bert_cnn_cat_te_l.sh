@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
 #SBATCH -n 8
-#SBATCH -t 37:00:00
+#SBATCH -t 6:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -19,7 +19,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-add_emb_size=256
+add_emb_size=400
 
 TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"

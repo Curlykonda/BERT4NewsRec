@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_te_l
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 4:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 
@@ -25,7 +25,7 @@ art_len=30
 neg_ratios=(4 9 24)
 lr=0.001
 
-TEMP_EMBS=("lte" "nte")
+TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"
 add_emb_size=512
 
