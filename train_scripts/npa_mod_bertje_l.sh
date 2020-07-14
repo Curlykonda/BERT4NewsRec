@@ -43,7 +43,7 @@ do
     echo "$exp_descr l$LEN k$K s$SEED"
       #1
     python -u main.py --template train_mod_npa --model_init_seed=$SEED --dataset_path=$data \
-    --npa_variant=bertje --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+    --npa_variant=bertje --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=0 \
     --train_negative_sample_size=$K --max_article_len=$LEN \
     --n_users=$n_users --num_epochs=$epochs \
     --lr $lr --cuda_launch_blocking=1 \
