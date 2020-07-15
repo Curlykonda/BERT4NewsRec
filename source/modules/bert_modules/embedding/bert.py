@@ -47,10 +47,16 @@ class BERTEmbedding(nn.Module):
         self.token_emb = self._get_token_emb()
         self.position_emb = self._get_pos_emb()
 
+
+        if args.norm_art_pos_embs:
+            self.layer_norm = nn.LayerNorm(self.tkn_emb_size + self.pos_emb_size)
+        else:
+            self.layer_norm = None
+
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, to_emb):
-        # sum token & positional embedding
+
         if isinstance(to_emb, list):
             seq, ts = to_emb
             # seq: (B x L x D_a)
@@ -58,16 +64,27 @@ class BERTEmbedding(nn.Module):
         else:
             seq = ts = to_emb
 
-        tkn = self.token_emb(seq) * math.sqrt(self.tkn_emb_size) if self.token_emb is not None else seq
-        pos = self.position_emb(ts) if self.position_emb is not None else ts
+        # * math.sqrt(self.tkn_emb_size)
+        tkn = self.token_emb(seq) if self.token_emb is not None else seq
+        if self.position_emb is not None:
+            pos = self.position_emb(ts)
+        else:
+            pos = torch.zeros_like(ts, requires_grad=False)
+
+        # normalise tkn & pos embs
+        tkn_pos = torch.cat([tkn, pos], dim=2)
+        if self.layer_norm is not None:
+            tkn_pos = self.layer_norm(tkn_pos)
+
 
         if 'add' == self.comb_func:
-            out = tkn + pos
+            #out = tkn + pos
+            out = tkn_pos[:, :, :self.tkn_emb_size] + tkn_pos[:, :, self.tkn_emb_size:]
+            assert out.shape[-1] == self.tkn_emb_size
+
         elif 'concat' == self.comb_func:
-            # for tpe, repeat pos embs over batch
-            if pos.shape[0] != tkn.shape[0]:
-                pos = pos.repeat(tkn.shape[0], 1, 1)
-            out = torch.cat([tkn, pos], dim=2)
+            out = tkn_pos
+            assert out.shape[-1] == self.output_size
         else:
             raise NotImplementedError()
 

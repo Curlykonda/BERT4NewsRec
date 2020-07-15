@@ -72,7 +72,7 @@ class TrigonometricPositionEmbedding(nn.Module):
         if self.pe.device != x.device:
             self.pe = self.pe.to(x.device)
 
-        pe = Variable(self.pe[:, :x.size(1)], requires_grad=False)
+        pe = Variable(self.pe[:, :x.size(1)].repeat(x.size(0), 1, 1), requires_grad=False)
         return pe
 
 

@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='RecPlay')
 # Top Level
 ################
 parser.add_argument('--mode', type=str, default='train', choices=['train'])
-parser.add_argument('--template', type=str, default='train_npa', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
+parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
@@ -109,6 +109,7 @@ parser.add_argument('--num_epochs', type=int, default=100, help='Number of epoch
 parser.add_argument('--num_samples', type=float, default=1e6, help='Number of samples for training')
 # logger #
 parser.add_argument('--log_period_as_iter', type=int, default=10000)
+parser.add_argument('--log_grads', type=bool, default=True, help="Log gradients during training")
 # evaluation #
 parser.add_argument('--metric_ks', nargs='+', type=int, default=[10, 20, 50], help='ks for Metric@k')
 parser.add_argument('--best_metric', type=str, default='AUC', help='Metric for determining the best model')
@@ -159,6 +160,7 @@ parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropo
 # Positional Embeddings #
 parser.add_argument('--add_emb_size', type=int, default=None, help='Size of additive embedding')
 parser.add_argument('--add_embs_func', type=str, default='add', choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
+parser.add_argument('--norm_art_pos_embs', type=bool, default=False, help='Normalise article & pos/temp embeddings')
 
 parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe', 'gnoise'], help='Type of positional embedding')
 
