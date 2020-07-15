@@ -160,7 +160,7 @@ parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropo
 # Positional Embeddings #
 parser.add_argument('--add_emb_size', type=int, default=None, help='Size of additive embedding')
 parser.add_argument('--add_embs_func', type=str, default='add', choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
-parser.add_argument('--norm_art_pos_embs', type=bool, default=False, help='Normalise article & pos/temp embeddings')
+parser.add_argument('--norm_art_pos_embs', type=bool, default=True, help='Normalise article & pos/temp embeddings')
 
 parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe', 'gnoise'], help='Type of positional embedding')
 
