@@ -11,9 +11,6 @@ from .base import AbstractTrainer, ExtendedTrainer, MetricGraphScalar, RecentMod
 from utils import AverageMeterSet
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
-
-
-
 class BERTTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)

@@ -24,7 +24,7 @@ add_emb_size=400
 TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"
 
-neg_ratios=(4 9 24) # 49
+neg_ratios=(4) # 9 24 49
 
 enc="wucnn"
 d_art=400
@@ -32,6 +32,7 @@ d_art=400
 nie="lin_gelu"
 #LR=(0.01, 0.001, 0.0001)
 lr=0.001
+n_epochs=10
 
 n_users=100000
 exp_descr="100k_NpaCNN_cat"
@@ -44,7 +45,7 @@ for K in "${neg_ratios[@]}"
 do
   for TE in "${TEMP_EMBS[@]}"
   do
-    echo "$exp_descr $TE al$art_len k$K s$SEED"
+    echo "$exp_descr $TE al$art_len k$K LN s$SEED"
 
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sample_size=$K \
@@ -52,8 +53,8 @@ do
     --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
     --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 128 $add_emb_size --temp_embs_act_func $t_act_func \
     --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
-    --lr=$lr --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $TE al$art_len k$K s$SEED
+    --lr=$lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $TE al$art_len k$K LN s$SEED
 
     ((COUNTER++))
     echo "Exp counter: $COUNTER"

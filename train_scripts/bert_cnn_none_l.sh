@@ -19,16 +19,17 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-hist_len=50
+hist_len=100
 
 POS=None #
-neg_ratios=(4 9 24)
+neg_ratios=(4 9) # 24
 
 enc="wucnn"
 d_art=400
 
 nie="lin_gelu"
 lr=0.001
+n_epochs=10
 
 n_users=100000
 exp_descr="100k_NpaCNN"
@@ -48,7 +49,7 @@ do
   --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
   --max_article_len=$art_len --max_hist_len=$hist_len \
   --nie_layer=$nie --n_users=$n_users \
-  --lr $lr --cuda_launch_blocking=1 \
+  --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
   --experiment_description $exp_descr $POS al$art_len hl$hist_len k$K s$SEED
 
   ((COUNTER++))

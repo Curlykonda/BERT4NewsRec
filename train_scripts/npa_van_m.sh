@@ -27,7 +27,7 @@ lr=0.001
 epochs=100
 
 n_users=40000
-exp_descr="npa_40k"
+exp_descr="40k_npa"
 COUNTER=0
 
 echo "$exp_descr $datapath"

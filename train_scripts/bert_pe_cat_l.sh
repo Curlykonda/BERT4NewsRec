@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 4:00:00
+#SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -24,12 +24,13 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 
 POS_EMBS=("tpe" "lpe")
-neg_ratios=(4 9 24)
+neg_ratios=(4)
 
 add_emb_size=768
 
 nie="lin_gelu"
 lr=0.001
+n_epochs=10
 
 n_users=100000
 COUNTER=0
@@ -42,15 +43,15 @@ do
   for POS in "${POS_EMBS[@]}"
   do
 
-    echo "$exp_descr $POS al$art_len k$K s$SEED"
+    echo "$exp_descr $POS al$art_len k$K LN s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sampler_code random --train_negative_sample_size=$K \
     --add_embs_func=concat --add_emb_size=$add_emb_size \
     --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
     --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \
-    --lr $lr --n_users=$n_users --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $POS al$art_len k$K s$SEED
+    --lr $lr --num_epochs=$n_epochs --n_users=$n_users --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $POS al$art_len k$K LN s$SEED
 
     ((COUNTER++))
     echo "Exp counter: $COUNTER"
