@@ -417,7 +417,6 @@ class BertTrainDatasetNews(BertTrainDataset):
                              n=n_cands+1)
         labels = pad_seq(labels, pad_token=pos_irrelevant_lbl, max_hist_len=self.max_hist_len,)
         mask = pad_seq(mask, pad_token=1, max_hist_len=self.max_hist_len,)
-
         assert len(hist) == self.max_hist_len
 
         ### Output ####

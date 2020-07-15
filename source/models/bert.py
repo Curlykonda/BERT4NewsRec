@@ -26,22 +26,6 @@ def make_bert4news_model(args):
     token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer = None, None, None, None, None
 
     vocab_size = args.max_vocab_size  # account for all items including PAD token
-    # load pretrained embeddings
-
-    # if args.fix_pt_art_emb:
-    #     # fix pre-computed article embs - no need for Word Embs or vocab
-    #     token_embedding = None
-    # else:
-    #     # compute article embs end-to-end using vocab + Word Embs + News Encoder
-    #     # load vocab
-    #     with Path(args.vocab_path).open('rb') as fin:
-    #         data = pickle.load(fin)
-    #         vocab = data['vocab']
-    #
-    #     # load pre-trained Word Embs, if exists
-    #     pt_word_emb = get_word_embs_from_pretrained_ft(vocab, args.pt_word_emb_path, args.dim_word_emb)
-    #     # intialise Token (Word) Embs either with pre-trained or random
-    #     token_embedding = TokenEmbedding(vocab_size, args.dim_word_emb, pt_word_emb)
 
     token_embedding = get_token_embeddings(args)
 
@@ -91,9 +75,15 @@ def make_bert4news_model(args):
         # cosine distance
         raise NotImplementedError()
 
+    # project hidden interest representation to next-item embedding
     if 'lin_gelu' == args.nie_layer:
-        # project hidden interest representation to next-item embedding
         nie_layer = nn.Sequential(nn.Linear(user_encoder.n_hidden, args.dim_art_emb), GELU())
+    elif 'lin_relu' == args.nie_layer:
+        nie_layer = nn.Sequential(nn.Linear(user_encoder.n_hidden, args.dim_art_emb), nn.ReLU())
+    elif 'lin_tanh' == args.nie_layer:
+        nie_layer = nn.Sequential(nn.Linear(user_encoder.n_hidden, args.dim_art_emb), nn.Tanh())
+    elif 'lin' == args.nie_layer:
+        nie_layer = nn.Linear(user_encoder.n_hidden, args.dim_art_emb)
 
     return token_embedding, news_encoder, user_encoder, prediction_layer, nie_layer
 

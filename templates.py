@@ -133,14 +133,19 @@ def set_template(args):
         args.n_users=10000
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
+        args.max_hist_len = 50
+
         args.pt_news_encoder = 'BERTje'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
+
+        args.nie_layer = 'lin_gelu'
 
         # args.news_encoder = "transf"
 
         args.add_emb_size=256
         args.add_embs_func='concat'
+        # args.add_embs_func = 'add'
 
         set_args_bert_pcp(args)
 
@@ -153,14 +158,18 @@ def set_template(args):
 
         args.max_article_len = 30
 
+        ### pos embs ###
+        args.norm_art_pos_embs = True
+
         # args.pos_embs = None
-        args.pos_embs = 'gnoise'
+        args.pos_embs = 'tpe'
         args.incl_time_stamp = False
-
-        args.nie_layer = 'lin_gelu'
-
-        # args.temp_embs = 'lte'
-        # args.temp_embs_hidden_units = [128, args.add_emb_size]
+        #
+        # args.temp_embs = 'nte'
+        # if 'concat' == args.add_embs_func:
+        #     args.temp_embs_hidden_units = [128, args.add_emb_size]
+        # else:
+        #     args.temp_embs_hidden_units = [128, args.dim_art_emb]
         # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
 

@@ -9,9 +9,94 @@ import sys
 import numpy as np
 import torch
 import torch.nn as nn
+from matplotlib.lines import Line2D
 from torch.backends import cudnn
 import arrow
 
+import matplotlib.pyplot as plt
+
+
+def get_grad_flow(named_parameters):
+    ave_grads = []
+    max_grads = []
+    layers = []
+    for n, p in named_parameters:
+        if (p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            ave_grads.append(p.grad.abs().mean())
+            max_grads.append(p.grad.abs().max())
+
+    return {n: [ave_grads[i], max_grads[i]] for i, n in enumerate(layers)}
+
+def get_grad_flow_report(named_parameters):
+    avg_grads = {}
+    max_grads = {}
+
+    for n, p in named_parameters:
+        if (p.requires_grad) and ("bias" not in n):
+            n = prettify_layer_names(n)
+            avg_grads[n] = p.grad.abs().mean().cpu().item()
+            max_grads[n] = p.grad.abs().max().cpu().item()
+
+    return avg_grads, max_grads
+
+def prettify_layer_names(l_name: str):
+    excl_layer_parts = ["weight", "embedding"]
+    n = ".".join([m for m in l_name.split('.') if m not in excl_layer_parts])
+    return n
+
+def plot_grad_flow(grad_report=None, named_parameters=None, iter=None):
+    '''Plots the gradients flowing through different layers in the net during training.
+    Can be used for checking for possible gradient vanishing / exploding problems.
+
+    Usage: Plug this function in Trainer class after loss.backwards() as
+    "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow'''
+
+    avg_grads = []
+    max_grads = []
+    layers = []
+
+    if grad_report is not None:
+        for n, (avg_g, max_g) in grad_report.items():
+            layers.append(n)
+            avg_grads.append(avg_g)
+            max_grads.append(max_g)
+    elif named_parameters is not None:
+        for n, p in named_parameters:
+            if (p.requires_grad) and ("bias" not in n):
+                layers.append(n)
+                avg_grads.append(p.grad.abs().mean().cpu().item())
+                max_grads.append(p.grad.abs().max().cpu().item())
+
+    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.3, lw=1, color="c")
+    plt.bar(np.arange(len(max_grads)), avg_grads, alpha=0.6, lw=1, color="b")
+    plt.hlines(0, 0, len(avg_grads) + 1, lw=2, color="k")
+    plt.xticks(range(0, len(avg_grads), 1), layers, rotation="vertical")
+    plt.xlim(left=0, right=len(avg_grads))
+    plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
+    plt.xlabel("Layers")
+    plt.ylabel("average gradient")
+    title = "Gradient flow"
+    if iter is not None:
+        title += " @iter {}".format(iter)
+    plt.title(title)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
+
+    #plt.gcf().subplots_adjust(bottom=0.15)
+    plt.show()
+
+    grad_report = {n: [avg_grads[i], max_grads[i]] for i, n in enumerate(layers)}
+    #print_grad_report(grad_report)
+
+    return grad_report
+
+def print_grad_report(grad_report):
+    for n, (avg_g, max_g) in grad_report.items():
+        print("{}: avg {}, max {}".format(n, avg_g, max_g))
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

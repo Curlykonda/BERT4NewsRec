@@ -7,7 +7,7 @@ from sklearn.preprocessing import OneHotEncoder
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from .base import AbstractTrainer, ExtendedTrainer, MetricGraphPrinter, RecentModelLogger, BestModelLogger
+from .base import AbstractTrainer, ExtendedTrainer, MetricGraphScalar, RecentModelLogger, BestModelLogger
 from utils import AverageMeterSet
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
@@ -54,6 +54,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+
         self.ce = nn.CrossEntropyLoss(reduction='mean')
 
     @classmethod

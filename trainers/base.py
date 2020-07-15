@@ -4,6 +4,7 @@ from sklearn.preprocessing import OneHotEncoder
 from loggers import *
 from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
 from utils import AverageMeterSet, get_hyper_params
+from source.utils import get_grad_flow_report
 
 import torch
 import torch.nn as nn
@@ -244,17 +245,17 @@ class AbstractTrainer(metaclass=ABCMeta):
         model_checkpoint = root.joinpath('models')
 
         train_loggers = [
-            MetricGraphPrinter(writer, key='epoch', graph_name='Epoch', group_name='Train'),
-            MetricGraphPrinter(writer, key='loss', graph_name='Loss', group_name='Train'),
-            MetricGraphPrinter(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
+            MetricGraphScalar(writer, key='epoch', graph_name='Epoch', group_name='Train'),
+            MetricGraphScalar(writer, key='loss', graph_name='Loss', group_name='Train'),
+            MetricGraphScalar(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
         ]
 
         val_loggers = []
         for k in self.metric_ks:
             val_loggers.append(
-                MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
+                MetricGraphScalar(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
             val_loggers.append(
-                MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+                MetricGraphScalar(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
 
         # val_loggers.append(MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Validation'))
         # val_loggers.append(MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Validation'))
@@ -290,6 +291,7 @@ class AbstractTrainer(metaclass=ABCMeta):
 
 class ExtendedTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+        self.log_grads = args.log_grads
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
 
@@ -344,6 +346,7 @@ class ExtendedTrainer(AbstractTrainer):
 
             # backward pass
             loss.backward()
+
             self.optimizer.step()
 
             # update metrics
@@ -367,6 +370,16 @@ class ExtendedTrainer(AbstractTrainer):
                 }
                 log_data.update(average_meter_set.averages())
                 self.log_extra_train_info(log_data)
+
+                if self.log_grads:
+                    # get grad_flow for abs_mean & sign_max
+                    avg_grads, max_grads = get_grad_flow_report(self.model.named_parameters())
+                    log_data['grad_abs_mean'] = avg_grads
+                    log_data['grad_sign_max'] = max_grads
+
+                    # add grad_flow to respective logger
+                    #self.logger_service.log_grad_flow(, accum_iter)
+
                 self.logger_service.log_train(log_data)
 
                 self.validate(epoch, accum_iter)
@@ -422,28 +435,32 @@ class ExtendedTrainer(AbstractTrainer):
         model_checkpoint = root.joinpath('models')
 
         train_loggers = [
-            MetricGraphPrinter(writer, key='epoch', graph_name='Epoch', group_name='Train'),
-            MetricGraphPrinter(writer, key='loss', graph_name='Loss', group_name='Train'),
-            MetricGraphPrinter(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
-            MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Train'),
-            MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Train')
+            MetricGraphScalar(writer, key='epoch', graph_name='Epoch', group_name='Train'),
+            MetricGraphScalar(writer, key='loss', graph_name='Loss', group_name='Train'),
+            MetricGraphScalar(writer, key='lr', graph_name='Learning Rate', group_name='Train'),
+            MetricGraphScalar(writer, key='AUC', graph_name='AUC', group_name='Train'),
+            MetricGraphScalar(writer, key='MRR', graph_name='MRR', group_name='Train'),
         ]
+
+        if self.log_grads:
+            train_loggers.append(MetricGraphScalars(writer, key='grad_abs_mean', graph_name='GradAbsMean', group_name='GradFlow'))
+            train_loggers.append(MetricGraphScalars(writer, key='grad_sign_max', graph_name='GradSignMax', group_name='GradFlow'))
 
         val_loggers = []
         for k in self.metric_ks:
             val_loggers.append(
-                MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
+                MetricGraphScalar(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Validation'))
             val_loggers.append(
-                MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+                MetricGraphScalar(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
 
             train_loggers.append(
-                MetricGraphPrinter(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Train'))
+                MetricGraphScalar(writer, key='NDCG@%d' % k, graph_name='NDCG@%d' % k, group_name='Train'))
             train_loggers.append(
-                MetricGraphPrinter(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
+                MetricGraphScalar(writer, key='Recall@%d' % k, graph_name='Recall@%d' % k, group_name='Validation'))
 
 
-        val_loggers.append(MetricGraphPrinter(writer, key='AUC', graph_name='AUC', group_name='Validation'))
-        val_loggers.append(MetricGraphPrinter(writer, key='MRR', graph_name='MRR', group_name='Validation'))
+        val_loggers.append(MetricGraphScalar(writer, key='AUC', graph_name='AUC', group_name='Validation'))
+        val_loggers.append(MetricGraphScalar(writer, key='MRR', graph_name='MRR', group_name='Validation'))
 
         val_loggers.append(RecentModelLogger(model_checkpoint))
         val_loggers.append(BestModelLogger(model_checkpoint, metric_key=self.best_metric))

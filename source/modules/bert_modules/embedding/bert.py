@@ -76,7 +76,6 @@ class BERTEmbedding(nn.Module):
         if self.layer_norm is not None:
             tkn_pos = self.layer_norm(tkn_pos)
 
-
         if 'add' == self.comb_func:
             #out = tkn + pos
             out = tkn_pos[:, :, :self.tkn_emb_size] + tkn_pos[:, :, self.tkn_emb_size:]
