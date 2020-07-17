@@ -128,23 +128,32 @@ def set_template(args):
         args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
+        args.train_batch_size = 10
         args.train_negative_sample_size=4
-        args.log_period_as_iter=200
-        args.n_users=10000
-        args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
+        args.log_period_as_iter=10000
+        args.n_users=40000
+        args.dataset_path="./Data/DPG_nov19/40k_time_split_n_rnd_users"
+        args.experiment_description = ["40k"]
 
         args.max_hist_len = 50
+        args.max_article_len = 30
 
         args.pt_news_encoder = 'BERTje'
+        args.news_encoder = 'bertje'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
 
         args.nie_layer = 'lin_gelu'
 
+        args.lr = 0.0005
+
         # args.news_encoder = "transf"
 
-        args.add_emb_size=256
-        args.add_embs_func='concat'
+        # args.news_encoder = "wucnn"
+        # args.dim_art_emb = 400
+
+        # args.add_emb_size=256
+        # args.add_embs_func='concat'
         # args.add_embs_func = 'add'
 
         set_args_bert_pcp(args)
@@ -152,18 +161,14 @@ def set_template(args):
         args.train_negative_sampler_code = 'random' # random_common
         args.test_negative_sampler_code = args.train_negative_sampler_code
 
-        # args.news_encoder = "wucnn"
-        # args.dim_art_emb = 400
-        # set_args_npa_cnn(args)
-
-        args.max_article_len = 30
+        args.experiment_description.append(args.news_encoder)
 
         ### pos embs ###
         args.norm_art_pos_embs = True
 
         # args.pos_embs = None
-        args.pos_embs = 'tpe'
-        args.incl_time_stamp = False
+        # args.pos_embs = 'lpe'
+        # args.incl_time_stamp = False
         #
         # args.temp_embs = 'nte'
         # if 'concat' == args.add_embs_func:
@@ -172,6 +177,15 @@ def set_template(args):
         #     args.temp_embs_hidden_units = [128, args.dim_art_emb]
         # args.temp_embs_act_func = "relu"
         # args.incl_time_stamp = True
+
+        if args.pos_embs is not None:
+            args.experiment_description.append(args.pos_embs)
+            args.experiment_description.append(args.add_embs_func)
+        elif args.temp_embs is not None:
+            args.experiment_description.append(args.temp_embs)
+            args.experiment_description.append(args.add_embs_func)
+        else:
+            args.experiment_description.append("none")
 
         # args.lower_case=False
 
@@ -370,7 +384,9 @@ def set_args_bert_pcp(args):
     elif "transf" == args.news_encoder:
         set_args_transf(args)
 
-    # args.lower_case = False
+    # pos embeddings
+    if 'add' == args.add_embs_func:
+        args.add_emb_size = args.dim_art_emb
 
     # split strategy
     args.split = 'time_threshold'

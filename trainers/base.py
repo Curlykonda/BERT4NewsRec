@@ -120,9 +120,6 @@ class AbstractTrainer(metaclass=ABCMeta):
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
             accum_iter += batch_size
 
-            #if self._needs_to_log(accum_iter):
-
-
             if self.args.local and batch_idx == 20:
                 break
 
@@ -288,10 +285,10 @@ class AbstractTrainer(metaclass=ABCMeta):
 
         pass
 
-
 class ExtendedTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
         self.log_grads = args.log_grads
+        self.grad_clip_val = args.grad_clip_val
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
 
@@ -306,7 +303,7 @@ class ExtendedTrainer(AbstractTrainer):
 
     def train(self):
         accum_iter = 0
-        #self.validate(0, accum_iter)
+        self.validate(0, accum_iter)
         print("\n > Start training")
         t0 = time.time()
         for epoch in range(self.num_epochs):
@@ -346,6 +343,9 @@ class ExtendedTrainer(AbstractTrainer):
 
             # backward pass
             loss.backward()
+
+            if self.grad_clip_val is not None:
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_val)
 
             self.optimizer.step()
 

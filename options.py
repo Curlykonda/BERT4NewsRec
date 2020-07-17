@@ -100,6 +100,7 @@ parser.add_argument('--optimizer', type=str, default='Adam', choices=['SGD', 'Ad
 parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
 parser.add_argument('--weight_decay', type=float, default=0, help='l2 regularization')
 parser.add_argument('--momentum', type=float, default=None, help='SGD momentum')
+parser.add_argument('--grad_clip_val', type=float, default=None, help='Value for gradient clipping')
 # lr scheduler #
 parser.add_argument('--lr_schedule', type=int, default=0, help="Enable lr scheduler")
 parser.add_argument('--decay_step', type=int, default=None, help='Decay step for StepLR')
@@ -153,13 +154,13 @@ parser.add_argument('--news_encoder', type=str, default=None, choices=["wucnn", 
 
 # Transformer Encoder #
 parser.add_argument('--transf_hidden_units', type=int, default=None, help='Size of hidden vectors (d_model)')
-parser.add_argument('--transf_enc_num_layers', type=int, default=1, help='Number of transformer layers')
-parser.add_argument('--tranf_enc_num_heads', type=int, default=2, help='Number of heads for multi-attention')
-parser.add_argument('--transf_enc_dropout', type=float, default=0.1, help='Dropout probability to use throughout the model')
+parser.add_argument('--transf_enc_num_layers', type=int, default=None, help='Number of transformer layers') # 1
+parser.add_argument('--tranf_enc_num_heads', type=int, default=None, help='Number of heads for multi-attention') # 4
+parser.add_argument('--transf_enc_dropout', type=float, default=None, help='Dropout probability to use throughout the model') # 0.1
 
 # Positional Embeddings #
 parser.add_argument('--add_emb_size', type=int, default=None, help='Size of additive embedding')
-parser.add_argument('--add_embs_func', type=str, default='add', choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
+parser.add_argument('--add_embs_func', type=str, default=None, choices=['add', 'concat'], help='Incorporate additional information to article embeddings')
 parser.add_argument('--norm_art_pos_embs', type=bool, default=True, help='Normalise article & pos/temp embeddings')
 
 parser.add_argument('--pos_embs', type=str, default=None, choices=['tpe', 'lpe', 'gnoise'], help='Type of positional embedding')

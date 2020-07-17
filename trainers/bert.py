@@ -7,9 +7,72 @@ from sklearn.preprocessing import OneHotEncoder
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+import matplotlib.pyplot as plt
+
 from .base import AbstractTrainer, ExtendedTrainer, MetricGraphScalar, RecentModelLogger, BestModelLogger
 from utils import AverageMeterSet
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
+
+class BERT4NewsCategoricalTrainer(ExtendedTrainer):
+    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+
+        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+
+        self.ce = nn.CrossEntropyLoss(reduction='mean')
+
+    @classmethod
+    def code(cls):
+        return 'bert_news_ce'
+
+    def calculate_loss(self, batch):
+
+        cat_labels = batch['lbls']
+        self.model.set_train_mode(True)
+        # forward pass
+        logits = self.model(cat_labels, **batch['input']) # L x N_c
+
+        # categorical labels indicate which candidate is the correct one C = [0, N_c]
+        # for positions where label is unequal -1
+        lbls = cat_labels[cat_labels != -1]
+
+        # calculate a separate loss for each class label per observation and sum the result.
+        loss = self.ce(logits, lbls)
+
+        ### calc metrics ###
+        # one-hot encode lbls
+        enc = OneHotEncoder(sparse=False)
+        enc.fit(np.array(range(logits.shape[1])).reshape(-1, 1))
+        oh_lbls = torch.LongTensor(enc.transform(lbls.cpu().reshape(len(lbls), 1)))
+        scores = nn.functional.softmax(logits, dim=1)
+
+        acc_train = (scores.argmax(dim=1) == lbls).sum().item() / lbls.size(0)
+
+        scores = scores.cpu().detach()
+
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, oh_lbls, self.metric_ks)
+        metrics.update(calc_auc_and_mrr(scores, oh_lbls))
+
+        return loss, metrics
+
+    def calculate_metrics(self, batch):
+
+        input = batch['input'].items()
+        lbls = batch['lbls']
+        self.model.set_train_mode(False)
+        logits = self.model(None, **batch['input']) # (L x N_c)
+
+        scores = nn.functional.softmax(logits, dim=1)
+
+        acc_val = (scores.argmax(dim=1) == lbls.argmax(dim=1)).sum().item() / lbls.size(0)
+
+        # select scores for the article indices of candidates
+        #scores = scores.gather(1, cands)  # (B x n_candidates)
+        # labels: (B x N_c)
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
+        metrics.update(calc_auc_and_mrr(scores, lbls))
+
+        return metrics
+
 
 class BERTTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
@@ -46,63 +109,6 @@ class BERTTrainer(AbstractTrainer):
 
         metrics = calc_recalls_and_ndcgs_for_ks(scores, labels, self.metric_ks)
         return metrics
-
-class BERT4NewsCategoricalTrainer(ExtendedTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
-
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
-
-        self.ce = nn.CrossEntropyLoss(reduction='mean')
-
-    @classmethod
-    def code(cls):
-        return 'bert_news_ce'
-
-    def calculate_loss(self, batch):
-
-        cat_labels = batch['lbls']
-        self.model.set_train_mode(True)
-        # forward pass
-        logits = self.model(cat_labels, **batch['input']) # L x N_c
-
-        # categorical labels indicate which candidate is the correct one C = [0, N_c]
-        # for positions where label is unequal -1
-        lbls = cat_labels[cat_labels != -1]
-
-        # calculate a separate loss for each class label per observation and sum the result.
-        loss = self.ce(logits, lbls)
-
-        ### calc metrics ###
-        # one-hot encode lbls
-        enc = OneHotEncoder(sparse=False)
-        enc.fit(np.array(range(logits.shape[1])).reshape(-1, 1))
-        oh_lbls = torch.LongTensor(enc.transform(lbls.cpu().reshape(len(lbls), 1)))
-        scores = nn.functional.softmax(logits, dim=1)
-
-        scores = scores.cpu().detach()
-
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, oh_lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, oh_lbls))
-
-        return loss, metrics
-
-    def calculate_metrics(self, batch):
-
-        input = batch['input'].items()
-        lbls = batch['lbls']
-        self.model.set_train_mode(False)
-        logits = self.model(None, **batch['input']) # (L x N_c)
-
-        scores = nn.functional.softmax(logits, dim=1)
-
-        # select scores for the article indices of candidates
-        #scores = scores.gather(1, cands)  # (B x n_candidates)
-        # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, lbls))
-
-        return metrics
-
 
 class Bert4NewsDistanceTrainer(BERTTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root, dist_func='cos'):

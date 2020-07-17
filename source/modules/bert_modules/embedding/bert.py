@@ -26,16 +26,18 @@ class BERTEmbedding(nn.Module):
         self.vocab_size = vocab_size
         self.max_seq_len = max_len
         self.tkn_emb_size = tkn_emb_size
-        self.pos_emb_size = pos_emb_size if pos_emb_size is not None else tkn_emb_size
-
+        self.pos_emb_size = pos_emb_size if pos_emb_size is not None else 0
         self.comb_func = args.add_embs_func # how to combine pos & token emb
+
+        self.output_size = self.tkn_emb_size
+
         if 'add' == self.comb_func:
-            assert self.pos_emb_size == self.tkn_emb_size
-            self.output_size = self.tkn_emb_size
+            if self.pos_emb_size > 0:
+                assert self.pos_emb_size == self.tkn_emb_size
         elif 'concat' == self.comb_func:
             self.output_size = self.tkn_emb_size + self.pos_emb_size
-        else:
-            raise ValueError(args.add_embs_func)
+        elif self.comb_func is not None:
+            raise ValueError(self.comb_func)
 
         self.temp_embs_hidden_units = args.temp_embs_hidden_units
         self.temp_embs_act_func = args.temp_embs_act_func
@@ -46,7 +48,6 @@ class BERTEmbedding(nn.Module):
 
         self.token_emb = self._get_token_emb()
         self.position_emb = self._get_pos_emb()
-
 
         if args.norm_art_pos_embs:
             self.layer_norm = nn.LayerNorm(self.tkn_emb_size + self.pos_emb_size)
@@ -69,16 +70,22 @@ class BERTEmbedding(nn.Module):
         if self.position_emb is not None:
             pos = self.position_emb(ts)
         else:
-            pos = torch.zeros_like(ts, requires_grad=False)
+            pos = None
 
         # normalise tkn & pos embs
-        tkn_pos = torch.cat([tkn, pos], dim=2)
+        if pos is not None:
+            tkn_pos = torch.cat([tkn, pos], dim=2)
+        else:
+            tkn_pos = tkn
+
         if self.layer_norm is not None:
             tkn_pos = self.layer_norm(tkn_pos)
 
         if 'add' == self.comb_func:
-            #out = tkn + pos
-            out = tkn_pos[:, :, :self.tkn_emb_size] + tkn_pos[:, :, self.tkn_emb_size:]
+            if pos is not None:
+                out = tkn_pos[:, :, :self.tkn_emb_size] + tkn_pos[:, :, self.tkn_emb_size:]
+            else:
+                out = tkn_pos
             assert out.shape[-1] == self.tkn_emb_size
 
         elif 'concat' == self.comb_func:

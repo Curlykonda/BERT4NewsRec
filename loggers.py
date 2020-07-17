@@ -124,9 +124,9 @@ class MetricGraphScalar(AbstractBaseLogger):
 
     def log(self, *args, **kwargs):
         if self.key in kwargs:
-            self.writer.add_scalar(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['epoch'])
+            self.writer.add_scalar(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['accum_iter']) # epoch
         else:
-            self.writer.add_scalar(self.group_name + '/' + self.graph_label, 0, kwargs['epoch'])
+            self.writer.add_scalar(self.group_name + '/' + self.graph_label, 0, kwargs['accum_iter'])
 
     def complete(self, *args, **kwargs):
         self.writer.close()
@@ -136,9 +136,9 @@ class MetricGraphScalars(MetricGraphScalar):
     def log(self, *args, **kwargs):
         if self.key in kwargs:
             # uses key-value pairs
-            self.writer.add_scalars(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['epoch'])
+            self.writer.add_scalars(self.group_name + '/' + self.graph_label, kwargs[self.key], kwargs['accum_iter'])
         else:
-            self.writer.add_scalars(self.group_name + '/' + self.graph_label, 0, kwargs['epoch'])
+            self.writer.add_scalars(self.group_name + '/' + self.graph_label, 0, kwargs['accum_iter'])
 
 class HistogramLogger(AbstractBaseLogger):
     def __init__(self, writer, key='grad_histo', graph_name='GradFlow', group_name='metric'):
