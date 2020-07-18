@@ -193,7 +193,7 @@ def set_template(args):
 
     elif args.template.startswith('train_npa'):
         # local debugging
-        args.local = True
+        # args.local = True
 
         if args.local:
             args.device = 'cuda'
@@ -273,19 +273,19 @@ def set_template(args):
         args.npa_dropout = 0.2 if args.npa_dropout is None else args.npa_dropout
 
     elif args.template.startswith('train_mod_npa'):
-        args.local = True
-        args.device = 'cuda'
-
-        args.max_hist_len = 100
-
-        args.num_epochs = 5
-        args.train_negative_sample_size = 4
-        args.log_period_as_iter = 200
-        args.n_users = 10000
-        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
-
-        args.news_encoder="wucnn"
-        args.npa_variant = 'custom'
+        # args.local = True
+        # args.device = 'cuda'
+        #
+        # args.max_hist_len = 100
+        #
+        # args.num_epochs = 5
+        # args.train_negative_sample_size = 4
+        # args.log_period_as_iter = 200
+        # args.n_users = 10000
+        # args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+        #
+        # args.news_encoder="wucnn"
+        # args.npa_variant = 'custom'
 
         if 'bertje' == args.npa_variant:
             args.fix_pt_art_emb = True
