@@ -36,6 +36,7 @@ n_users=100000
 exp_descr="100k_NpaCNN_add"
 COUNTER=0
 
+echo "$SLURM_JOBID"
 echo "$datapath"
 echo "$SEED"
 

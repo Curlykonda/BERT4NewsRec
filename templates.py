@@ -194,17 +194,19 @@ def set_template(args):
     elif args.template.startswith('train_npa'):
         # local debugging
         args.local = True
-        args.device = 'cuda'
 
-        args.max_hist_len = 100
-        args.npa_variant = 'custom'
-        args.news_encoder = 'wucnn'
+        if args.local:
+            args.device = 'cuda'
 
-        args.num_epochs = 5
-        args.train_negative_sample_size = 4
-        args.log_period_as_iter = 200
-        args.n_users = 10000
-        args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
+            args.max_hist_len = 100
+            args.npa_variant = 'custom'
+            args.news_encoder = 'wucnn'
+
+            args.num_epochs = 5
+            args.train_negative_sample_size = 4
+            args.log_period_as_iter = 200
+            args.n_users = 10000
+            args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
         # NPA model trained with pseudo categorical prediction
         args.mode = 'train'

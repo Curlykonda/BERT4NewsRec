@@ -27,7 +27,7 @@ neg_ratios=(4)
 add_emb_size=512
 
 nie="lin_gelu"
-lr=5e-4
+lr=1e-2
 n_epochs=10
 
 n_users=100000
