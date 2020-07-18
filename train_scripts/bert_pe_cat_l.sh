@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 1:00:00
-#SBATCH -p gpu_short
+#SBATCH -t 10:00:00
+#SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
 module load pre2019
@@ -24,7 +24,7 @@ art_len=30
 POS_EMBS=("tpe" "lpe")
 neg_ratios=(4)
 
-add_emb_size=768
+add_emb_size=512
 
 nie="lin_gelu"
 lr=5e-4
@@ -41,7 +41,7 @@ do
   for POS in "${POS_EMBS[@]}"
   do
 
-    echo "$exp_descr $POS al$art_len k$K lr$lr LN s$SEED"
+    echo "$exp_descr $POS al$art_len k$K lr$lr s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sampler_code random --train_negative_sample_size=$K \

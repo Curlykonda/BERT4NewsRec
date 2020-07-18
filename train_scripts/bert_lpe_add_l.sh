@@ -5,7 +5,6 @@
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
-
 module load pre2019
 module load Miniconda3/4.3.27
 source activate thesis-user-modelling
@@ -25,11 +24,11 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(4 9)
+neg_ratios=(4) # 9
 
 nie="lin_gelu"
-lr=0.001
-
+lr=5e-4
+n_epochs=10
 
 n_users=100000
 COUNTER=0
@@ -41,7 +40,7 @@ for K in "${neg_ratios[@]}"
 do
   for POS in "${POS_EMBS[@]}"
   do
-    echo "$exp_descr $POS al$art_len hl$hist_len k$K LN s$SEED"
+    echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED"
       #1
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sampler_code random --train_negative_sample_size=$K \
@@ -49,7 +48,7 @@ do
     --max_article_len=$art_len  --max_hist_len=$hist_len \
     --pos_embs=$POS --nie_layer $nie \
     --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $POS al$art_len LN k$K s$SEED
+    --experiment_description $exp_descr $POS al$art_len k$K lr$lr s$SEED
 
     ((COUNTER++))
     echo "Exp counter: $COUNTER"
