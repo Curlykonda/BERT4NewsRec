@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -n 8
-#SBATCH -t 10:00:00
-#SBATCH -p gpu_shared
+#SBATCH -t 1:00:00
+#SBATCH -p gpu_short
 #SBATCH --mem=60000M
 
 module load pre2019
