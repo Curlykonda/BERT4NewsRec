@@ -49,7 +49,8 @@ do
     python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sample_size=$K \
     --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-    --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
+    --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
+    --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
     --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
     --lr=$lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
     --experiment_description $exp_descr $TE al$art_len LN k$K s$SEED
