@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_te_l
 #SBATCH -n 8
-#SBATCH -t 4:00:00
+#SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -31,8 +31,8 @@ add_emb_size=512
 d_model=768
 
 nie="lin_gelu"
-lr=1e-2
-n_epochs=10
+lr=1e-4
+n_epochs=50
 
 n_users=100000
 COUNTER=0
