@@ -27,9 +27,8 @@ neg_ratios=(4)
 add_emb_size=512
 
 nie="lin_gelu"
-LR=(1e-3) # lr
-decay=2
-gamma=0.1
+LR=(1e-4) # lr
+warmup=0.1
 
 n_epochs=30
 
@@ -51,7 +50,7 @@ do
         #1
       python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --train_negative_sampler_code random --train_negative_sample_size=$K \
-      --lr_schedule=1 --decay_step=$decay --gamma=$gamma \
+      --lr_schedule=1 --warmup_ratio=$warmup \
       --add_embs_func=concat --add_emb_size=$add_emb_size \
       --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
       --pos_embs=$POS --max_article_len=$art_len --nie_layer $nie \

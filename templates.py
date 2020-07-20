@@ -125,7 +125,7 @@ def set_template(args):
     #     args.bert_num_heads = 4
 
     elif args.template.startswith("local_test"):
-        args.local = True
+        args.local = False
         args.device = 'cuda'
         args.num_epochs = 5
         args.train_batch_size = 10
@@ -134,6 +134,9 @@ def set_template(args):
         args.n_users=40000
         args.dataset_path="./Data/DPG_nov19/40k_time_split_n_rnd_users"
         args.experiment_description = ["40k"]
+
+        args.lr_schedule=1
+        args.warmup_ratio=0.1
 
         args.max_hist_len = 50
         args.max_article_len = 30
@@ -145,7 +148,7 @@ def set_template(args):
 
         args.nie_layer = 'lin_gelu'
 
-        args.lr = 0.0005
+        args.lr = 1e-4
 
         # args.news_encoder = "transf"
 
@@ -154,7 +157,7 @@ def set_template(args):
 
         # args.add_emb_size=256
         # args.add_embs_func='concat'
-        # args.add_embs_func = 'add'
+        args.add_embs_func = 'add'
 
         set_args_bert_pcp(args)
 
@@ -167,7 +170,7 @@ def set_template(args):
         args.norm_art_pos_embs = True
 
         # args.pos_embs = None
-        # args.pos_embs = 'lpe'
+        args.pos_embs = 'lpe'
         # args.incl_time_stamp = False
         #
         # args.temp_embs = 'nte'
@@ -422,8 +425,9 @@ def set_args_bert_pcp(args):
     args.lr = 0.001 if args.lr is None else args.lr
 
     if args.lr_schedule:
-        args.decay_step = 25 if args.decay_step is None else args.decay_step
-        args.gamma = 0.1
+        # args.decay_step = 25 if args.decay_step is None else args.decay_step
+        # args.gamma = 0.1 if args.gamma is None else args.gamma
+        args.warmup_ratio = 0.1 if args.warmup_ratio is None else args.warmup_ratio
 
     # evaluation
     args.metric_ks = [5, 10]

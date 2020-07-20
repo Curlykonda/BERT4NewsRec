@@ -6,6 +6,8 @@ from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
 from utils import AverageMeterSet, get_hyper_params
 from source.utils import get_grad_flow_report
 
+from transformers import get_linear_schedule_with_warmup
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -30,11 +32,14 @@ class AbstractTrainer(metaclass=ABCMeta):
         self.val_loader = val_loader
         self.test_loader = test_loader
         self.optimizer = self._create_optimizer()
-        if args.lr_schedule:
+        self.init_lr = args.lr
+        if args.lr_schedule and args.decay_step is not None:
             # Decays the learning rate of each parameter group by gamma every step_size epochs
             self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=args.decay_step, gamma=args.gamma)
 
         self.num_epochs = args.num_epochs
+        self.num_training_steps = len(train_loader) * args.num_epochs
+        self.max_iters = args.num_epochs * args.log_period_as_iter
         self.metric_ks = args.metric_ks
         self.best_metric = args.best_metric
 
@@ -267,11 +272,11 @@ class AbstractTrainer(metaclass=ABCMeta):
             OPTIMIZER_STATE_DICT_KEY: self.optimizer.state_dict(),
         }
 
-    def _needs_to_log(self, accum_iter):
-        return accum_iter % self.log_period_as_iter < self.args.train_batch_size and accum_iter != 0
+    def _needs_to_log(self, global_step):
+        return global_step % self.log_period_as_iter < self.args.train_batch_size # and global_step != 0
 
-    def _reached_max_iterations(self, accum_iter):
-        return (self.num_epochs * self.log_period_as_iter) <= accum_iter
+    def _reached_max_iterations(self, global_step):
+        return self.max_iters <= global_step
 
     def print_final(self):
 
@@ -291,6 +296,17 @@ class ExtendedTrainer(AbstractTrainer):
         self.grad_clip_val = args.grad_clip_val
 
         super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+        if self.args.lr_schedule:
+            self.warmup_ratio = args.warmup_ratio if args.warmup_ratio is not None else 0
+            # Create schedule with learning rate that decreases linearly
+            # from the initial lr set in the optimizer to 0,
+            # after a warmup period during which it increases linearly
+            # from 0 to the initial lr set in the optimizer.
+            self.lr_scheduler = get_linear_schedule_with_warmup(self.optimizer,
+                                                                num_warmup_steps=self.warmup_ratio * self.num_training_steps,
+                                                                num_training_steps=self.num_training_steps)
+
+
 
     def add_extra_loggers(self):
         pass
@@ -326,7 +342,7 @@ class ExtendedTrainer(AbstractTrainer):
         #self.writer.close()
         print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
 
-    def train_one_epoch(self, epoch, accum_iter):
+    def train_one_epoch(self, epoch, global_step):
         self.model.train()
 
         average_meter_set = AverageMeterSet()
@@ -351,22 +367,25 @@ class ExtendedTrainer(AbstractTrainer):
 
             # update metrics
             average_meter_set.update('loss', loss.item())
-            average_meter_set.update('lr', self.optimizer.defaults['lr'])
-
+            average_meter_set.update('lr', *self.lr_scheduler.get_lr())
             for k, v in metrics_train.items():
                 average_meter_set.update(k, v)
 
-            #tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
-            accum_iter += batch_size
+            # adapt learning rate
+            if self.args.lr_schedule:
+                self.lr_scheduler.step()
 
-            if self._needs_to_log(accum_iter):
-                print('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
+            #tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
+            global_step += batch_size
+
+            if self._needs_to_log(global_step):
+                print('Epoch {}, loss {:.3f},  lr {:.5f}'.format(epoch + 1, average_meter_set['loss'].avg, average_meter_set['lr'].val))
                 print('Logging to Tensorboard')
                 #tqdm_dataloader.set_description('Logging to Tensorboard')
                 log_data = {
                     'state_dict': (self._create_state_dict()),
                     'epoch': epoch + 1,
-                    'accum_iter': accum_iter,
+                    'accum_iter': global_step,
                 }
                 log_data.update(average_meter_set.averages())
                 self.log_extra_train_info(log_data)
@@ -382,25 +401,20 @@ class ExtendedTrainer(AbstractTrainer):
 
                 self.logger_service.log_train(log_data)
 
-                self.validate(epoch, accum_iter)
+                self.validate(epoch, global_step)
 
-                if self._reached_max_iterations(accum_iter):
-                    return accum_iter
+                if self._reached_max_iterations(global_step):
+                    return global_step
                 else:
                     self.model.train()
+
+            #self.model.zero_grad()
 
             # break condition for local debugging
             if self.args.local and batch_idx > 20:
                 break
 
-        # adapt learning rate
-        if self.args.lr_schedule:
-            self.lr_scheduler.step()
-            if epoch % self.lr_scheduler.step_size == 0:
-                print(self.optimizer.defaults['lr'])
-
-
-        return accum_iter
+        return global_step
 
     def eval_one_epoch(self, eval_loader, epoch=None):
 
