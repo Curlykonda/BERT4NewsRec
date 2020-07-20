@@ -23,15 +23,15 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
 neg_ratios=(4)
-lr=1e-4
-n_epochs=50
-
 
 TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"
 
-nie="lin_gelu"
 d_model=768
+
+nie="lin_gelu"
+LR=(1e-4 1e-5)
+n_epochs=10
 
 n_users=100000
 COUNTER=0
@@ -41,20 +41,23 @@ exp_descr="100k_add"
 
 for K in "${neg_ratios[@]}"
 do
-  for TE in "${TEMP_EMBS[@]}"
+  for lr in "${LR[@]}"
   do
-    echo "$exp_descr $TE al$art_len k$K LN s$SEED"
-      #1
-    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-    --train_negative_sampler_code random_common --train_negative_sample_size=$K \
-    --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-    --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
-    --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-    --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
-    --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $TE al$art_len k$K LN s$SEED
+    for TE in "${TEMP_EMBS[@]}"
+    do
+      echo "$exp_descr $TE al$art_len k$K lr$lr s$SEED"
+        #1
+      python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+      --train_negative_sampler_code random_common --train_negative_sample_size=$K \
+      --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+      --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
+      --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
+      --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
+      --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+      --experiment_description $exp_descr $TE al$art_len k$K lr$lr s$SEED
 
-    ((COUNTER++))
-    echo "Exp counter: $COUNTER"
+      ((COUNTER++))
+      echo "Exp counter: $COUNTER"
+    done
   done
 done
