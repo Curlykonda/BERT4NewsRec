@@ -253,7 +253,7 @@ def set_template(args):
         args.device = 'cuda' #if not args.local else 'cpu'
         args.train_method = 'npa'
 
-        args.num_gpu = 1
+        #args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
 
@@ -343,7 +343,7 @@ def set_template(args):
         args.device = 'cuda' #if not args.local else 'cpu'
         args.train_method = 'cloze'
 
-        args.num_gpu = 1
+        #args.num_gpu = 1
         args.device_idx = '0'
         args.optimizer = 'Adam'
         #args.lr = 0.001

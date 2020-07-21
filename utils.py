@@ -90,10 +90,10 @@ def fix_random_seed_as(random_seed):
 
 
 def set_up_gpu(args):
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.device_idx
+    #os.environ['CUDA_VISIBLE_DEVICES'] = args.device_idx
     if args.cuda_launch_blocking:
         os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-    args.num_gpu = len(args.device_idx.split(","))
+    args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
 
 
 def load_pretrained_weights(model, path):
