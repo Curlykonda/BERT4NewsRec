@@ -16,7 +16,7 @@ python --version
 data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
-SEED=$SLURM_ARRAY_TASK_ID
+SEED=42
 
 art_len=30
 add_emb_size=400
