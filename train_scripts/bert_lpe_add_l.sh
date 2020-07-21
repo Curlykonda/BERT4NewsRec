@@ -26,8 +26,8 @@ POS_EMBS=("lpe")
 neg_ratios=(4) # 9
 
 nie="lin_gelu"
-LR=(1e-4 1e-5)
-n_epochs=10
+LR=(1e-4)
+n_epochs=50
 
 n_users=100000
 COUNTER=0
@@ -44,8 +44,7 @@ do
       echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED"
         #1
       python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-      --train_negative_sampler_code random --train_negative_sample_size=$K \
-      --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+      --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
       --max_article_len=$art_len --max_hist_len=$hist_len \
       --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
       --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \

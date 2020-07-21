@@ -27,8 +27,8 @@ neg_ratios=(4)
 add_emb_size=512
 
 nie="lin_gelu"
-LR=(1e-4 1e-5) # lr
-n_epochs=10
+LR=(1e-4) # lr
+n_epochs=50
 
 n_users=100000
 COUNTER=0

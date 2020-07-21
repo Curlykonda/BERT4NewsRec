@@ -26,8 +26,8 @@ art_len=30
 hist_len=100
 
 neg_ratios=(4 9) # 4 9
-lr=0.001
-n_epochs=10
+lr=1e-4
+n_epochs=50
 
 nie="lin_gelu"
 d_model=768
@@ -40,15 +40,14 @@ exp_descr="100k"
 
 for K in "${neg_ratios[@]}"
 do
-  echo "$exp_descr $TE al$art_len hl$hist_len k$K LN s$SEED"
+  echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr s$SEED"
     #1
   python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-  --train_negative_sampler_code random --train_negative_sample_size=$K \
-  --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+  --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
   --max_article_len=$art_len --max_hist_len=$hist_len \
   --nie_layer $nie --n_users=$n_users \
   --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $TE al$art_len hl$hist_len k$K LN s$SEED
+  --experiment_description $exp_descr $TE al$art_len hl$hist_len k$K lr$lr s$SEED
 
   ((COUNTER++))
   echo "Exp counter: $COUNTER"
