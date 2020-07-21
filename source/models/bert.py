@@ -9,7 +9,10 @@ from source.modules.bert_modules.utils.gelu import GELU
 class BERT4RecModel(BaseModel):
     def __init__(self, args):
         super().__init__(args)
-        self.bert = BERT(args)
+        self.bert = BERT(args, n_hidden=args.bert_hidden_units,
+                        n_layers=args.bert_num_blocks,
+                        n_heads=args.bert_num_heads,
+                        dropout=args.bert_dropout,)
         self.out = nn.Linear(self.bert.n_hidden, args.num_items + 1) # + 1 for the mask token
 
     @classmethod
@@ -62,7 +65,11 @@ def make_bert4news_model(args):
         raise ValueError("Can't use positional and temporal embedding! Use one or none")
 
     # initialise BERT user encoder
-    user_encoder = BERT(args, n_hidden=args.bert_hidden_units, token_emb=None, pos_emb=pos_emb)
+    user_encoder = BERT(args, n_hidden=args.bert_hidden_units,
+                        n_layers=args.bert_num_blocks,
+                        n_heads=args.bert_num_heads,
+                        dropout=args.bert_dropout,
+                        token_emb=None, pos_emb=pos_emb)
 
     # output layer: return the predicted and candidate embeddings
     if args.pred_layer is None:

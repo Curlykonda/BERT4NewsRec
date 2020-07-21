@@ -131,22 +131,23 @@ def set_template(args):
         args.train_batch_size = 10
         args.train_negative_sample_size=4
         args.log_period_as_iter=10000
-        args.n_users=40000
-        args.dataset_path="./Data/DPG_nov19/40k_time_split_n_rnd_users"
-        args.experiment_description = ["40k"]
+        args.n_users=10000
+        args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
+        args.experiment_description = ["10k"]
 
         args.lr_schedule=0
         #args.warmup_ratio=0.1
 
-        args.max_hist_len = 50
+        args.max_hist_len = 100
         args.max_article_len = 30
 
-        args.pt_news_encoder = 'BERTje'
-        args.news_encoder = 'bertje'
-        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
-        args.language = "dutch"
+        # args.pt_news_encoder = 'BERTje'
+        # args.news_encoder = 'bertje'
+        # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        # args.language = "dutch"
 
-        #args.bert_num_blocks=1
+        args.bert_num_blocks=2
+        args.bert_num_heads=4
 
         args.nie_layer = 'lin_gelu'
 
@@ -154,8 +155,8 @@ def set_template(args):
 
         # args.news_encoder = "transf"
 
-        # args.news_encoder = "wucnn"
-        # args.dim_art_emb = 400
+        args.news_encoder = "wucnn"
+        args.dim_art_emb = 400
 
         # args.add_emb_size=256
         # args.add_embs_func='concat'

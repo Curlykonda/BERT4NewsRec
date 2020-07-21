@@ -307,7 +307,6 @@ class ExtendedTrainer(AbstractTrainer):
                                                                 num_training_steps=self.num_training_steps)
 
 
-
     def add_extra_loggers(self):
         pass
 
