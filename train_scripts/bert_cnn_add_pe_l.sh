@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_pe
 #SBATCH -n 8
-#SBATCH -t 22:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
 
@@ -31,7 +31,7 @@ n_bert_layers=1
 
 nie="lin_gelu"
 lr=0.001
-n_epochs=50
+n_epochs=100
 
 n_users=100000
 exp_descr="100k_NpaCNN_add"

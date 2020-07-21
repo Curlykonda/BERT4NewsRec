@@ -32,7 +32,7 @@ n_bert_layers=1
 
 nie="lin_gelu"
 lr=0.001
-n_epochs=50
+n_epochs=100
 
 n_users=100000
 exp_descr="100k_NpaCNN_add"
