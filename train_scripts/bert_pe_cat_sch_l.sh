@@ -30,7 +30,7 @@ nie="lin_gelu"
 lr=1e-4 # lr
 warmup=(0 0.1)
 
-n_epochs=30
+n_epochs=50
 
 n_users=100000
 COUNTER=0
