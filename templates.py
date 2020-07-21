@@ -125,7 +125,7 @@ def set_template(args):
     #     args.bert_num_heads = 4
 
     elif args.template.startswith("local_test"):
-        args.local = False
+        args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
         args.train_batch_size = 10
@@ -135,8 +135,8 @@ def set_template(args):
         args.dataset_path="./Data/DPG_nov19/40k_time_split_n_rnd_users"
         args.experiment_description = ["40k"]
 
-        args.lr_schedule=1
-        args.warmup_ratio=0.1
+        args.lr_schedule=0
+        #args.warmup_ratio=0.1
 
         args.max_hist_len = 50
         args.max_article_len = 30
@@ -145,6 +145,8 @@ def set_template(args):
         args.news_encoder = 'bertje'
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
+
+        #args.bert_num_blocks=1
 
         args.nie_layer = 'lin_gelu'
 

@@ -367,7 +367,7 @@ class ExtendedTrainer(AbstractTrainer):
 
             # update metrics
             average_meter_set.update('loss', loss.item())
-            average_meter_set.update('lr', *self.lr_scheduler.get_lr())
+            average_meter_set.update('lr', self._get_cur_lr())
             for k, v in metrics_train.items():
                 average_meter_set.update(k, v)
 
@@ -442,6 +442,11 @@ class ExtendedTrainer(AbstractTrainer):
 
         return average_meter_set
 
+    def _get_cur_lr(self):
+        if self.args.lr_schedule:
+            return self.lr_scheduler.get_last_lr()[0]
+        else:
+            return self.init_lr
 
     def _create_loggers(self):
         root = Path(self.export_root)
