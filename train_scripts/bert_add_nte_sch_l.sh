@@ -28,7 +28,7 @@ t_act_func="relu"
 d_model=768
 
 nie="lin_gelu"
-lr=1e-4
+lr=1e-3
 warmup=(0 0.1)
 n_epochs=50
 
