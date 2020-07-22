@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=bert_cnn_none
 #SBATCH -n 8
-#SBATCH -t 20:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -22,16 +22,16 @@ art_len=30
 hist_len=100
 
 POS=None #
-neg_ratios=(4 9) # 24
+neg_ratios=(4) # 24
 
 enc="wucnn"
 d_art=400
 
-n_bert_layers=1
+n_bert_layers=2
 
 nie="lin_gelu"
-lr=0.001
-n_epochs=100
+LR=(1e-3 1e-4)
+n_epochs=50
 
 n_users=100000
 exp_descr="100k_NpaCNN"
@@ -43,19 +43,20 @@ echo "$exp_descr"
 echo "$SEED"
 for K in "${neg_ratios[@]}"
 do
+  for lr in "${LR[@]}"
+  do
+    echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED" # nl$n_bert_layers
+      #1
+    python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
+    --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+    --max_article_len=$art_len --max_hist_len=$hist_len \
+    --nie_layer=$nie --n_users=$n_users \
+    --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+    --experiment_description $exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED
 
-  echo "$exp_descr $POS al$art_len hl$hist_len k$K nl$n_bert_layers s$SEED"
-    #1
-  python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-  --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
-  --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-  --max_article_len=$art_len --max_hist_len=$hist_len \
-  --nie_layer=$nie --n_users=$n_users \
-  --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-  --experiment_description $exp_descr $POS al$art_len hl$hist_len k$K nl$n_bert_layers s$SEED
+    ((COUNTER++))
+    echo "Exp counter: $COUNTER"
 
-  ((COUNTER++))
-  echo "Exp counter: $COUNTER"
-
-
+  done
 done
