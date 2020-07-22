@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
-#SBATCH -n 8
-#SBATCH -t 16:00:00
+#SBATCH -N 8
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -30,9 +30,9 @@ enc="wucnn"
 d_art=400
 
 nie="lin_gelu"
-#LR=(0.01, 0.001, 0.0001)
-lr=5e-4
-n_epochs=10
+
+lr=1e-4
+n_epochs=50
 
 n_users=100000
 exp_descr="100k_NpaCNN_cat"
