@@ -107,14 +107,14 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True, device=args.device)
         self.mask_token = args.bert_mask_token
         self.encoded_art = None
-        self.train_mode = False
+        # self.train_mode = False
 
     @classmethod
     def code(cls):
         return 'bert4news'
 
-    def set_train_mode(self, val):
-        self.train_mode = val
+    # def set_train_mode(self, val):
+    #     self.train_mode = val
 
     def forward(self, cand_mask, **kwargs):
 

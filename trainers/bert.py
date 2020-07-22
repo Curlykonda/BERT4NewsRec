@@ -27,7 +27,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
     def calculate_loss(self, batch):
 
         cat_labels = batch['lbls']
-        self.model.set_train_mode(True)
+        # self.model.set_train_mode(True)
         # forward pass
         logits = self.model(cat_labels, **batch['input']) # L x N_c
 
@@ -58,7 +58,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
 
         input = batch['input'].items()
         lbls = batch['lbls']
-        self.model.set_train_mode(False)
+        # self.model.set_train_mode(False)
         logits = self.model(None, **batch['input']) # (L x N_c)
 
         scores = nn.functional.softmax(logits, dim=1)
