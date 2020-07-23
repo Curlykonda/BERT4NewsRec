@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
-#SBATCH -n 8
+#SBATCH -N 2
 #SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=l_bertje_none
-#SBATCH -n 8
+#SBATCH -N 2
 #SBATCH -t 24:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
