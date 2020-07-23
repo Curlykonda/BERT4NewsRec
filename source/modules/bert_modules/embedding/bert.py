@@ -88,11 +88,11 @@ class BERTEmbedding(nn.Module):
                 out = tkn_pos
             assert out.shape[-1] == self.tkn_emb_size
 
-        elif 'concat' == self.comb_func:
+        else: #'concat' == self.comb_func:
+            # 'concat' & None case
             out = tkn_pos
             assert out.shape[-1] == self.output_size
-        else:
-            raise NotImplementedError()
+
 
         return self.dropout(out)
 

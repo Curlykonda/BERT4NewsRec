@@ -109,11 +109,11 @@ parser.add_argument('--warmup_ratio', type=float, default=None, help='Portion of
 
 
 # epochs #
-parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs for training') #100
+parser.add_argument('--num_epochs', type=int, default=100, help='Number of log iteration for training') #100
 parser.add_argument('--num_samples', type=float, default=1e6, help='Number of samples for training')
 # logger #
 parser.add_argument('--log_period_as_iter', type=int, default=10000)
-parser.add_argument('--log_grads', type=bool, default=True, help="Log gradients during training")
+parser.add_argument('--log_grads', type=bool, default=False, help="Log gradients during training")
 # evaluation #
 parser.add_argument('--metric_ks', nargs='+', type=int, default=[10, 20, 50], help='ks for Metric@k')
 parser.add_argument('--best_metric', type=str, default='AUC', help='Metric for determining the best model')

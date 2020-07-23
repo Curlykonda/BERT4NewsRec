@@ -38,8 +38,10 @@ class AbstractTrainer(metaclass=ABCMeta):
             self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=args.decay_step, gamma=args.gamma)
 
         self.num_epochs = args.num_epochs
-        self.num_training_steps = len(train_loader) * args.num_epochs
+        self.batch_size = args.train_batch_size
         self.max_iters = args.num_epochs * args.log_period_as_iter
+        self.num_training_steps = self.max_iters // self.batch_size
+
         self.metric_ks = args.metric_ks
         self.best_metric = args.best_metric
 
@@ -108,7 +110,6 @@ class AbstractTrainer(metaclass=ABCMeta):
         for batch_idx, batch in enumerate(tqdm_dataloader):
 
             batch = self.batch_to_device(batch)
-            batch_size = self.args.train_batch_size
 
             # forward pass
             self.optimizer.zero_grad()
@@ -123,7 +124,7 @@ class AbstractTrainer(metaclass=ABCMeta):
             average_meter_set.update('lr', self.optimizer.defaults['lr'])
 
             tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
-            accum_iter += batch_size
+            accum_iter += self.batch_size
 
             if self.args.local and batch_idx == 20:
                 break
@@ -317,25 +318,25 @@ class ExtendedTrainer(AbstractTrainer):
         pass
 
     def train(self):
-        accum_iter = 0
-        self.validate(0, accum_iter)
+        global_step = 0
+        self.validate(0, global_step)
         print("\n > Start training")
         t0 = time.time()
         for epoch in range(self.num_epochs):
             t1 = time.time()
-            accum_iter = self.train_one_epoch(epoch, accum_iter)
+            global_step = self.train_one_epoch(epoch, global_step)
             t2 = time.time()
             print("> Train epoch {} in {:.3f} min \n".format(epoch+1, (t2-t1)/60))
 
             # t3 = time.time()
             # print("> Val epoch in {:.3f} min".format((t3 - t2) / 60))
 
-            if self._reached_max_iterations(accum_iter):
+            if self._reached_max_iterations(global_step):
                 break
 
-        print("Performed {} iterations in {} epochs (/{})".format(accum_iter, epoch+1, self.num_epochs))
+        print("Performed {} iterations in {} epochs (/{})".format(global_step, epoch+1, self.num_epochs))
 
-        self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": accum_iter})
+        self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": global_step})
         self.logger_service.complete({'state_dict': (self._create_state_dict()),})
 
         #self.writer.close()
@@ -345,12 +346,10 @@ class ExtendedTrainer(AbstractTrainer):
         self.model.train()
 
         average_meter_set = AverageMeterSet()
-        #tqdm_dataloader = tqdm(self.train_loader)
 
         for batch_idx, batch in enumerate(self.train_loader):
 
             batch = self.batch_to_device(batch)
-            batch_size = self.args.train_batch_size
 
             # forward pass
             self.optimizer.zero_grad()
@@ -374,8 +373,7 @@ class ExtendedTrainer(AbstractTrainer):
             if self.args.lr_schedule:
                 self.lr_scheduler.step()
 
-            #tqdm_dataloader.set_description('Epoch {}, loss {:.3f} '.format(epoch + 1, average_meter_set['loss'].avg))
-            global_step += batch_size
+            global_step += self.batch_size
 
             if self._needs_to_log(global_step):
                 print('Epoch {}, loss {:.3f},  lr {:.5f}'.format(epoch + 1, average_meter_set['loss'].avg, average_meter_set['lr'].val))

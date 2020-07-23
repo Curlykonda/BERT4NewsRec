@@ -125,7 +125,7 @@ def set_template(args):
     #     args.bert_num_heads = 4
 
     elif args.template.startswith("local_test"):
-        args.local = True
+        args.local = False
         args.device = 'cuda'
         args.num_epochs = 5
         args.train_batch_size = 10
@@ -135,19 +135,19 @@ def set_template(args):
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
         args.experiment_description = ["10k"]
 
-        args.lr_schedule=0
+        args.lr_schedule=1
         #args.warmup_ratio=0.1
 
         args.max_hist_len = 100
         args.max_article_len = 30
 
-        # args.pt_news_encoder = 'BERTje'
-        # args.news_encoder = 'bertje'
-        # args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
-        # args.language = "dutch"
+        args.pt_news_encoder = 'BERTje'
+        args.news_encoder = 'bertje'
+        args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
+        args.language = "dutch"
 
-        args.bert_num_blocks=2
-        args.bert_num_heads=4
+        args.bert_num_blocks=1
+        # args.bert_num_heads=4
 
         args.nie_layer = 'lin_gelu'
 
@@ -155,12 +155,12 @@ def set_template(args):
 
         # args.news_encoder = "transf"
 
-        args.news_encoder = "wucnn"
-        args.dim_art_emb = 400
+        # args.news_encoder = "wucnn"
+        # args.dim_art_emb = 400
 
         # args.add_emb_size=256
         # args.add_embs_func='concat'
-        args.add_embs_func = 'add'
+        # args.add_embs_func = 'add'
 
         set_args_bert_pcp(args)
 
@@ -173,7 +173,7 @@ def set_template(args):
         args.norm_art_pos_embs = True
 
         # args.pos_embs = None
-        args.pos_embs = 'lpe'
+        # args.pos_embs = 'lpe'
         # args.incl_time_stamp = False
         #
         # args.temp_embs = 'nte'
@@ -204,7 +204,7 @@ def set_template(args):
         if args.local:
             args.device = 'cuda'
 
-            args.max_hist_len = 100
+            args.max_hist_len = 50
             args.npa_variant = 'custom'
             args.news_encoder = 'wucnn'
 
