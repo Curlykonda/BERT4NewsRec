@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=test_mul_gpu
-#SBATCH -n 8
-#SBATCH -t 2:00:00
+#SBATCH -N 4
+#SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 
 module load pre2019
