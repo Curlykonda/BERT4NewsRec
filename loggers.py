@@ -13,6 +13,7 @@ class LoggerService(object):
     def __init__(self, train_loggers=None, val_loggers=None, grad_histo_logger=None):
         self.train_loggers = train_loggers if train_loggers else []
         self.val_loggers = val_loggers if val_loggers else []
+        self.best_model_logger = [log for log in val_loggers if isinstance(log, BestModelLogger)][0]
 
         self.train_keys = [log.key for log in self.train_loggers]
         self.val_keys = [log.key for log in self.val_loggers if isinstance(log, MetricGraphScalar)]
@@ -20,16 +21,23 @@ class LoggerService(object):
         self.metrics = {'train': defaultdict(list),
                         'val': defaultdict(list),
                         'test': defaultdict(list)}
-
+        ##
         # currently not used [14.07.20]
         self.grad_histo_logger = grad_histo_logger
         self.grad_reports = defaultdict(list)
+        ###
 
     def complete(self, log_data):
         for logger in self.train_loggers:
             logger.complete(**log_data)
         for logger in self.val_loggers:
             logger.complete(**log_data)
+
+        # add best val to metrics
+        best_epoch = self.best_model_logger.best_epoch
+        self.metrics['val_best'] = {}
+        for key, vals in self.metrics['val'].items():
+            self.metrics['val_best'][key] = vals[best_epoch]
 
     def log_train(self, log_data):
         for logger in self.train_loggers:
@@ -55,6 +63,7 @@ class LoggerService(object):
         self.grad_reports[iter].append(report)
 
     def save_metric_dicts(self, export_path=None):
+
         with open(os.path.join(export_path, 'logs', 'metrics.json'), 'w') as f:
             json.dump(self.metrics, f, indent=4)
 
@@ -104,6 +113,7 @@ class BestModelLogger(AbstractBaseLogger):
             os.mkdir(self.checkpoint_path)
 
         self.best_metric = 0.
+        self.best_epoch = 0
         self.metric_key = metric_key
         self.filename = filename
 
@@ -112,6 +122,7 @@ class BestModelLogger(AbstractBaseLogger):
         if self.best_metric < current_metric:
             print("Update Best {} Model at {}".format(self.metric_key, kwargs['epoch']))
             self.best_metric = current_metric
+            self.best_epoch = kwargs['epoch']
             save_state_dict(kwargs['state_dict'], self.checkpoint_path, self.filename)
 
 
