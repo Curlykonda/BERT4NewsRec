@@ -26,7 +26,7 @@ neg_ratios=(4) #
 enc="wucnn"
 d_art=400
 
-n_bert_layers=2
+n_bert_layers=1
 
 nie="lin_gelu"
 LR=(1e-3 1e-4)
@@ -47,7 +47,7 @@ do
     for POS in "${POS_EMBS[@]}"
     do
 
-      echo "$exp_descr $POS al$art_len k$K lr$lr s$SEED" # nl$n_bert_layers
+      echo "$exp_descr $POS al$art_len k$K lr$lr nl$n_bert_layers s$SEED" #
         #1
       python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
@@ -55,7 +55,7 @@ do
       --pos_embs=$POS --add_embs_func=add \
       --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
       --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-      --experiment_description $exp_descr $POS al$art_len k$K lr$lr s$SEED
+      --experiment_description $exp_descr $POS al$art_len k$K lr$lr nl$n_bert_layers s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"

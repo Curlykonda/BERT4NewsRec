@@ -26,7 +26,7 @@ neg_ratios=(4) #
 enc="wucnn"
 d_art=400
 
-n_bert_layers=2
+n_bert_layers=1
 
 nie="lin_gelu"
 LR=(1e-3 1e-4)
