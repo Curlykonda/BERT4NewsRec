@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -N 4
-#SBATCH -t 15:00:00
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
-#SBATCH --mem=60000M
+#SBATCH --gres=gpu:2
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -23,7 +24,7 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(4) # 9
+neg_ratios=(9 24) # 9
 
 nie="lin_gelu"
 lr=1e-4
@@ -36,21 +37,22 @@ COUNTER=0
 
 exp_descr="100k_add"
 
-for K in "${neg_ratios[@]}"
+for wu in "${warmup[@]}"
 do
-  for wu in "${warmup[@]}"
+  for K in "${neg_ratios[@]}"
   do
+
     for POS in "${POS_EMBS[@]}"
     do
       echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr sch s$SEED"
         #1
-      python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-      --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-      --lr_schedule=1 --warmup_ratio=$wu \
-      --max_article_len=$art_len --max_hist_len=$hist_len \
-      --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
-      --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-      --experiment_description $exp_descr $POS al$art_len k$K lr$lr sch s$SEED
+      CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+        --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+        --lr_schedule=1 --warmup_ratio=$wu \
+        --max_article_len=$art_len --max_hist_len=$hist_len \
+        --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
+        --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+        --experiment_description $exp_descr $POS al$art_len k$K lr$lr sch s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
