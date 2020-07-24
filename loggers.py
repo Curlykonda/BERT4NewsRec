@@ -71,9 +71,46 @@ class LoggerService(object):
             with open(os.path.join(export_path, 'logs', 'grad_reports.json'), 'w') as fout:
                 json.dump(self.grad_reports, fout, indent=4)
 
-    def get_metrics_at_epoch(self, epoch):
-        return_str = []
-        pass
+    def get_metrics_at_epoch(self, metrics, epoch):
+        return {key: vals[epoch] for key, vals in metrics.items()}
+
+    def print_final(self, rel_epochs: list, add_info: dict, mul_lines=False, metric_ks=[5, 10]):
+
+        self.rel_metrics = ['AUC'] + ['MRR'] + \
+                          ['NDCG@%d' % k for k in metric_ks[:2]] + \
+                          ['Recall@%d' % k for k in metric_ks[:2]]
+
+        for key, val in add_info.items():
+            print("{}: {}".format(key, val))
+
+        print("\n### Val metrics ###")
+        for ep in rel_epochs:
+            m = {'loss': self.metrics['train']['loss'][ep]}
+            m.update(self.get_metrics_at_epoch(self.metrics['val'], ep))
+            if -1 == ep:
+                ep = len(self.metrics['train']['loss'])
+            print("Epoch {}: ".format(ep+1) + self.format_metric_descr(m, mul_lines=mul_lines))
+
+        print("\n### Best Val metrics ###")
+        print("Best epoch {}: ".format(self.best_model_logger.best_epoch) +
+                self.format_metric_descr(self.metrics['val_best'], mul_lines))
+
+        print("### Test metrics ###")
+        print(self.format_metric_descr(self.metrics['test'], mul_lines))
+
+    def format_metric_descr(self, metrics, mul_lines=False):
+        res_str = ""
+        for key, val in sorted(metrics.items()):
+            if key in self.rel_metrics:
+                res_str += "{}: {:.3f}".format(key, val)
+                if mul_lines:
+                    res_str += "\n "
+                else:
+                    res_str += ", "
+
+        res_str = res_str.replace('NDCG', 'N').replace('Recall', 'R')
+
+        return res_str
 
 
 class AbstractBaseLogger(metaclass=ABCMeta):

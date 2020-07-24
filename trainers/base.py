@@ -340,7 +340,9 @@ class ExtendedTrainer(AbstractTrainer):
         self.logger_service.complete({'state_dict': (self._create_state_dict()),})
 
         #self.writer.close()
-        print("\n >> Run completed in {:.1f} h \n".format((time.time() - t0) / 3600))
+        self.total_train_time = "{:.1f} h".format((time.time() - t0) / 3600)
+        print("\n >> Run completed in {} \n".format(self.total_train_time))
+
 
     def train_one_epoch(self, epoch, global_step):
         self.model.train()
@@ -438,6 +440,29 @@ class ExtendedTrainer(AbstractTrainer):
         print(descr)
 
         return average_meter_set
+
+    def test(self):
+        print('Test best model with test set!')
+
+        best_model = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
+        self.model.load_state_dict(best_model)
+        self.model.eval()
+
+        average_meter_set = self.eval_one_epoch(self.test_loader)
+
+        average_metrics = average_meter_set.averages()
+
+        self.logger_service.log_test(average_metrics)
+        self.logger_service.save_metric_dicts(self.export_root)
+
+        with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
+            json.dump(average_metrics, f, indent=4)
+
+        add_info = {'exp_dir': self.export_root,
+                    'n_params': self.args.n_params,
+                    'total_train_time': self.total_train_time}
+        self.logger_service.print_final(rel_epochs=[0, -1], add_info=add_info)
+        print("\n############################################\n")
 
     def _get_cur_lr(self):
         if self.args.lr_schedule:

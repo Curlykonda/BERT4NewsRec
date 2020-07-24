@@ -125,7 +125,7 @@ def set_template(args):
     #     args.bert_num_heads = 4
 
     elif args.template.startswith("local_test"):
-        args.local = False
+        args.local = True
         args.device = 'cuda'
         args.num_epochs = 5
         args.train_batch_size = 10
@@ -345,7 +345,7 @@ def set_template(args):
         args.train_method = 'cloze'
 
         #args.num_gpu = 1
-        args.device_idx = '0'
+        #args.device_idx = '0'
         args.optimizer = 'Adam'
         #args.lr = 0.001
         args.enable_lr_schedule = False

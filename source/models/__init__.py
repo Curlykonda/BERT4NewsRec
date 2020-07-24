@@ -30,4 +30,5 @@ def model_factory(args):
         n_params = "{:.2f} k".format(n_params / 1e3)
 
     print("Number of trainable parameters: {}".format(n_params))
+    args.n_params = n_params
     return model
