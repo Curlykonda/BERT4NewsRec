@@ -148,7 +148,7 @@ class AbstractTrainer(metaclass=ABCMeta):
 
         return accum_iter
 
-    def validate(self, epoch, accum_iter):
+    def validate(self, epoch, global_step):
         self.model.eval()
 
         average_meter_set = self.eval_one_epoch(self.val_loader, epoch)
@@ -156,7 +156,7 @@ class AbstractTrainer(metaclass=ABCMeta):
         log_data = {
             'state_dict': (self._create_state_dict()),
             'epoch': epoch+1,
-            'accum_iter': accum_iter,
+            'accum_iter': global_step,
         }
         log_data.update(average_meter_set.averages())
         self.log_extra_val_info(log_data)

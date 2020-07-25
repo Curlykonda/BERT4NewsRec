@@ -144,7 +144,7 @@ class RecentModelLogger(AbstractBaseLogger):
 
 
 class BestModelLogger(AbstractBaseLogger):
-    def __init__(self, checkpoint_path, metric_key='mean_iou', filename='best_acc_model.pth'):
+    def __init__(self, checkpoint_path, metric_key='mean_iou', filename='best_auc_model.pth'):
         self.checkpoint_path = checkpoint_path
         if not os.path.exists(self.checkpoint_path):
             os.mkdir(self.checkpoint_path)

@@ -10,23 +10,42 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", type=int, default=1)
+    parser.add_argument("--incl_model", type=int, default=0)
+    parser.add_argument("--specified_only", type=int, default=0, help="Get logs only for specified exps in 'logs_to_get.txt' or all")
+    parser.add_argument("--target_dir", type=str, default="logs")
 
     args = parser.parse_args()
 
     if args.local:
-        log_dir = Path("../../logs")
-        exp_dir = Path("../../experiments")
+        root = "../../"
     else:
-        log_dir = Path("./logs")
-        exp_dir = Path("./experiments")
+        root = "./"
+
+    log_dir = Path(root + args.target_dir)
+    exp_dir = Path(root + "experiments")
 
     if not log_dir.is_dir():
         log_dir.mkdir()
 
+    exps = []
 
-    for exp in os.listdir(exp_dir):
+    if args.specified_only:
+        # load exp names from json file
+        with open(root + "logs_to_get.txt", 'r') as fin:
+            exp_names = fin.readlines()
+
+        # add 'exp_dir' to exp name
+        for n in exp_names:
+          exps.append(exp_dir.joinpath(n))
+    else:
+        exps = os.listdir(exp_dir)
+
+
+    for exp in exps:
         try:
             shutil.copytree(exp_dir.joinpath(exp + "/logs/"), log_dir.joinpath(exp))
+            if args.incl_model:
+                shutil.copytree(exp_dir.joinpath(exp + "/models/"), log_dir.joinpath(exp, "models"))
         except:
             pass
 
