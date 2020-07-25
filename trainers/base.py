@@ -279,17 +279,6 @@ class AbstractTrainer(metaclass=ABCMeta):
     def _reached_max_iterations(self, global_step):
         return self.max_iters <= global_step
 
-    def print_final(self):
-
-        # get relevant hyper params
-
-        # get loss & metrics at certain epochs
-
-        # get test metrics
-
-        # print string
-
-        pass
 
 class ExtendedTrainer(AbstractTrainer):
     def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
@@ -474,6 +463,12 @@ class ExtendedTrainer(AbstractTrainer):
             return self.lr_scheduler.get_last_lr()[0]
         else:
             return self.init_lr
+
+    def _create_state_dict(self):
+        return {
+            STATE_DICT_KEY: self.model.state_dict(),
+            OPTIMIZER_STATE_DICT_KEY: self.optimizer.state_dict(),
+        }
 
     def _create_loggers(self):
         root = Path(self.export_root)

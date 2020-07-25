@@ -34,11 +34,6 @@ if __name__ == "__main__":
         with open(root + "logs_to_get.txt", 'r') as fin:
             for line in fin.readlines():
                 exps.append(line.strip())
-
-
-        # # add 'exp_dir' to exp name
-        # for n in exp_names:
-        #   exps.append(exp_dir.joinpath(n))
     else:
         exps = os.listdir(exp_dir)
 
