@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
-#SBATCH -n 8
+#SBATCH -N 2
 #SBATCH -t 15:00:00
 #SBATCH -p gpu_shared
 #SBATCH --mem=60000M
@@ -28,7 +28,7 @@ t_act_func="relu"
 d_model=768
 
 nie="lin_gelu"
-lr=1e-3
+lr=1e-4
 warmup=(0 0.1)
 n_epochs=50
 
