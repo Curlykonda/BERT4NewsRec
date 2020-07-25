@@ -444,8 +444,13 @@ class ExtendedTrainer(AbstractTrainer):
     def test(self):
         print('Test best model with test set!')
 
-        best_model = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
-        self.model.load_state_dict(best_model)
+        best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
+
+        if self.is_parallel:
+            self.model = nn.DataParallel(self.model)
+            #self.model = self.model.to(self.device)
+
+        self.model.load_state_dict(best_model_state_dict)
         self.model.eval()
 
         average_meter_set = self.eval_one_epoch(self.test_loader)

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test_mul_gpu
 #SBATCH -N 4
-#SBATCH -t 10:00:00
+#SBATCH -t 3:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -21,7 +21,7 @@ SEED=42
 art_len=30
 add_emb_size=400
 POS_EMBS=("lpe") #
-neg_ratios=(4 24) # 9 24
+neg_ratios=(24) # 9 24
 
 enc="wucnn"
 d_art=400
