@@ -255,7 +255,7 @@ def set_template(args):
         args.train_method = 'npa'
 
         #args.num_gpu = 1
-        args.device_idx = '0'
+        #args.device_idx = '0'
         args.optimizer = 'Adam'
 
         args.enable_lr_schedule = False
@@ -422,8 +422,8 @@ def set_args_bert_pcp(args):
     args.trainer_code = 'bert_news_ce'
     #args.device = 'cuda' #if not args.local else 'cpu'
 
-    args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
-    args.device_idx = '0'
+    #args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
+    #args.device_idx = '0'
     args.optimizer = 'Adam'
     args.lr = 0.001 if args.lr is None else args.lr
 

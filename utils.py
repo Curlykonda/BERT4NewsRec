@@ -92,9 +92,8 @@ def fix_random_seed_as(random_seed):
 def set_up_gpu(args):
     #os.environ['CUDA_VISIBLE_DEVICES'] = args.device_idx
     print("n devices: {}".format(torch.cuda.device_count()))
-    #print(torch.cuda.current_device())
     os.environ['CUDA_LAUNCH_BLOCKING'] = str(args.cuda_launch_blocking)
-    args.num_gpu = 1 if args.num_gpu is None else args.num_gpu
+    args.num_gpu = torch.cuda.device_count()
 
 
 def load_pretrained_weights(model, path):
