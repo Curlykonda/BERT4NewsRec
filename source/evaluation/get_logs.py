@@ -32,7 +32,9 @@ if __name__ == "__main__":
     if args.specified_only:
         # load exp names from json file
         with open(root + "logs_to_get.txt", 'r') as fin:
-            exps = fin.readlines()
+            for line in fin.readlines():
+                exps.append(line.strip())
+
 
         # # add 'exp_dir' to exp name
         # for n in exp_names:
