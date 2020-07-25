@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", type=int, default=1)
     parser.add_argument("--incl_model", type=int, default=0)
-    parser.add_argument("--specified_only", type=int, default=0, help="Get logs only for specified exps in 'logs_to_get.txt' or all")
+    parser.add_argument("--specified_only", type=int, default=1, help="Get logs only for specified exps in 'logs_to_get.txt' or all")
     parser.add_argument("--target_dir", type=str, default="logs")
 
     args = parser.parse_args()
@@ -32,11 +32,11 @@ if __name__ == "__main__":
     if args.specified_only:
         # load exp names from json file
         with open(root + "logs_to_get.txt", 'r') as fin:
-            exp_names = fin.readlines()
+            exps = fin.readlines()
 
-        # add 'exp_dir' to exp name
-        for n in exp_names:
-          exps.append(exp_dir.joinpath(n))
+        # # add 'exp_dir' to exp name
+        # for n in exp_names:
+        #   exps.append(exp_dir.joinpath(n))
     else:
         exps = os.listdir(exp_dir)
 
