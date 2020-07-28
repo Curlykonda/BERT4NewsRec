@@ -26,7 +26,7 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(24 49) # 4 9
+neg_ratios=(24 49 99) # 4 9
 lr=1e-4
 n_epochs=100
 
@@ -48,7 +48,7 @@ do
     --max_article_len=$art_len --max_hist_len=$hist_len \
     --nie_layer $nie --n_users=$n_users \
     --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $TE al$art_len hl$hist_len k$K lr$lr s$SEED
+    --experiment_description $exp_descr $TE al$art_len k$K lr$lr s$SEED
 
   ((COUNTER++))
   echo "Exp counter: $COUNTER"
