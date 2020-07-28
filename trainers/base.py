@@ -164,8 +164,8 @@ class AbstractTrainer(metaclass=ABCMeta):
 
     def test(self):
         print('Test best model with test set!')
-
-        best_model = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
+        best_model_filename = self.logger_service.best_model_logger.filename
+        best_model = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
         self.model.load_state_dict(best_model)
         self.model.eval()
 
@@ -432,8 +432,8 @@ class ExtendedTrainer(AbstractTrainer):
 
     def test(self):
         print('Test best model with test set!')
-
-        best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', 'best_acc_model.pth')).get('model_state_dict')
+        best_model_filename = self.logger_service.best_model_logger.filename
+        best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
 
         if self.is_parallel:
             self.model = nn.DataParallel(self.model)
