@@ -31,7 +31,7 @@ n_bert_layers=2
 nie="lin_gelu"
 
 lr=1e-3
-n_epochs=4
+n_epochs=3
 n_gpu=2
 
 n_users=100000

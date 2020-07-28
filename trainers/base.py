@@ -430,16 +430,31 @@ class ExtendedTrainer(AbstractTrainer):
 
         return average_meter_set
 
+    def validate(self, epoch, global_step):
+        self.model.eval()
+
+        average_meter_set = self.eval_one_epoch(self.val_loader, epoch)
+
+        log_data = {
+            'state_dict': (self._create_state_dict()),
+            'epoch': epoch+1,
+            'accum_iter': global_step,
+        }
+        log_data.update(average_meter_set.averages())
+        self.log_extra_val_info(log_data)
+        self.logger_service.log_val(log_data)
+
     def test(self):
         print('Test best model with test set!')
         best_model_filename = self.logger_service.best_model_logger.filename
         best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
 
+        self.model.load_state_dict(best_model_state_dict)
+
         if self.is_parallel:
             self.model = nn.DataParallel(self.model)
             #self.model = self.model.to(self.device)
 
-        self.model.load_state_dict(best_model_state_dict)
         self.model.eval()
 
         average_meter_set = self.eval_one_epoch(self.test_loader)
