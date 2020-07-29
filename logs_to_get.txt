@@ -1,4 +1,3 @@
-100k_add_lpe_al30_k9_lr1e-4_sch_s1_2020-07-25_0
 100k_add_lpe_al30_k24_lr1e-4_sch_s1_2020-07-26_0
 100k_NpaCNN_None_al30_hl100_k24_lr1e-4_s1_2020-07-25_0
 100k_NpaCNN_None_al30_hl100_k49_lr1e-4_s1_2020-07-26_0
