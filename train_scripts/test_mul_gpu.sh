@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test_mul_gpu
-#SBATCH -N 4
-#SBATCH -t 3:00:00
+#SBATCH -N 2
+#SBATCH -t 2:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
