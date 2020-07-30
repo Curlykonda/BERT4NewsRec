@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
-#SBATCH -n 8
+#SBATCH -N 4
 #SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -22,7 +22,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 neg_ratios=(4)
 
-TEMP_EMBS=("nte") # "lte"
+TEMP_EMBS=("nte" "ntev2") # "lte"
 t_act_func="relu"
 
 d_model=768
