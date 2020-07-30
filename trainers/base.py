@@ -450,10 +450,10 @@ class ExtendedTrainer(AbstractTrainer):
         best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
 
         self.model.load_state_dict(best_model_state_dict)
+        self.model = self.model.to(self.device)
 
         if self.is_parallel:
             self.model = nn.DataParallel(self.model)
-            #self.model = self.model.to(self.device)
 
         self.model.eval()
 
