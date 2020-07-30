@@ -153,6 +153,9 @@ class BertDataloaderNews(BertDataloader):
             self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
         del self.art_index2word_ids
 
+        if self.w_time_stamps:
+            self.ts_scaler = data['ts_scaler']
+
     @classmethod
     def code(cls):
         return 'bert_news'
@@ -351,6 +354,7 @@ class BertTrainDatasetNews(BertTrainDataset):
         candidates = []
         time_stamps = []
         n_cands = len(neg_samples[0])
+        n_predictions = 0
 
         pos_irrelevant_lbl = -1 # label to indicate irrelevant position to avoid confusion with other categorical labels
 
@@ -363,7 +367,12 @@ class BertTrainDatasetNews(BertTrainDataset):
             else:
                 art_id = entry
 
-            prob = self.rng.random()
+            if 0 not in mask and idx+1 == len(seq):
+                # force at least 1 mask position if no seq element has been masked off
+                prob = 0
+            else:
+                prob = self.rng.random()
+
             if prob < self.mask_prob:
                 prob /= self.mask_prob
 
@@ -373,6 +382,7 @@ class BertTrainDatasetNews(BertTrainDataset):
                     # After the News Encoder this position will be replaced with Mask Embedding
                     tkn = art_id
                     m_val = 0
+                    n_predictions += 1
                 elif prob < 0.9:
                     # put random item
                     tkn = self.rng.choice(range(self.num_items))
@@ -435,18 +445,6 @@ class BertTrainDatasetNews(BertTrainDataset):
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
 
-
-#         if self.w_time_stamps:
-# #            time_stamps = list(map(map_time_stamp_to_vector, time_stamps))
-#             #args.len_time_vec
-#
-#
-#             return torch.LongTensor(hist), torch.LongTensor(mask), \
-#                    torch.LongTensor(candidates), torch.LongTensor(labels), \
-#                    torch.LongTensor(time_stamps)
-#         else:
-#             return torch.LongTensor(hist), torch.LongTensor(mask), \
-#                    torch.LongTensor(candidates), torch.LongTensor(labels)
 
     def _get_neg_samples(self, user):
         return self.train_neg_samples[user]

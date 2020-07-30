@@ -26,6 +26,7 @@ class AbstractDatasetDPG(AbstractDataset):
         self.use_content = args.use_article_content
         self.pt_news_encoder = args.pt_news_encoder
         self.w_time_stamp = args.incl_time_stamp
+        self.ts_scaler = None
 
         seed = args.dataloader_random_seed
         self.rnd = random.Random(seed)
@@ -105,7 +106,8 @@ class AbstractDatasetDPG(AbstractDataset):
                    'art2words': self.art_idx2word_ids,
                    'art_emb': self.art_embs, # article emb matrix
                    'valid_items': self.valid_items,
-                   'rnd': self.rnd}
+                   'rnd': self.rnd,
+                   'ts_scaler': self.ts_scaler}
 
         # save
         with dataset_path.open('wb') as fout:
@@ -344,26 +346,26 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                 # fit scaler
                 if 'standard' == self.args.normalise_time_stamps:
 
-                    scaler = StandardScaler()
+                    self.ts_scaler = StandardScaler()
                     print("> Fitting scaler ..")
-                    scaler.fit(np.array(all_ts['train']))
+                    self.ts_scaler.fit(np.array(all_ts['train']))
                 else:
-                    raise NotImplementedError()
+                    raise NotImplementedError(self.args.normalise_time_stamps)
 
                 # transform data
                 print("> Scaling time stamps ..")
                 for u_id, seq in train.items():
                     articles, ts = zip(*seq)
-                    train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
+                    train[u_id] = list(zip(articles, self.ts_scaler.transform(np.array(ts)).tolist()))
 
                 for u_id, seq in test.items():
                     articles, ts = zip(*seq)
-                    train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
+                    test[u_id] = list(zip(articles, self.ts_scaler.transform(np.array(ts)).tolist()))
 
                 for u_id, seq in val.items():
                     if len(seq) > 0:
                         articles, ts = zip(*seq)
-                        train[u_id] = list(zip(articles, scaler.transform(np.array(ts)).tolist()))
+                        val[u_id] = list(zip(articles, self.ts_scaler.transform(np.array(ts)).tolist()))
 
         return train, val, test, u_id2idx
 
