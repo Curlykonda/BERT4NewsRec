@@ -2,10 +2,10 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-import torch.nn.functional as F
-
 import math
+
+from source.modules.activation_funcs import get_activation_func
+
 
 class NormalLinear(nn.Linear):
     """
@@ -92,7 +92,50 @@ class NeuralFunc(nn.Module):
         # (B x L x D_model)
         return x_out.squeeze()
 
+
+class NeuralFuncV2(nn.Module):
+    def __init__(self, d_in, d_model, hidden_units=[256, 768], dropout=0.1, act_func="relu"):
+        super(NeuralFuncV2, self).__init__()
+
+        assert d_model == hidden_units[-1], "Last Temp. Emb. layer with {} units must match embedding dimension {}".format(hidden_units[-1], d_model)
+
+        self.act_func = act_func.lower()
+        self.blocks = nn.ModuleList()
+
+        for i, hidden in enumerate(hidden_units):
+
+            if 0 == i:
+                lin = nn.Linear(d_in, hidden)
+            else:
+                lin = nn.Linear(hidden_units[i - 1], hidden)
+
+            # if i < len(hidden_units) - 1:
+            self.blocks.append(nn.Sequential(lin, nn.Dropout(p=dropout),  get_activation_func(self.act_func)))
+            # else:
+            #     self.blocks.append(lin)
+
+
+    @staticmethod
+    def code():
+        # neural temporal embedding V2 (func approx)
+        return 'ntev2'
+
+    def forward(self, x_in):
+        if len(x_in.shape) < 3:
+            x = x_in.unsqueeze(2).float()
+        else:
+            x = x_in.float()
+        # input x: time stamp in vector format, e.g. [DD, HH, mm]
+        for i, block in enumerate(self.blocks):
+            x = block(x)
+
+        # (B x L x D_model)
+        out = x.squeeze()
+        return out
+
+
 TEMP_EMBS = {
     LinearProject.code(): LinearProject,
-    NeuralFunc.code(): NeuralFunc
+    NeuralFunc.code(): NeuralFunc,
+    NeuralFuncV2.code(): NeuralFuncV2
 }
