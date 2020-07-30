@@ -112,35 +112,31 @@ def set_random_seeds(rnd_seed):
     cudnn.deterministic = True
     cudnn.benchmark = False
 
-def map_time_stamp_to_vector(ts, ts_len=4):
+def map_time_stamp_to_vector(ts, rel_parts):
     """
     input:
         ts (int): UNIX time stamp
-
+        rel_parts list(str): parts of datetime relevant for time vector
     output:
         ts_vector (list): vector representation of the datetime
     """
+
+    if rel_parts is None:
+        rel_parts = ['WD', 'HH', 'mm']
+
     ts = arrow.get(ts)
 
-    ts_vector = [
-        ts.weekday(),
-        ts.hour,
-        ts.minute,
-        ts.second
-    ]
-    to_add = None
-    if ts_len == 4:
-        return ts_vector
-    if ts_len > 4:
-        to_add = [ts.day] # 1 - 7
-    if ts > 5:
-        to_add.append(ts.month) # 1 - 12
-    if ts > 6:
-        to_add.append(ts.year - 2000)
-    if ts > 7:
-        raise ValueError()
+    dt_parts = {'YY': ts.year, 'MM': ts.month, 'DD': ts.day,
+              'WD': ts.weekday(), 'HH': ts.hour, 'mm': ts.minute, 'ss': ts.second}
 
-    return to_add + ts_vector
+    ts_vector = []
+
+    for key in rel_parts:
+        if key not in dt_parts:
+            raise ValueError("{} is not valid part of datetime".format(key))
+        ts_vector.append(dt_parts[key])
+
+    return ts_vector
 
 def init_weights(m):
     if isinstance(m, nn.Linear):

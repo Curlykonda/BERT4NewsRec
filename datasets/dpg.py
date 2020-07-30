@@ -25,12 +25,17 @@ class AbstractDatasetDPG(AbstractDataset):
 
         self.use_content = args.use_article_content
         self.pt_news_encoder = args.pt_news_encoder
-        self.w_time_stamp = args.incl_time_stamp
-        self.ts_scaler = None
 
         seed = args.dataloader_random_seed
         self.rnd = random.Random(seed)
 
+        ## time stamps ##
+        self.w_time_stamp = args.incl_time_stamp
+        self.parts_time_vec = ['WD', 'HH', 'mm'] if args.parts_time_vec is None else args.parts_time_vec
+        args.len_time_vec = len(self.parts_time_vec)
+        self.ts_scaler = None
+
+        ## article content ##
         self.vocab = None
         self.art_id2idx = None # mapping article ID -> article index
         self.art_idx2word_ids = None
@@ -394,11 +399,11 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
         # check if data has already been separated into train & test
         if 'articles_train' in u_data.keys():
-            train_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
+            train_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts, rel_parts=self.parts_time_vec)) for art_id, ts
                            in sorted(u_data['articles_train'], key=lambda tup: tup[1])
                            if art_id in self.art_id2idx]
 
-            test_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts)) for art_id, ts
+            test_items = [(self.art_id2idx[art_id], map_time_stamp_to_vector(ts, rel_parts=self.parts_time_vec)) for art_id, ts
                           in sorted(u_data['articles_test'], key=lambda tup: tup[1])
                           if art_id in self.art_id2idx]
 
@@ -410,9 +415,9 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
             for i, (item, ts) in enumerate(full_hist):
                 if ts < threshold_date:
-                    train_items.append((item, map_time_stamp_to_vector(ts)) if self.w_time_stamp else item)
+                    train_items.append((item, map_time_stamp_to_vector(ts, rel_parts=self.parts_time_vec)) if self.w_time_stamp else item)
                 else:
-                    test_items = [(item, map_time_stamp_to_vector(ts)) for item, ts in full_hist[i:]]
+                    test_items = [(item, map_time_stamp_to_vector(ts, rel_parts=self.parts_time_vec)) for item, ts in full_hist[i:]]
                     break
 
         if len(test_items) < 1 or len(train_items) < 2:
