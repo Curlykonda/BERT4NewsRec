@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
-from loggers import *
+from trainers.loggers import *
 from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
 from utils import AverageMeterSet, get_hyper_params
 from source.utils import get_grad_flow_report
