@@ -76,7 +76,7 @@ class LoggerService(object):
 
     def print_final(self, rel_epochs: list, add_info: dict, mul_lines=False, metric_ks=[5, 10]):
 
-        self.rel_metrics = ['AUC'] + ['MRR'] + \
+        self.rel_metrics = ['loss'] + ['AUC'] + ['MRR'] + \
                           ['NDCG@%d' % k for k in metric_ks[:2]] + \
                           ['Recall@%d' % k for k in metric_ks[:2]]
 
