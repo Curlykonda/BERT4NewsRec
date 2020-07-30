@@ -1,9 +1,8 @@
 from .base import AbstractTrainer
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks
-from loggers import MetricGraphScalar
+from trainers.loggers import MetricGraphScalar
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 

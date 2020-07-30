@@ -1,7 +1,7 @@
 import torch.nn as nn
 from .token import *
 from .position import *
-from source.modules.temporal_embedding import *
+from source.modules.temporal_embedding import TEMP_EMBS
 from .position import POS_EMBS
 
 #TOKEN_EMBS = [TokenEmbedding.code(), 'pt', None]
@@ -129,7 +129,10 @@ class BERTEmbedding(nn.Module):
             return temp_emb(self.len_time_vec, self.pos_emb_size)
         elif 'nte' == self.pos_code:
             temp_emb = TEMP_EMBS[self.pos_code]
-            return temp_emb(self.len_time_vec, self.pos_emb_size, self.temp_embs_hidden_units, self.temp_embs_act_func)
+            return temp_emb(self.len_time_vec, self.pos_emb_size, self.temp_embs_hidden_units, act_func=self.temp_embs_act_func)
+        elif 'ntev2' == self.pos_code:
+            temp_emb = TEMP_EMBS[self.pos_code]
+            return temp_emb(self.len_time_vec, self.pos_emb_size, self.temp_embs_hidden_units, act_func=self.temp_embs_act_func)
         else:
             return None
 

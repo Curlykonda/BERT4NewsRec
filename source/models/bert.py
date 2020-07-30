@@ -1,9 +1,8 @@
 from .base import *
-from source.modules.bert_modules.bert import BERT
 
 from ..modules.news_encoder import *
 from ..modules.bert_modules.embedding.token import *
-from source.modules.bert_modules.utils.gelu import GELU
+from source.modules.activation_funcs import GELU
 
 
 class BERT4RecModel(BaseModel):

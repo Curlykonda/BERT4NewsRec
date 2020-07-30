@@ -4,7 +4,6 @@ import os
 import pickle
 import random
 from pathlib import Path
-import sys
 
 import numpy as np
 import torch
@@ -14,6 +13,10 @@ from torch.backends import cudnn
 import arrow
 
 import matplotlib.pyplot as plt
+
+from source.modules.activation_funcs import GELU
+
+
 
 
 def get_grad_flow(named_parameters):
