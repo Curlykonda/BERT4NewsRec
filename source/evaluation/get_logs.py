@@ -37,12 +37,14 @@ if __name__ == "__main__":
     else:
         exps = os.listdir(exp_dir)
 
-
+    copied = 0
     for exp in exps:
         try:
             shutil.copytree(exp_dir.joinpath(exp + "/logs/"), log_dir.joinpath(exp))
             if args.incl_model:
                 shutil.copytree(exp_dir.joinpath(exp + "/models/"), log_dir.joinpath(exp, "models"))
+            copied += 1
         except Exception as e:
             print(e)
 
+    print("\n copied {} new logs".format(copied))
