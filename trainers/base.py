@@ -452,8 +452,8 @@ class ExtendedTrainer(AbstractTrainer):
         self.model.load_state_dict(best_model_state_dict)
         self.model = self.model.to(self.device)
 
-        if self.is_parallel:
-            self.model = nn.DataParallel(self.model)
+        # if self.is_parallel:
+        #     self.model = nn.DataParallel(self.model)
 
         self.model.eval()
 
