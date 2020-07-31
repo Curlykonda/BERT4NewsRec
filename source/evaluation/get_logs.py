@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", type=int, default=1)
     parser.add_argument("--incl_model", type=int, default=0)
-    parser.add_argument("--specified_only", type=int, default=1, help="Get logs only for specified exps in 'logs_to_get.txt' or all")
+    parser.add_argument("--specified_only", type=int, default=0, help="Get logs only for specified exps in 'logs_to_get.txt' or all")
     parser.add_argument("--target_dir", type=str, default="logs")
 
     args = parser.parse_args()

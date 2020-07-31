@@ -11,7 +11,7 @@ source activate thesis-user-modelling
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-python -u source/evaluation/get_logs.py --local=0
+python -u source/evaluation/get_logs.py --local=0 --specified_only=0
 
 
 
