@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
 #SBATCH -N 4
-#SBATCH -t 10:00:00
+#SBATCH -t 25:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -21,7 +21,7 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-neg_ratios=(4 24)
+neg_ratios=(24 49)
 
 TEMP_EMBS=("nte" "ntev2") # "lte"
 t_act_func="relu"
