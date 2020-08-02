@@ -23,7 +23,7 @@ art_len=30
 hist_len=100
 
 POS=None #
-neg_ratios=(24 49 99) # 24
+neg_ratios=(49 74 99) # 24
 
 enc="wucnn"
 d_art=400
@@ -32,16 +32,13 @@ n_bert_layers=2
 
 nie="lin_gelu"
 LR=(1e-4)
-n_epochs=100
+n_epochs=50
 
 n_users=100000
 exp_descr="100k_NpaCNN"
 COUNTER=0
+#######################3
 
-echo "$data"
-echo "$exp_descr"
-
-echo "$SEED"
 for K in "${neg_ratios[@]}"
 do
   for lr in "${LR[@]}"
