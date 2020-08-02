@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_lpe
-#SBATCH -N 4
+#SBATCH -N 2
 #SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
@@ -22,7 +22,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 
 POS_EMBS=("lpe" "tpe") #
-neg_ratios=(49 74) #
+neg_ratios=(99) #
 
 enc="wucnn"
 d_art=400

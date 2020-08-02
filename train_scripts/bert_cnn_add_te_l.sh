@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
-#SBATCH -N 4
+#SBATCH -N 2
 #SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
@@ -24,7 +24,7 @@ art_len=30
 TEMP_EMBS=("nte" "ntev2") # "lte"
 t_act_func="relu"
 
-neg_ratios=(49 74) # 9 24
+neg_ratios=(99) # 9 24
 
 enc="wucnn"
 d_art=400
