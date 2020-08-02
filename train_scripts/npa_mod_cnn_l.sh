@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=npa_mod_cnn
-#SBATCH -n 8
+#SBATCH -N 4
 #SBATCH -t 34:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -21,12 +21,12 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
 hist_len=100
-neg_ratios=(4 24 49) # 4
+neg_ratios=(49 74 99) # 4
 
 d_art=400
 
 lr=1e-4
-epochs=100
+epochs=50
 n_users=100000
 
 exp_descr="100k_npa_mod"
