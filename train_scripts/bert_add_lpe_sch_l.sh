@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
 #SBATCH -N 4
-#SBATCH -t 20:00:00
+#SBATCH -t 25:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -24,11 +24,11 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(9 24) # 9
+neg_ratios=(49 74 99) # 9
 
 nie="lin_gelu"
 lr=1e-4
-warmup=(0 0.1)
+warmup=(0)
 n_epochs=50
 
 n_users=100000

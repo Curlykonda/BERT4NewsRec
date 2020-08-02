@@ -26,7 +26,7 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(24 49 99) # 4 9
+neg_ratios=(49 74 99) # 4 9
 lr=1e-4
 warmup=(0)
 
