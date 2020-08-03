@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
-#SBATCH -N 2
+#SBATCH -n 4
 #SBATCH -t 15:00:00
 #SBATCH -p gpu_shared
-#SBATCH --mem=60000M
+#SBATCH --mem=60G
 
 module load pre2019
 module load Miniconda3/4.3.27
@@ -20,7 +20,7 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-neg_ratios=(4)
+neg_ratios=(49 74)
 
 TEMP_EMBS=("nte") # "lte"
 t_act_func="relu"
@@ -29,7 +29,7 @@ d_model=768
 
 nie="lin_gelu"
 lr=1e-4
-warmup=(0 0.1)
+warmup=(0)
 n_epochs=50
 
 n_users=100000

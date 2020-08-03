@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
 #SBATCH -n 4
-#SBATCH -t 19:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -21,7 +21,7 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-neg_ratios=(49)
+neg_ratios=(49 74)
 
 TEMP_EMBS=("nte" "ntev2") # "lte"
 t_act_func="relu"
@@ -31,13 +31,13 @@ d_model=768
 nie="lin_gelu"
 LR=(1e-4)
 n_epochs=50
-eval_seq_order="shuffle_exc_t"
+#eval_seq_order="shuffle_exc_t"
 
 n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_add_shuf_exc_t"
+exp_descr="100k_add" # _shuf_exc_t
 
 for K in "${neg_ratios[@]}"
 do
@@ -52,7 +52,6 @@ do
         --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
         --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
         --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
-        --eval_seq_order=$eval_seq_order \
         --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
         --experiment_description $exp_descr $TE al$art_len k$K lr$lr s$SEED
 
