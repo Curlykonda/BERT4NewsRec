@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=bert_cnn_none
-#SBATCH -N 4
+#SBATCH -n 4
 #SBATCH -t 40:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:3
