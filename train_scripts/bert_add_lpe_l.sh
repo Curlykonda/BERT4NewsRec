@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_pe_l
-#SBATCH -N 4
-#SBATCH -t 25:00:00
+#SBATCH -N 2
+#SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -24,17 +24,18 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(49 74 99) # 99
+neg_ratios=(49) # 99
 
 nie="lin_gelu"
 LR=(1e-4)
 n_epochs=50
+eval_seq_order="shuffle_exc_t"
 
 n_users=100000
 COUNTER=0
 #####
 
-exp_descr="100k_add"
+exp_descr="100k_add_shuffle_hist"
 
 for K in "${neg_ratios[@]}"
 do
@@ -48,6 +49,7 @@ do
         --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
+        --eval_seq_order=$eval_seq_order \
         --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
         --experiment_description $exp_descr $POS al$art_len k$K lr$lr s$SEED
 
