@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_nte_l
-#SBATCH -N 2
-#SBATCH -t 10:00:00
+#SBATCH -n 4
+#SBATCH -t 19:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
