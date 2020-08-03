@@ -164,7 +164,8 @@ class BertDataloaderNews(BertDataloader):
         # u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng):
         dataset = BertTrainDatasetNews(self.train, self.art_id2word_ids, self.train_negative_samples, self.max_hist_len,
                                        self.max_article_len, self.mask_prob, self.mask_token, self.item_count, self.rnd,
-                                       self.w_time_stamps, self.w_u_id)
+                                       self.w_time_stamps, self.w_u_id,
+                                       seq_order=self.args.train_seq_order)
         return dataset
 
     def _get_eval_dataset(self, mode):
@@ -175,7 +176,8 @@ class BertDataloaderNews(BertDataloader):
 
         # for now, we just assume to always use 'last_as_target'
         dataset = BertEvalDatasetNews(u2hist, self.art_id2word_ids, self.test_negative_samples, self.max_hist_len, self.max_article_len,
-                                      self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id)
+                                      self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
+                                      seq_order=self.args.eval_seq_order)
         return dataset
 
     def get_valid_items(self):
@@ -325,7 +327,7 @@ class BertEvalDataset(data_utils.Dataset):
 ### NEWS ###
 class BertTrainDatasetNews(BertTrainDataset):
     def __init__(self, u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_prob, mask_token, num_items, rng,
-                 w_time_stamps=False, w_u_id=False):
+                 w_time_stamps=False, w_u_id=False, seq_order=None):
         super(BertTrainDatasetNews, self).__init__(u2seq, max_hist_len, mask_prob, mask_token, num_items, rng)
 
         self.art2words = art2words
@@ -334,6 +336,7 @@ class BertTrainDatasetNews(BertTrainDataset):
 
         self.w_time_stamps = w_time_stamps
         self.w_u_idx = w_u_id
+        self.shuffle_seq_order = seq_order
 
     def __getitem__(self, index):
 
@@ -450,16 +453,39 @@ class BertTrainDatasetNews(BertTrainDataset):
         return self.train_neg_samples[user]
 
 
+def reorder_sequence(seq, rnd, seq_order='shuffle_exc_t'):
+    """ Reorder sequence according to passed argument """
+
+    if 'shuffle_all' == seq_order:
+        return rnd.shuffle(seq)
+    elif 'shuffle_exc_t' == seq_order:
+        t = seq[-1] #preserve target
+        seq_to_shuffle = list(seq[:-1])
+        rnd.shuffle(seq_to_shuffle)
+        return seq_to_shuffle + [t]
+    elif 'shuffle_exc_t_1' == seq_order:
+        t = list(seq[-2:])
+        seq_to_shuffle = list(seq[:-2])
+        rnd.shuffle(seq_to_shuffle)
+        return seq_to_shuffle + t
+    elif 'ordered' == seq_order:
+        return seq
+    else:
+        raise ValueError(seq_order)
+
+
 class BertEvalDatasetNews(BertEvalDataset):
 
     def __init__(self, u2seq, art2words, neg_samples, max_hist_len, max_article_len, mask_token,
-                 rnd, w_time_stamps=False, u_idx=False):
+                 rnd, w_time_stamps=False, u_idx=False, seq_order=None):
         super(BertEvalDatasetNews, self).__init__(u2seq, None, max_hist_len, mask_token, neg_samples, rnd, u_idx=u_idx)
 
         self.art2words = art2words
         self.max_article_len = max_article_len # len(next(iter(art2words.values())))
         self.eval_mask = [1] * (max_hist_len-1) + [0]  # insert mask token at the end
         self.w_time_stamps = w_time_stamps
+        self.shuffle_seq_order = seq_order
+
 
     def __getitem__(self, u_idx):
         hist = self.u2hist[u_idx]
@@ -471,7 +497,7 @@ class BertEvalDatasetNews(BertEvalDataset):
 
 
     def gen_eval_instance(self, hist, negs, u_idx=None):
-        # hist = train + test[:-1]
+
         if self.w_time_stamps:
             hist, time_stamps = zip(*hist)
             #test_items, test_time_stamps = zip(*test_items)
@@ -485,22 +511,22 @@ class BertEvalDatasetNews(BertEvalDataset):
                                   max_hist_len=self.max_hist_len, n=len_time_vec)
         else:
             time_stamps = None
-            test_time_stamps = None
 
-        target = hist[-1]
+        # adjust sequence if applicable
+        if self.shuffle_seq_order is not None:
+            hist = reorder_sequence(hist, self.rnd, self.shuffle_seq_order)
+
+        target = hist[-1] # predict only the next/last token in seq
         candidates = [target] + negs # candidates as article indices
         # shuffle to avoid trivial guessing
         self.rnd.shuffle(candidates)
         labels = [0] * len(candidates)
         labels[candidates.index(target)] = 1
 
+        # map art indices to words if applicable
         candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
-
-        # extend train history with new test interactions
-        #hist = hist + test_items[:-1]
         hist = [art_idx2word_ids(art, self.art2words) for art in hist[-self.max_hist_len:]]
         # note: target will be masked off by model
-        #hist = hist + [art_idx2word_ids(*target, self.art2words)]  # predict only the next/last token in seq
 
         ## apply padding
         hist = pad_seq(hist, self.pad_token, self.max_hist_len,
@@ -508,12 +534,6 @@ class BertEvalDatasetNews(BertEvalDataset):
                                         if self.art2words is not None else None))
         #
         assert len(hist) == self.max_hist_len
-
-        #print(target)
-        # return dictionary
-        # return {'input': [torch.LongTensor(hist), torch.LongTensor(self.eval_mask)],
-        #         'cands': torch.LongTensor(candidates),
-        #         'lbls': torch.LongTensor(labels)}
 
         inp = {'hist': torch.LongTensor(hist), 'mask': torch.LongTensor(self.eval_mask), \
                'cands': torch.LongTensor(candidates)}
@@ -524,11 +544,3 @@ class BertEvalDatasetNews(BertEvalDataset):
             inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len)
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
-
-        # if self.w_time_stamps:
-        #     return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
-        #            torch.LongTensor(candidates), torch.LongTensor(labels), \
-        #            torch.LongTensor(time_stamps)
-        # else:
-        #     return torch.LongTensor(hist), torch.LongTensor(self.eval_mask), \
-        #            torch.LongTensor(candidates), torch.LongTensor(labels)

@@ -71,6 +71,8 @@ parser.add_argument('--train_batch_size', type=int, default=100)
 parser.add_argument('--val_batch_size', type=int, default=64)
 parser.add_argument('--test_batch_size', type=int, default=64)
 parser.add_argument('--eval_method', type=str, choices=['last_as_target', 'random_as_target'])
+parser.add_argument('--train_seq_order', type=str, default=None, choices=['shuffle_all', 'shuffle_exc_t', 'shuffle_exc_t_1', 'ordered'], help="adjust the validation sequence order")
+parser.add_argument('--eval_seq_order', type=str, default=None, choices=['shuffle_all', 'shuffle_exc_t', 'shuffle_exc_t_1', 'ordered'], help="adjust the validation sequence order")
 
 
 ################
