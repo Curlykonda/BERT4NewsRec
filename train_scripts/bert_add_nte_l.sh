@@ -37,7 +37,7 @@ n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_add"
+exp_descr="100k_add_shuf_exc_t"
 
 for K in "${neg_ratios[@]}"
 do

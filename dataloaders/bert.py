@@ -457,7 +457,8 @@ def reorder_sequence(seq, rnd, seq_order='shuffle_exc_t'):
     """ Reorder sequence according to passed argument """
 
     if 'shuffle_all' == seq_order:
-        return rnd.shuffle(seq)
+        rnd.shuffle(list(seq))
+        return seq
     elif 'shuffle_exc_t' == seq_order:
         t = seq[-1] #preserve target
         seq_to_shuffle = list(seq[:-1])
