@@ -31,13 +31,13 @@ d_model=768
 nie="lin_gelu"
 LR=(1e-4)
 n_epochs=50
-eval_seq_order="shuffle_all"
+eval_seq_order="shuffle_exc_t"
 
 n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_add_shuf_all"
+exp_descr="100k_add_shuf_exc_t"
 
 for K in "${neg_ratios[@]}"
 do
