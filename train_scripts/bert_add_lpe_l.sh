@@ -29,13 +29,13 @@ neg_ratios=(49) # 99
 nie="lin_gelu"
 LR=(1e-4)
 n_epochs=50
-eval_seq_order="shuffle_exc_t"
+eval_seq_order="shuffle_all"
 
 n_users=100000
 COUNTER=0
 #####
 
-exp_descr="100k_add_shuffle_hist"
+exp_descr="100k_add_shuf_all"
 
 for K in "${neg_ratios[@]}"
 do
