@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_tpe_l
 #SBATCH -n 2
-#SBATCH -t 10:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -25,7 +25,7 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("tpe")
-neg_ratios=(99)
+neg_ratios=(49 74 99)
 
 nie="lin_gelu"
 LR=(1e-4)

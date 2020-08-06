@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_lpe
-#SBATCH -N 2
-#SBATCH -t 30:00:00
+#SBATCH -n 4
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -21,8 +21,8 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
 
-POS_EMBS=("lpe" "tpe") #
-neg_ratios=(99) #
+POS_EMBS=("lpe") #
+neg_ratios=(49 74) #
 
 enc="wucnn"
 d_art=400
@@ -34,13 +34,12 @@ LR=(1e-4)
 n_epochs=50
 
 n_users=100000
-exp_descr="100k_NpaCNN_add"
+exp_descr="100k_cnn_add"
 COUNTER=0
+####################################
 
 echo "$data"
-echo "$exp_descr"
 
-echo "$SEED"
 for K in "${neg_ratios[@]}"
 do
   for lr in "${LR[@]}"
