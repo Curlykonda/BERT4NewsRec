@@ -13,7 +13,7 @@ class BertDataloader(AbstractDataloader):
     def __init__(self, args, dataset):
         super().__init__(args, dataset)
 
-        args.num_items = len(self.smap)
+        args.num_items = len(self.item_id2idx)
         self.max_hist_len = args.max_hist_len
         self.mask_prob = args.bert_mask_prob
 
@@ -105,7 +105,7 @@ class BertDataloader(AbstractDataloader):
         return negative_sampler
 
     def get_valid_items(self):
-        all_items = set(self.smap.values()) # train + test + val
+        all_items = set(self.item_id2idx.values()) # train + test + val
 
         if self.split_method != "time_threshold":
             test = train = all_items
@@ -150,7 +150,7 @@ class BertDataloaderNews(BertDataloader):
             self.art_id2word_ids = None
         else:
             # create direct mapping art_id -> word_ids
-            self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.smap.items()}
+            self.art_id2word_ids = {art_idx: self.art_index2word_ids[art_id] for art_id, art_idx in self.item_id2idx.items()}
         del self.art_index2word_ids
 
         if self.w_time_stamps:
@@ -181,7 +181,7 @@ class BertDataloaderNews(BertDataloader):
         return dataset
 
     def get_valid_items(self):
-        all_items = set(self.smap.values()) # train + test + val
+        all_items = set(self.item_id2idx.values()) # train + test + val
 
         if self.split_method != "time_threshold":
             test = train = all_items

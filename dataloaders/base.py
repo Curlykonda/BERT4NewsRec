@@ -1,6 +1,7 @@
 from abc import *
 import random
 
+from source.utils import reverse_mapping_dict
 
 class AbstractDataloader(metaclass=ABCMeta):
     def __init__(self, args, dataset):
@@ -11,8 +12,11 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.train = data['train']
         self.val = data['val']
         self.test = data['test']
-        self.umap = data['umap'] # mapping from u_id to index
-        self.smap = data['smap'] # mapping from item_id to index
+        self.u_id2idx = data['umap'] # mapping from u_id to index
+        self.idx2u_id = reverse_mapping_dict(data['umap'])
+
+        self.item_id2idx = data['smap'] # mapping from item_id to index
+        self.idx2item_id = reverse_mapping_dict(data['smap'])
 
 
         if data['rnd'] is not None:
@@ -23,8 +27,8 @@ class AbstractDataloader(metaclass=ABCMeta):
             seed = args.dataloader_random_seed
             self.rnd = random.Random(seed)
 
-        self.user_count = len(self.umap)
-        self.item_count = len(self.smap)
+        self.user_count = len(self.u_id2idx)
+        self.item_count = len(self.item_id2idx)
 
         if args.n_users is not None:
             if args.n_users != self.user_count:

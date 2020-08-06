@@ -13,7 +13,7 @@ class NpaDataloader(AbstractDataloader):
     def __init__(self, args, dataset):
         super().__init__(args, dataset)
 
-        args.num_items = len(self.smap)
+        args.num_items = len(self.item_id2idx)
         self.max_hist_len = args.max_hist_len
 
         self.split_method = args.split
@@ -34,7 +34,7 @@ class NpaDataloader(AbstractDataloader):
             self.art_index2word_ids = None
         else:
             # create direct mapping art_id -> word_ids
-            self.art_index2word_ids = {art_idx: self.art_id2word_ids[art_id] for art_id, art_idx in self.smap.items()}
+            self.art_index2word_ids = {art_idx: self.art_id2word_ids[art_id] for art_id, art_idx in self.item_id2idx.items()}
         del self.art_id2word_ids
 
         # retrieve valid items for negative sampling
@@ -140,7 +140,7 @@ class NpaDataloader(AbstractDataloader):
 
         """
 
-        all_items = set(self.smap.values()) # train + test + val
+        all_items = set(self.item_id2idx.values()) # train + test + val
         raise NotImplementedError()
         #
         # if self.split_method != "time_threshold":

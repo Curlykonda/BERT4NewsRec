@@ -32,7 +32,7 @@ class AEDataloader(AbstractDataloader):
         self.test  = {user : remap(items) for user, items in self.test.items()}
 
         # some bookkeeping
-        del self.umap, self.user_count
+        del self.u_id2idx, self.user_count
         self.item_count = len(unique_items)
         args.num_items = self.item_count
 

@@ -334,7 +334,10 @@ class ExtendedTrainer(AbstractTrainer):
 
         if self.args.log_user_metrics:
             print('compute individual user metrics on validation set')
-            self.eval_indiv_user_scores(self.val_loader, data_code='val')
+            try:
+                self.eval_indiv_user_scores(self.val_loader, data_code='val')
+            except Exception as e:
+                print(e)
 
         print("\n >> Run completed in {} \n".format(self.total_train_time))
 
@@ -459,7 +462,7 @@ class ExtendedTrainer(AbstractTrainer):
 
                 user_metrics = self.calculate_metrics(batch, avg_metrics=False)
 
-                self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.umap,
+                self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.idx2u_id,
                                                          code=data_code, key=order_emb_code)
 
                 if self.args.local and batch_idx > 20:
