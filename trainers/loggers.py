@@ -84,7 +84,7 @@ class LoggerService(object):
         for u_idx, vals in log_data.items():
             # map user idx to ID
             u_id = u_idx2id[u_idx] if u_idx2id is not None else u_idx
-            self.user_metrics[code][u_id][key] = vals
+            self.user_metrics[code][u_id][key] = {k: "{:.4f}".format(v) for k, v in vals.items()}
 
 
     def log_grad_flow_report(self, report: dict, iter: int):
