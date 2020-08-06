@@ -11,6 +11,6 @@ TRAINERS = {
     NpaModTrainer.code(): NpaModTrainer
 }
 
-def trainer_factory(args, model, train_loader, val_loader, test_loader, export_root):
+def trainer_factory(args, model, dataloader, export_root):
     trainer = TRAINERS[args.trainer_code]
-    return trainer(args, model, train_loader, val_loader, test_loader, export_root)
+    return trainer(args, model, dataloader, export_root)

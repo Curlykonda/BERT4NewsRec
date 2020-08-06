@@ -21,6 +21,10 @@ class LoggerService(object):
         self.metrics = {'train': defaultdict(list),
                         'val': defaultdict(list),
                         'test': defaultdict(list)}
+
+        self.user_metrics = {'val': defaultdict(dict),
+                             'test': defaultdict(dict)}
+
         ##
         # currently not used [14.07.20]
         self.grad_histo_logger = grad_histo_logger
@@ -59,6 +63,30 @@ class LoggerService(object):
         for k, v in log_data.items():
             self.metrics['test'][k] = v
 
+    def log_user_val_metrics(self, log_data: dict, u_idx2id: dict, code='val', key='None'):
+        """
+        Stores individual user metrics in dictionary, also maps user index to ID
+
+        Input:
+            log_data: contains metrics for one batch of users, indexed by u_idx
+            u_idx2id: mapping from working u_idx to real user ID
+            code: indicate dataset, i.e. val or test
+            key: additional key to create nested dict, e.g. order embedding
+
+
+        Output:
+
+            { 'user_id':
+                    {'key': {'auc': 0.8, 'mrr': 0.6, 'ndcg5': 0.7}
+            }
+
+        """
+        for u_idx, vals in log_data.items():
+            # map user idx to ID
+            u_id = u_idx2id[u_idx] if u_idx2id is not None else u_idx
+            self.user_metrics[code][u_id][key] = vals
+
+
     def log_grad_flow_report(self, report: dict, iter: int):
         self.grad_reports[iter].append(report)
 
@@ -66,6 +94,9 @@ class LoggerService(object):
 
         with open(os.path.join(export_path, 'logs', 'metrics.json'), 'w') as f:
             json.dump(self.metrics, f, indent=4)
+
+        with open(os.path.join(export_path, 'logs', 'user_metrics.json'), 'w') as f:
+            json.dump(self.user_metrics, f, indent=4)
 
         if len(self.grad_reports.keys()) > 0:
             with open(os.path.join(export_path, 'logs', 'grad_reports.json'), 'w') as fout:

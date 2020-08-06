@@ -20,7 +20,7 @@ from pathlib import Path
 import time
 
 class AbstractTrainer(metaclass=ABCMeta):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+    def __init__(self, args, model, dataloader, export_root):
         self.args = args
         self.device = args.device
         self.model = model.to(self.device)
@@ -28,9 +28,11 @@ class AbstractTrainer(metaclass=ABCMeta):
         if self.is_parallel:
             self.model = nn.DataParallel(self.model)
 
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.test_loader = test_loader
+        self.train_loader, self.val_loader, self.test_loader = dataloader.get_pytorch_dataloaders()
+        self.general_dataloader = dataloader
+        # self.train_loader = train_loader
+        # self.val_loader = val_loader
+        # self.test_loader = test_loader
         self.optimizer = self._create_optimizer()
         self.init_lr = args.lr
         if args.lr_schedule and args.decay_step is not None:
@@ -281,11 +283,12 @@ class AbstractTrainer(metaclass=ABCMeta):
 
 
 class ExtendedTrainer(AbstractTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+    def __init__(self, args, model, dataloader, export_root):
         self.log_grads = args.log_grads
         self.grad_clip_val = args.grad_clip_val
 
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+        super().__init__(args, model, dataloader, export_root)
+
         if self.args.lr_schedule:
             self.warmup_ratio = args.warmup_ratio if args.warmup_ratio is not None else 0
             # Create schedule with learning rate that decreases linearly
@@ -324,12 +327,15 @@ class ExtendedTrainer(AbstractTrainer):
                 break
 
         print("Performed {} iterations in {} epochs (/{})".format(global_step, epoch+1, self.num_epochs))
+        self.total_train_time = "{:.1f} h".format((time.time() - t0) / 3600)
 
         self.writer.add_hparams(hparam_dict=get_hyper_params(self.args), metric_dict={"accum_iter": global_step})
         self.logger_service.complete({'state_dict': (self._create_state_dict()),})
 
-        #self.writer.close()
-        self.total_train_time = "{:.1f} h".format((time.time() - t0) / 3600)
+        if self.args.log_user_metrics:
+            print('compute individual user metrics on validation set')
+            self.eval_indiv_user_scores(self.val_loader, data_code='val')
+
         print("\n >> Run completed in {} \n".format(self.total_train_time))
 
 
@@ -405,6 +411,7 @@ class ExtendedTrainer(AbstractTrainer):
         return global_step
 
     def eval_one_epoch(self, eval_loader, epoch=None):
+        self.model.eval()
 
         average_meter_set = AverageMeterSet()
 
@@ -430,6 +437,35 @@ class ExtendedTrainer(AbstractTrainer):
 
         return average_meter_set
 
+    def eval_indiv_user_scores(self, eval_loader, data_code='val'):
+        """
+        Compute individual user metrics and stores them with 'logger_service'
+
+        Input:
+            eval_loader: Dataloader
+
+        Output:
+            None
+
+        """
+
+        self.model.eval()
+        order_emb_code = self.model._get_pos_emb()
+
+        with torch.no_grad():
+
+            for batch_idx, batch in enumerate(eval_loader):
+                batch = self.batch_to_device(batch)
+
+                user_metrics = self.calculate_metrics(batch, avg_metrics=False)
+
+                self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.umap,
+                                                         code=data_code, key=order_emb_code)
+
+                if self.args.local and batch_idx > 20:
+                    break
+
+
     def validate(self, epoch, global_step):
         self.model.eval()
 
@@ -441,11 +477,11 @@ class ExtendedTrainer(AbstractTrainer):
             'accum_iter': global_step,
         }
         log_data.update(average_meter_set.averages())
-        self.log_extra_val_info(log_data)
+        #self.log_extra_val_info(log_data)
         self.logger_service.log_val(log_data)
 
     def test(self):
-        print('Test best model with test set!')
+
         best_model_filename = self.logger_service.best_model_logger.filename
         best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
 
@@ -455,13 +491,20 @@ class ExtendedTrainer(AbstractTrainer):
         # if self.is_parallel:
         #     self.model = nn.DataParallel(self.model)
 
-        self.model.eval()
-
+        print('Test best model with test set!')
         average_meter_set = self.eval_one_epoch(self.test_loader)
 
         average_metrics = average_meter_set.averages()
 
         self.logger_service.log_test(average_metrics)
+
+        if self.args.log_user_metrics:
+            print('compute individual user metrics on test set')
+            try:
+                self.eval_indiv_user_scores(self.test_loader, data_code='test')
+            except Exception as e:
+                print(e)
+
         self.logger_service.save_metric_dicts(self.export_root)
 
         with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
@@ -472,6 +515,9 @@ class ExtendedTrainer(AbstractTrainer):
                     'total_train_time': self.total_train_time}
         self.logger_service.print_final(rel_epochs=[0, -1], add_info=add_info)
         print("\n############################################\n")
+
+    def calculate_metrics(self, batch, avg_metrics=False):
+        pass
 
     def _get_cur_lr(self):
         if self.args.lr_schedule:

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import torch
@@ -14,9 +15,9 @@ from utils import AverageMeterSet
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
 class BERT4NewsCategoricalTrainer(ExtendedTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+    def __init__(self, args, model, dataloader, export_root):
 
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+        super().__init__(args, model, dataloader, export_root)
 
         self.ce = nn.CrossEntropyLoss(reduction='mean')
 
@@ -54,7 +55,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
 
         return loss, metrics
 
-    def calculate_metrics(self, batch):
+    def calculate_metrics(self, batch, avg_metrics=True):
 
         input = batch['input'].items()
         lbls = batch['lbls']
@@ -68,15 +69,31 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, lbls))
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks, avg_metrics)
+        metrics.update(calc_auc_and_mrr(scores, lbls, avg_metrics))
 
-        return metrics
+        if avg_metrics:
+            return metrics
+
+        else:
+            # update individual user metrics
+            # { u_id: {'auc': 0.8, 'mrr': 0.4}}
+            user_metrics = defaultdict(dict)
+
+            # get user ids
+            user_ids = batch['input']['u_id'][:, 0].cpu().numpy()
+
+            for i, u_id in enumerate(user_ids):
+                for key, vals in metrics.items():
+                    user_metrics[u_id][key] = vals[i]
+                    #assert len(vals) == len(user_ids)
+
+            return user_metrics
 
 
 class BERTTrainer(AbstractTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+    def __init__(self, args, model, dataloader, export_root):
+        super().__init__(args, model, dataloader, export_root)
         self.ce = nn.CrossEntropyLoss(ignore_index=0)
 
     @classmethod
@@ -111,9 +128,9 @@ class BERTTrainer(AbstractTrainer):
         return metrics
 
 class Bert4NewsDistanceTrainer(BERTTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root, dist_func='cos'):
+    def __init__(self, args, model, dataloader, export_root, dist_func='cos'):
 
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+        super().__init__(args, model, dataloader, export_root)
 
         self.dist_func_string = dist_func
         self.dist_func = None

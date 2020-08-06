@@ -8,9 +8,9 @@ from .base import ExtendedTrainer
 from .utils_metrics import calc_recalls_and_ndcgs_for_ks, calc_auc_and_mrr
 
 class NpaTrainer(ExtendedTrainer):
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
+    def __init__(self, args, model, dataloader, export_root):
 
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+        super().__init__(args, model, dataloader, export_root)
         self.ce = nn.CrossEntropyLoss(reduction='mean')
 
     @classmethod
@@ -66,8 +66,8 @@ class NpaModTrainer(ExtendedTrainer):
     """
     Modified NPA trainer to align training with BERT models
     """
-    def __init__(self, args, model, train_loader, val_loader, test_loader, export_root):
-        super().__init__(args, model, train_loader, val_loader, test_loader, export_root)
+    def __init__(self, args, model, dataloader, export_root):
+        super().__init__(args, model, dataloader, export_root)
         self.ce = nn.CrossEntropyLoss(reduction='mean')
 
     @classmethod

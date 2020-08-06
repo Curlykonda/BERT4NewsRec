@@ -16,9 +16,9 @@ def train():
 def setup_trainer():
     export_root = setup_train(args)
     fix_random_seed_as(args.model_init_seed)
-    train_loader, val_loader, test_loader = dataloader_factory(args)
+    dataloader = dataloader_factory(args)
     model = model_factory(args)
-    trainer = trainer_factory(args, model, train_loader, val_loader, test_loader, export_root)
+    trainer = trainer_factory(args, model, dataloader, export_root)
 
     return trainer
 

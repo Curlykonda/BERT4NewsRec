@@ -492,8 +492,8 @@ class BertEvalDatasetNews(BertEvalDataset):
         hist = self.u2hist[u_idx]
         negs = self.neg_samples[u_idx] # get negative samples
 
-        if not self.w_u_id:
-            u_idx = None
+        # if not self.w_u_id:
+        #     u_idx = None
         return self.gen_eval_instance(hist, negs, u_idx)
 
 
@@ -541,7 +541,8 @@ class BertEvalDatasetNews(BertEvalDataset):
         if self.w_time_stamps:
             inp['ts'] = torch.LongTensor(time_stamps)
 
-        if u_idx is not None:
-            inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len)
+        #if u_idx is not None:
+        # add u_id
+        inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len)
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
