@@ -107,6 +107,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         self.mask_token = args.bert_mask_token
         self.encoded_art = None
         # self.train_mode = False
+        self.use_u_id = args.incl_u_id
 
     @classmethod
     def code(cls):
@@ -120,7 +121,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         history = kwargs['hist']
         mask = kwargs['mask']
         candidates = kwargs['cands']
-        u_ids = kwargs['u_id'][:, 0] if 'u_id' in kwargs else None
+        u_ids = kwargs['u_id'][:, 0] if 'u_id' in kwargs and self.use_u_id else None
         time_stamps = kwargs['ts'] if 'ts' in kwargs else None
 
         ### article encoding ###
@@ -274,3 +275,6 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             interest_reps = self.user_encoder(art_emb, mask)
 
         return interest_reps
+
+    def _get_pos_emb(self):
+        return 'None' if self.user_encoder.pos_embedding is None else self.user_encoder.pos_embedding
