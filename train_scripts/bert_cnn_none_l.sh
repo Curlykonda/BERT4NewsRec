@@ -31,7 +31,7 @@ d_art=400
 n_bert_layers=2
 
 nie="lin_gelu"
-LR=(1e-4)
+LR=(1e-3)
 n_epochs=50
 
 n_users=100000
