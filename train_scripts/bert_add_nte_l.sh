@@ -21,7 +21,7 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-neg_ratios=(49 74)
+neg_ratios=(99)
 
 TEMP_EMBS=("nte" "ntev2") # "lte"
 t_act_func="relu"

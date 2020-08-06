@@ -27,7 +27,7 @@ art_len=30
 hist_len=100
 
 neg_ratios=(49 74 99) # 4 9
-lr=1e-4
+lr=1e-3
 n_epochs=50
 
 nie="lin_gelu"
