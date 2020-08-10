@@ -37,7 +37,7 @@ n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_add" # _shuf_exc_t
+exp_descr="100k_add_brans_s" # _shuf_exc_t
 
 for K in "${neg_ratios[@]}"
 do
@@ -48,7 +48,8 @@ do
       echo "$exp_descr $TE al$art_len k$K lr$lr s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+        --train_negative_sample_size=$K --train_negative_sampler_code=rnd_brand_sens \
+        --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
         --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
         --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \

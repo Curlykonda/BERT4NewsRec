@@ -24,7 +24,7 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(99) # 99
+neg_ratios=(74 99) # 99
 
 nie="lin_gelu"
 LR=(1e-4)
@@ -35,7 +35,7 @@ n_users=100000
 COUNTER=0
 #####
 
-exp_descr="100k_add" #_shuf_exc_t
+exp_descr="100k_add_brand_s" #_shuf_exc_t
 
 for K in "${neg_ratios[@]}"
 do
@@ -46,7 +46,8 @@ do
       echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+        --train_negative_sample_size=$K --train_negative_sampler_code=rnd_brand_sens \
+        --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
         --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \

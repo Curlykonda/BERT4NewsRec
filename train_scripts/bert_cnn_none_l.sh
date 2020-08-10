@@ -35,7 +35,7 @@ LR=(1e-3)
 n_epochs=50
 
 n_users=100000
-exp_descr="100k_NpaCNN"
+exp_descr="100k_cnn_brand_s"
 COUNTER=0
 #############################
 
@@ -46,6 +46,7 @@ do
     echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED" # nl$n_bert_layers
       #1
     CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+      --train_negative_sampler_code=rnd_brand_sens \
       --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
       --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
       --max_article_len=$art_len --max_hist_len=$hist_len \
