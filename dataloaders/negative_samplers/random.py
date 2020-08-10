@@ -7,6 +7,9 @@ from tqdm import trange
 
 
 class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
+    def __init__(self, **kwargs):
+        super(RandomNegativeSamplerPerUser, self).__init__(**kwargs)
+
     @classmethod
     def code(cls):
         return 'random'
@@ -16,7 +19,7 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         #random.seed(self.seed)
         negative_samples = {}
         print('Sampling negative items')
-        for user in trange(self.user_count):
+        for user in trange(self.n_users):
 
             seen, _ = self.determine_seen_items(user)
 
@@ -57,6 +60,83 @@ class RandomNegativeSamplerPerUser(AbstractNegativeSampler):
         return naive_sample
 
 
+class RandomBrandSensitiveNegativeSampler(AbstractNegativeSampler):
+    def __init__(self, **kwargs):
+        super(RandomBrandSensitiveNegativeSampler, self).__init__(**kwargs)
+
+        if 'id2idx' not in kwargs.keys():
+            raise ValueError('Article index to ID mapping required for brand-sensitive sampling')
+        else:
+            # build art2brand
+            id2idx = kwargs['id2idx']
+            id2info = kwargs['id2info']
+
+            self.art_idx2brand = {indx: list(id2info[id]['brands']) for id, indx in id2idx.items()}
+
+        self.targets = self.get_prediction_targets_for_position()
+
+    @classmethod
+    def code(cls):
+        return 'rnd_brand_sens'
+
+    def generate_negative_samples(self):
+
+        negative_samples = {}
+        print('Sampling negative items')
+        for user in trange(self.n_users):
+
+            seen, _ = self.determine_seen_items(user)
+
+            # sample uniform random unseen items from the full set
+            # note: for 'time_split' need to separate into train and test intervals
+
+            if isinstance(self.targets[user], int):
+                samples = self.get_brandsens_sample_for_target(self.targets[user], seen)
+            else:
+                # neg samples for each position in each user sequence
+                samples = []
+                for i in range(len(self.targets[user])):
+                    neg_samples = self.get_brandsens_sample_for_target(self.targets[user][i], seen)
+                    samples.append(neg_samples)
+
+                assert len(samples) == len(self.targets[user])
+
+            negative_samples[user] = samples
+
+        return negative_samples
+
+    def get_brandsens_sample_for_target(self, target, seen):
+        samples = []
+        target_brands = self.art_idx2brand[target]
+        while len(samples) < self.sample_size:
+            item = self.rnd.choice(self.valid_items)
+
+            if item not in seen and item not in samples \
+                and self.check_brand_match(target_brands, self.art_idx2brand[item]):
+                samples.append(item)
+
+        return samples
+
+    def check_brand_match(self, tgt_brands, itm_brands):
+        for b in itm_brands:
+            if b in tgt_brands:
+                return True
+
+        return False
+
+    def get_prediction_targets_for_position(self):
+        """
+        Returns the target article for each position of the user history depending on the mode
+        """
+        if "train" == self.mode:
+            return self.train
+        elif 'val' == self.mode:
+            return {u_idx: hist[-1] for u_idx, hist in self.val.items()}
+        elif 'test' == self.mode:
+            return {u_idx: hist[-1] for u_idx, hist in self.test.items()}
+        else:
+            raise ValueError()
+
 class RandomFromCommonNegativeSampler(AbstractNegativeSampler):
     @classmethod
     def code(cls):
@@ -69,7 +149,7 @@ class RandomFromCommonNegativeSampler(AbstractNegativeSampler):
 
         negative_samples = {}
         print('Sampling negative items')
-        for user in trange(self.user_count):
+        for user in trange(self.n_users):
             seen = seens[user]
 
             # sample uniform random from most common items
@@ -111,7 +191,7 @@ class RandomFromCommonNegativeSampler(AbstractNegativeSampler):
     def items_by_popularity(self):
         popularity = Counter()
         seens = {}
-        for user in range(self.user_count):
+        for user in range(self.n_users):
             seen, pop = self.determine_seen_items(user)
             seens[user] = seen
             popularity.update(pop)

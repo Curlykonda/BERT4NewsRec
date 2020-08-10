@@ -632,8 +632,12 @@ def select_rel_embs_and_stack(articles, embedding_dict):
     art_embs = []
     art_id2idx = OrderedDict()
     for art_id in articles:
-        art_id2idx[art_id] = len(art_id2idx)
-        art_embs.append(embedding_dict[art_id])
+
+        if art_id in embedding_dict.keys():
+            art_embs.append(embedding_dict[art_id])
+            art_id2idx[art_id] = len(art_id2idx)
+        else:
+            raise ValueError("No pre-computed embedding for article {}".format(art_id))
 
     # reformat as matrix
     # (n_items x dim_art_emb)

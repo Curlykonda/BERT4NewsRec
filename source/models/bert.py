@@ -51,6 +51,9 @@ def make_bert4news_model(args):
                                 n_heads=args.tranf_enc_num_heads,
                                 n_hidden=args.dim_art_emb,
                                 req_mask=False, token_emb=None, pos_emb='lpe')
+        elif "rnd_emb" == args.news_encoder:
+            # non-content-based article embeddings
+            news_encoder = nn.Embedding(vocab_size, args.dim_art_emb)
         else:
             raise NotImplementedError("Selected invalid News Encoder!")
 

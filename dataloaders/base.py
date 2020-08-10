@@ -18,6 +18,9 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.item_id2idx = data['smap'] # mapping from item_id to index
         self.idx2item_id = reverse_mapping_dict(data['smap'])
 
+        if 'art_id2info' in data:
+            self.item_id2info = data['art_id2info']
+
 
         if data['rnd'] is not None:
             # re-use Random obj

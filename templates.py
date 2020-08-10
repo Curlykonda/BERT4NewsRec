@@ -127,16 +127,20 @@ def set_template(args):
     elif args.template.startswith("local_test"):
         args.local = True
         args.device = 'cuda'
-        args.num_epochs = 5
+        args.num_epochs = 2
         args.train_batch_size = 10
         args.train_negative_sample_size=4
-        args.log_period_as_iter=10000
+        args.log_period_as_iter=100
         args.n_users=10000
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
         args.experiment_description = ["10k"]
+        args.cuda_launch_blocking = True
 
-        args.lr_schedule=1
+        ## test params ##
+        # args.eval_seq_order = 'shuffle_all'
+        # args.lr_schedule=1
         #args.warmup_ratio=0.1
+        args.log_user_metrics = True
 
         args.max_hist_len = 100
         args.max_article_len = 30
@@ -160,11 +164,11 @@ def set_template(args):
 
         # args.add_emb_size=256
         # args.add_embs_func='concat'
-        # args.add_embs_func = 'add'
+        args.add_embs_func = 'add'
 
         set_args_bert_pcp(args)
 
-        args.train_negative_sampler_code = 'random' # random_common
+        args.train_negative_sampler_code = 'rnd_brand_sens' # random_common
         args.test_negative_sampler_code = args.train_negative_sampler_code
 
         args.experiment_description.append(args.news_encoder)
@@ -173,7 +177,7 @@ def set_template(args):
         args.norm_art_pos_embs = True
 
         # args.pos_embs = None
-        # args.pos_embs = 'lpe'
+        args.pos_embs = 'lpe'
         # args.incl_time_stamp = False
         #
         # args.temp_embs = 'nte'
@@ -194,8 +198,6 @@ def set_template(args):
             args.experiment_description.append("none")
 
         # args.lower_case=False
-
-        args.cuda_launch_blocking=True
 
     elif args.template.startswith('train_npa'):
         # local debugging
@@ -404,7 +406,7 @@ def set_args_bert_pcp(args):
     batch = args.train_batch_size if not args.local else 10
     args.train_batch_size = batch
     args.val_batch_size = batch
-    args.test_batch_size = batch
+    args.test_batch_size = 10 if args.test_batch_size is None else args.test_batch_size
     args.dataloader_random_seed = args.model_init_seed
 
     # negative sampling

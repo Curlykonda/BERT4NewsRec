@@ -50,31 +50,6 @@ def get_n_words(text, tokenizer=None):
     return len(tokens)
 
 
-# def subsample_items(n_items, snippet_len, data_dir, keys_to_exclude = ["short_id", "url"], test_time_thresh=None):
-#     item_dict = OrderedDict()
-#     item_dict['all'] = {}
-#
-#     # if test_time_thresh is not None:
-#     #     item_dict['train'] = {}
-#     #     item_dict['test'] = {}
-#
-#     for i, item in enumerate(data_stream_generator(data_dir + "items")):
-#         #item.keys() = dict_keys(['text', 'pub_date', 'author', 'url', 'short_id'])
-#         if snippet_len is not None:
-#             item['snippet'] = get_text_snippet(item['text'], snippet_len)
-#
-#         item['n_words'] = get_n_words(item['text'])
-#         val_dict = {key: val for (key, val) in item.items() if key not in keys_to_exclude}
-#         item_dict['all'][item['short_id']] = val_dict
-#
-#         if item['pub_date']: #< test_time_thresh:
-#              pass # currently no pub_date available [30.03.]
-#
-#         if i == n_items-1:
-#             break
-#
-#     return item_dict
-
 def update_logging_dates(articles_read, logging_dates):
     first, last = logging_dates
 
@@ -102,6 +77,7 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
     elif isinstance(article_data, set):
         valid_item_ids = article_data
         article_data = {}
+        article_data['all'] = defaultdict(dict)
 
     c_articles_raw = Counter() # without threshold
     c_articles_thresh = Counter() # count only those from 'valid' histories
@@ -130,11 +106,18 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
                 for entry in user['articles_read']:
                     if len(entry) == 3: ## december 19 data has 3 fields for each interaction
                         _, art_id, ts = entry
+                        brand = None # currently unkown if brand field is included
 
                     elif len(entry) == 5: ## november 19 data has 5
-                        art_id, ts = entry[-2:]
+                        brand, _, _, art_id, ts = entry
                         # convert time_stamp to UNIX
                         ts = time_stamp2unix(ts)
+
+                    # handle brand names
+                    if brand is None:
+                        brand = "<UNK>"
+                    elif len(brand) < 2:
+                        pass
 
 
                     if art_id not in valid_item_ids:
@@ -156,6 +139,11 @@ def subsample_users(n_users, article_data, data_dir, min_hist_len, max_hist_len=
                                 user['articles_train'].append([art_id, ts])
                             else:
                                 user['articles_test'].append([art_id, ts])
+
+                        if art_id not in article_data['all']:
+                            article_data['all'][art_id]['brands'] = set([brand])
+                        else:
+                            article_data['all'][art_id]['brands'].add(brand)
 
                         history.append(art_id)
                         time_stamps.append(ts)
@@ -412,6 +400,8 @@ def get_data_n_rnd_users(data_dir, n_users, news_len, min_hist_len, max_hist_len
                                                min_test_len=min_test_len,
                                                test_time_thresh=test_time_thresh)
 
+    # newsdata = {'art_id': {'brands': list(str)}}
+
     #specify logging dates
     logging_dates = {'start': logging_dates[0], 'end': logging_dates[1]}
 
@@ -425,7 +415,12 @@ def get_data_n_rnd_users(data_dir, n_users, news_len, min_hist_len, max_hist_len
     article_data = subsample_items_from_id(data_dir, valid_article_ids,
                                         n_news=-1, news_len=news_len,
                                         test_time_thresh=test_time_thresh)
-    news_data['all'] = article_data['all']
+
+    art_id2info = defaultdict(dict, article_data['all'])
+    for art_id in article_data['all'].keys():
+        art_id2info[art_id].update(news_data['all'][art_id]) # add brands to existing info
+
+    news_data['all'] = art_id2info
     # dict := "art_id": {'text': val, 'pub_data' .. }
 
     if len(news_data['all']) != len(valid_article_ids):
@@ -461,7 +456,7 @@ if __name__ == "__main__":
     parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
     parser.add_argument('--size', type=str, default='10k', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
-    parser.add_argument('--n_users', type=int, default=10000, help='number of users')
+    parser.add_argument('--n_users', type=int, default=100000, help='number of users')
     parser.add_argument('--ratio_user_items', type=int, default=USER_ITEM_RATIO, help='ratio of user to items, e.g. 1 : 10')
 
     #parser.add_argument('--vocab_size', type=int, default=30000, help='vocab')
@@ -484,9 +479,11 @@ if __name__ == "__main__":
         n_users = config.n_users
         n_news = config.n_articles
 
+    size = "{:.0f}k".format(n_users / 1e3)
+
 
     delim = "_"
-    sample_name = config.size + delim + "time_split" + delim + config.item_sample_method
+    sample_name = delim.join([size, "time_split", config.item_sample_method])
 
     if config.time_format is not None:
         threshold_time = time_stamp2unix(config.time_threshold, config.time_format)
@@ -516,6 +513,7 @@ if __name__ == "__main__":
     save_data_to_dir(config.save_path, sample_name, news_data, user_data, logging_dates)
 
     print("Done")
+    print(sample_name)
     print("User: {} \t Articles: {}".format(len(user_data), len(news_data['all'])))
     print("Pickle protocol {}".format(pickle.HIGHEST_PROTOCOL))
     print("Logging dates: ")

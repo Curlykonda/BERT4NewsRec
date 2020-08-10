@@ -7,21 +7,31 @@ import random
 
 
 class AbstractNegativeSampler(metaclass=ABCMeta):
-    def __init__(self, train_method, mode, train, val, test, user_count, item_set, sample_size, seed, seq_lengths, save_folder):
-        self.train = train
-        self.val = val
-        self.test = test
-        self.user_count = user_count
-        self.valid_items = list(item_set)
-        self.sample_size = sample_size
-        self.seq_lengths = seq_lengths # indicates the sequence length for each user
-        self.seed = seed
-        self.mode = mode
+    def __init__(self, **kwargs):
+        accepted_keys = ['train', 'val', 'test', 'n_users',
+                     'valid_items', 'sample_size', 'seq_lengths',
+                     'seed', 'mode', 'save_folder', 'train_method']
+        for k in kwargs.keys():
+            if k in accepted_keys:
+                self.__setattr__(k, kwargs[k])
+
+        # self.train = train
+        # self.val = val
+        # self.test = test
+        # self.n_users = user_count
+        # self.valid_items = list(item_set)
+        # self.sample_size = sample_size
+        # self.seq_lengths = seq_lengths # indicates the sequence length for each user
+        # self.seed = seed
+        # self.mode = mode
+        # self.save_folder = save_folder
+        # self.train_method = train_method
+        self.valid_items = list(self.valid_items)
+
         assert self.seed is not None, 'Specify seed for random sampling'
         self.rnd = random.Random(self.seed)
 
-        self.save_folder = save_folder
-        self.train_method = train_method
+
 
     @classmethod
     @abstractmethod

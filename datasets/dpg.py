@@ -110,6 +110,7 @@ class AbstractDatasetDPG(AbstractDataset):
                    'vocab': self.vocab,
                    'art2words': self.art_idx2word_ids,
                    'art_emb': self.art_embs, # article emb matrix
+                   'art_id2info': news_data['all'],
                    'valid_items': self.valid_items,
                    'rnd': self.rnd,
                    'ts_scaler': self.ts_scaler}
@@ -238,12 +239,6 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         user_data = self.load_raw_read_histories()
         u_id2idx = {}
 
-        # for user in range(user_count):
-        #     items = [*list(zip(*user_data[user]))[0]]  # only take article ids, discard the timestamps
-        #     train[user], val[user], test[user] = items[:-2], items[-2:-1], items[-1:]
-        #
-        #     return train, val, test
-
         train, val, test = defaultdict(list), defaultdict(list), defaultdict(list)
         all_ts = defaultdict(list)
 
@@ -264,13 +259,18 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
             # get train & test dat
             if 'time_threshold' == self.args.split:
-                train_items, test_items = self.get_train_test_items_from_data(user_data[u_id])
+                train_items, test_items = self.get_train_test_items_from_time_split_data(user_data[u_id])
                 # train_items (list): [(art_idx_1, ts_1), ..., (art_idx_N, ts_N)]
                 # list of tuples consisting of article indices (already mapped) and (converted) time_stamps
 
                 if train_items is None:
                     print("Reading history of user {} was too short and is excluded".format(u_id))
                     continue
+            elif 'leave_one_out' == self.args.split:
+                # get full history
+
+                # train
+                pass
             else:
                 raise NotImplementedError()
 
@@ -375,20 +375,20 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         return train, val, test, u_id2idx
 
     def select_rnd_item_for_validation(self, test_items):
-        # select random portion of test items as subset for validation
+        # select items for validation from test items
         # exclude possibility to use last test interaction for validation because it's reserved for testing
-        val_pos = self.rnd.choice(range(len(test_items) - 1)) if len(test_items) > 1 else None
-        #coin_flip = self.rnd.random()
-        if val_pos is not None:
-            return test_items[:val_pos], test_items[val_pos:]
+        if "leave_one_out" == self.args.split:
+            return test_items[:-2], test_items[-1]
         else:
-            raise ValueError("Number of test items insufficient to creat validation instance")
+            val_pos = self.rnd.choice(range(len(test_items) - 1)) if len(test_items) > 1 else None
 
-        # is not None and coin_flip > (1 - self.args.validation_portion):
-        # else:
-        #     return [], test_items
+            if val_pos is not None:
+                return test_items[:val_pos], test_items[val_pos:]
+            else:
+                raise ValueError("Number of test items insufficient to creat validation instance")
 
-    def get_train_test_items_from_data(self, u_data):
+
+    def get_train_test_items_from_time_split_data(self, u_data):
         # split user interactions according to certain threshold timestamp
         # e.g. first 3 weeks for training, last week for testing
         try:

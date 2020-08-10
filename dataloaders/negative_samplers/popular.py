@@ -18,7 +18,7 @@ class PopularNaiveNegativeSampler(AbstractNegativeSampler):
 
         negative_samples = {}
         print('Sampling negative items')
-        for user in trange(self.user_count):
+        for user in trange(self.n_users):
             seen = set(self.train[user])
             seen.update(self.val[user])
             seen.update(self.test[user])
@@ -37,7 +37,7 @@ class PopularNaiveNegativeSampler(AbstractNegativeSampler):
 
     def items_by_popularity(self):
         popularity = Counter()
-        for user in range(self.user_count):
+        for user in range(self.n_users):
             popularity.update(self.train[user])
             popularity.update(self.val[user])
             popularity.update(self.test[user])
@@ -62,7 +62,7 @@ class PopularLikelihoodNegativeSampler(AbstractNegativeSampler):
 
         negative_samples = {}
         print('Sampling negative items')
-        for user in trange(self.user_count):
+        for user in trange(self.n_users):
             seen = seens[user]
 
             # sample uniform random unseen items from the full set
@@ -108,7 +108,7 @@ class PopularLikelihoodNegativeSampler(AbstractNegativeSampler):
     def items_by_popularity(self):
         popularity = Counter()
         seens = {}
-        for user in range(self.user_count):
+        for user in range(self.n_users):
             seen, pop = self.determine_seen_items(user)
             seens[user] = seen
             popularity.update(pop)
