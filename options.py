@@ -5,6 +5,7 @@ from source.models import MODELS
 from source.modules import NEWS_ENCODER
 from trainers import TRAINERS
 from source.modules.temporal_embedding import TEMP_EMBS
+from dataloaders.negative_samplers import NEGATIVE_SAMPLERS
 
 import argparse
 
@@ -78,7 +79,7 @@ parser.add_argument('--eval_seq_order', type=str, default=None, choices=['shuffl
 ################
 # NegativeSampler
 ################
-parser.add_argument('--train_negative_sampler_code', type=str, default='random', choices=['popular', 'random', 'random_common'],
+parser.add_argument('--train_negative_sampler_code', type=str, default='random', choices=NEGATIVE_SAMPLERS.keys(),
                     help='Method to sample negative items for training. Not used in bert')
 parser.add_argument('--train_negative_sample_size', type=int, default=None)
 parser.add_argument('--train_negative_sampling_seed', type=int, default=None)
