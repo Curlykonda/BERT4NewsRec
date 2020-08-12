@@ -453,7 +453,11 @@ class ExtendedTrainer(AbstractTrainer):
         """
 
         self.model.eval()
-        order_emb_code = self.model._get_pos_emb()
+        if isinstance(self.model, nn.DataParallel):
+            # access model attribute when wrapped in DataParallel
+            order_emb_code = self.model.module._get_pos_emb()
+        else:
+            order_emb_code = self.model._get_pos_emb()
 
         with torch.no_grad():
 
