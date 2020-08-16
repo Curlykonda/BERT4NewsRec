@@ -338,10 +338,10 @@ class ExtendedTrainer(AbstractTrainer):
 
         if self.args.log_user_metrics:
             print('compute individual user metrics on validation set')
-            try:
-                self.eval_indiv_user_scores(self.val_loader, data_code='val')
-            except Exception as e:
-                print(e)
+
+            self.eval_indiv_user_scores(self.val_loader, data_code='val')
+            # except Exception as e:
+            #     print(e)
 
         print("\n >> Run completed in {} \n".format(self.total_train_time))
 

@@ -88,7 +88,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
                     user_metrics[u_id][key] = vals[i]
                     #assert len(vals) == len(user_ids)
 
-                user_metrics[u_id]['scores'] = scores[i, :]
+                user_metrics[u_id]['scores'] = scores[i, :].cpu().numpy()
 
             return user_metrics
 

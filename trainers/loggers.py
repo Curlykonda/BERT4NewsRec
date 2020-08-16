@@ -1,6 +1,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 
+import numpy
 import torch
 import json
 from collections import defaultdict
@@ -84,7 +85,8 @@ class LoggerService(object):
         for u_idx, vals in log_data.items():
             # map user idx to ID
             u_id = u_idx2id[u_idx] if u_idx2id is not None else u_idx
-            self.user_metrics[code][u_id][key] = {k: "{:.4f}".format(v) for k, v in vals.items()}
+            self.user_metrics[code][u_id][key] = {k: ("{:.4f}".format(v) if not isinstance(v, numpy.ndarray) else self.conv_arr_to_str(v))
+                                                  for k, v in vals.items()}
 
 
     def log_grad_flow_report(self, report: dict, iter: int):
@@ -142,6 +144,14 @@ class LoggerService(object):
         res_str = res_str.replace('NDCG', 'N').replace('Recall', 'R')
 
         return res_str
+
+    def conv_arr_to_str(self, arr):
+        """ Convert an array of float values to string """
+        result = ""
+        for val in arr:
+            result += "{:.4f}, ".format(val)
+
+        return result[:-2]
 
 
 class AbstractBaseLogger(metaclass=ABCMeta):
