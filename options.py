@@ -10,19 +10,19 @@ from dataloaders.negative_samplers import NEGATIVE_SAMPLERS
 import argparse
 
 
-parser = argparse.ArgumentParser(description='RecPlay')
+parser = argparse.ArgumentParser(description='Bert4News')
 
 ################
 # Top Level
 ################
-parser.add_argument('--mode', type=str, default='train', choices=['train'])
+parser.add_argument('--mode', type=str, default='train', choices=['train', 'test', 'eval_users'])
 parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
 ################
 # Test
 ################
-parser.add_argument('--test_model_path', type=str, default=None)
+parser.add_argument('--path_test_model', type=str, default=None)
 
 ################
 # Dataset

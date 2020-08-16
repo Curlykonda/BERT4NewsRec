@@ -31,5 +31,7 @@ if __name__ == '__main__':
         trainer.test()
     elif 'test' == args.mode:
         trainer.test()
+    elif 'eval_users' == args.mode:
+        trainer.detail_eval_users()
     else:
         raise ValueError('Invalid mode')

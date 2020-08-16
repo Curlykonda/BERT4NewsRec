@@ -165,8 +165,11 @@ class BertDataloaderNews(BertDataloader):
                                     self.item_id2idx.items()}
         del self.art_index2word_ids
 
-        if self.w_time_stamps:
+        if 'ts_scaler' in data:
             self.ts_scaler = data['ts_scaler']
+        else:
+            self.ts_scaler = None
+
 
     @classmethod
     def code(cls):

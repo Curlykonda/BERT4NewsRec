@@ -217,23 +217,27 @@ class AbstractTrainer(metaclass=ABCMeta):
         return average_meter_set
 
 
-    def batch_to_device(self, batch):
+    def batch_to_device(self, batch, device=None):
+        
+        device = self.device if device is None else device
+        
         if isinstance(batch, dict):
             device_dict = {}
             for key, val in batch.items():
                 if isinstance(val, list):
-                    device_dict[key] = [elem.to(self.device) for elem in val]
+                    device_dict[key] = [elem.to(device) for elem in val]
                 elif isinstance(val, dict):
-                    device_dict[key] = {k: v.to(self.device) for k, v in val.items()}
+                    device_dict[key] = {k: v.to(device) for k, v in val.items()}
                 else:
-                    device_dict[key] = val.to(self.device)
+                    device_dict[key] = val.to(device)
 
             batch = device_dict
             # batch = {key: x.to(self.device) for key, x in batch.items() if not isinstance(x, list) else key: [elem.to(self.device) for elem in x]}
         else:
-            batch = [x.to(self.device) for x in batch]
+            batch = [x.to(device) for x in batch]
 
         return batch
+    
 
     def _create_optimizer(self):
         args = self.args
@@ -440,7 +444,7 @@ class ExtendedTrainer(AbstractTrainer):
 
         return average_meter_set
 
-    def eval_indiv_user_scores(self, eval_loader, data_code='val'):
+    def eval_indiv_user_scores(self, eval_loader, data_code='val', log=True, qual_eval=False, **kwargs):
         """
         Compute individual user metrics and stores them with 'logger_service'
 
@@ -466,9 +470,15 @@ class ExtendedTrainer(AbstractTrainer):
 
                 user_metrics = self.calculate_metrics(batch, avg_metrics=False)
 
-                self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.idx2u_id,
-                                                         code=data_code, key=order_emb_code)
+                if log:
+                    self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.idx2u_id,
+                                                             code=data_code, key=order_emb_code)
 
+                if qual_eval:
+                    # prints details about user cases (e.g. article IDs and text)
+                    self.add_detail_user_cases(batch, user_metrics)
+
+                # early stopping for local debugging
                 if self.args.local and batch_idx > 20:
                     break
 
@@ -489,14 +499,7 @@ class ExtendedTrainer(AbstractTrainer):
 
     def test(self):
 
-        best_model_filename = self.logger_service.best_model_logger.filename
-        best_model_state_dict = torch.load(os.path.join(self.export_root, 'models', best_model_filename)).get('model_state_dict')
-
-        self.model.load_state_dict(best_model_state_dict)
-        self.model = self.model.to(self.device)
-
-        # if self.is_parallel:
-        #     self.model = nn.DataParallel(self.model)
+        self.load_best_model()
 
         print('Test best model with test set!')
         average_meter_set = self.eval_one_epoch(self.test_loader)
@@ -522,6 +525,109 @@ class ExtendedTrainer(AbstractTrainer):
                     'total_train_time': self.total_train_time}
         self.logger_service.print_final(rel_epochs=[0, -1], add_info=add_info)
         print("\n############################################\n")
+
+    def load_best_model(self, exp_root=None):
+
+        model_filename = self.logger_service.best_model_logger.filename
+
+        if exp_root is None:
+            model_path = os.path.join(self.export_root, 'models', model_filename)
+        else:
+            model_path = os.path.join(exp_root, 'models', model_filename)
+
+        best_model_state_dict = torch.load(model_path).get(
+            'model_state_dict')
+
+        if 'module' in next(iter(best_model_state_dict.keys())):
+            mod_state_dict = {}
+            for k, val in best_model_state_dict.items():
+                k_mod = k.replace("module.", "")
+                mod_state_dict[k_mod] = val
+
+            self.model.load_state_dict(mod_state_dict)
+        else:
+            self.model.load_state_dict(best_model_state_dict)
+
+        self.model = self.model.to(self.device)
+
+    def detail_eval_users(self):
+
+        self.load_best_model(self.args.path_test_model)
+
+        # user selection:
+        # 1) random users for n_batches
+        # 2) pre-determined user IDs loaded from json file
+
+        # try:
+        self.eval_indiv_user_scores(self.test_loader, log=False, qual_eval=True)
+        # except Exception as e:
+        #     print(e)
+
+        # self.logger_service.save_metric_dicts(self.export_root)
+        #
+        # with open(os.path.join(self.export_root, 'logs', 'test_metrics.json'), 'w') as f:
+        #     json.dump(average_metrics, f, indent=4)
+        #
+        # add_info = {'exp_dir': self.export_root,
+        #             'n_params': self.args.n_params,
+        #             'total_train_time': self.total_train_time}
+        # self.logger_service.print_final(rel_epochs=[0, -1], add_info=add_info)
+        # print("\n############################################\n")
+
+    def add_detail_user_cases(self, batch: dict, user_metrics: dict):
+        """
+        Provide details to user histories, articles and scores for qualitative analysis
+
+        """
+
+        #data = self.general_dataloader.dataset_instance.load_dataset()
+        batch = self.batch_to_device(batch, device='cpu')
+        ts_scaler = self.general_dataloader.ts_scaler
+
+        for i, u_index in enumerate(user_metrics.keys()):
+            u_id = self.general_dataloader.idx2u_id[u_index] # mapping from u_index to ID
+            hist = batch['input']['hist'][i].numpy()
+            cands = batch['input']['cands'][i].numpy()
+
+            # if 'ts' in batch['input']:
+            #     interaction_ts = batch['input']['ts'][i]
+
+            print("User {} / ID: {}".format(u_index, u_id))
+            print("Reading history (len={}):".format(len(hist)))
+            for j, art_index in enumerate(hist):
+                if art_index != 0:
+                    # mapping from art_index to ID to text
+                    art_id = self.general_dataloader.idx2item_id[art_index]
+                    text = self.general_dataloader.item_id2info[art_id]['snippet']
+                    #ts = interaction_ts[j]
+
+                    print("\t {}. / Idx: {} / ID: {}".format(j, art_index, art_id))
+                    print("\t {}".format(text))
+
+            print("######################################")
+            print("Candidate Articles:")
+
+            pred_scores = user_metrics[u_index]['scores'].cpu().numpy()
+            lbls = batch['lbls'][i].numpy()
+
+            for j, art_index in enumerate(cands):
+
+                # mapping from art_index to ID to text
+                art_id = self.general_dataloader.idx2item_id[art_index]
+                text = self.general_dataloader.item_id2info[art_id]['snippet']
+                # ts = interaction_ts[j]
+
+                print("\t Pos:{} / Idx: {} / ID: {}".format(j, art_index, art_id))
+                print("\t Score: {:.3f} / Label: {}".format(pred_scores[j], lbls[j]))
+                print("\t {}".format(text))
+
+            print("Metrics")
+            print(get_metric_descr(user_metrics[u_index], metric_ks=[5], avg=False))
+
+            # print("Recommendation Probabilities:")
+            # print(pred_scores)
+            # print("Labels:")
+            # print(lbls)
 
     def calculate_metrics(self, batch, avg_metrics=False):
         pass
@@ -583,12 +689,15 @@ class ExtendedTrainer(AbstractTrainer):
 
         return oh_lbls
 
-def get_metric_descr(metric_set, metric_ks=[5, 10]):
+def get_metric_descr(metric_set, metric_ks=[5, 10], avg=True):
     description_metrics = ['AUC'] + ['MRR'] + \
                           ['NDCG@%d' % k for k in metric_ks[:3]] + \
                           ['Recall@%d' % k for k in metric_ks[:3]]
     description = 'Val: ' + ', '.join(s + ' {:.3f}' for s in description_metrics)
     description = description.replace('NDCG', 'N').replace('Recall', 'R')
-    description = description.format(*(metric_set[k].avg for k in description_metrics))
+    if avg:
+        description = description.format(*(metric_set[k].avg for k in description_metrics))
+    else:
+        description = description.format(*(metric_set[k] for k in description_metrics))
 
     return description

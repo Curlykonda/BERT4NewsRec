@@ -8,6 +8,8 @@ class AbstractDataloader(metaclass=ABCMeta):
         self.args = args
 
         self.save_folder = dataset._get_preprocessed_folder_path()
+
+        self.dataset_instance = dataset
         data = dataset.load_dataset()
         self.train = data['train']
         self.val = data['val']
@@ -57,6 +59,9 @@ class AbstractDataloader(metaclass=ABCMeta):
         val_loader = self._get_val_loader()
         test_loader = self._get_test_loader()
         return train_loader, val_loader, test_loader
+
+    def get_data(self):
+        return self.dataset_instance.load_dataset()
 
     @abstractmethod
     def _get_train_loader(self):
