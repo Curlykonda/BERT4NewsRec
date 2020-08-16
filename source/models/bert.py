@@ -266,7 +266,7 @@ class BERT4NewsRecModel(NewsRecBaseModel):
             # replace mask positions with mask embedding
             if self.mask_embedding.device != art_emb.device:
                 self.mask_embedding = self.mask_embedding.to(art_emb.device)
-            art_emb[mask] = self.mask_embedding
+            art_emb[mask == 0] = self.mask_embedding
             # encoded_articles = encoded_articles.masked_fill(mask==True, self.token_embedding._mask_embedding)
         else:
             raise ValueError("Should apply masking before using BERT ;)")
