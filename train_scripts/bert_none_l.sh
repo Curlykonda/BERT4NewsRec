@@ -26,7 +26,7 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(49 74 99) # 4 9
+neg_ratios=(4 49 99) # 4 9
 lr=1e-4
 n_epochs=50
 
@@ -37,7 +37,7 @@ n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_brand_s"
+exp_descr="100k"
 
 for K in "${neg_ratios[@]}"
 do
@@ -45,7 +45,6 @@ do
     #1
   CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
     --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-    --train_negative_sampler_code=rnd_brand_sens \
     --max_article_len=$art_len --max_hist_len=$hist_len \
     --nie_layer $nie --n_users=$n_users \
     --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
@@ -54,3 +53,5 @@ do
   ((COUNTER++))
   echo "Exp counter: $COUNTER"
 done
+
+#--train_negative_sampler_code=rnd_brand_sens \
