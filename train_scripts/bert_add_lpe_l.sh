@@ -27,7 +27,7 @@ POS_EMBS=("lpe")
 neg_ratios=(4 49 99) # 99
 
 nie="lin_gelu"
-LR=(1e-4)
+LR=(1e-3)
 n_epochs=50
 #eval_seq_order="shuffle_exc_t"
 
