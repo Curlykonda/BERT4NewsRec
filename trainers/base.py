@@ -538,7 +538,8 @@ class ExtendedTrainer(AbstractTrainer):
         best_model_state_dict = torch.load(model_path).get(
             'model_state_dict')
 
-        if 'module' in next(iter(best_model_state_dict.keys())):
+        # remove module when not using DataParallel
+        if 'module' in next(iter(best_model_state_dict.keys())) and not self.is_parallel:
             mod_state_dict = {}
             for k, val in best_model_state_dict.items():
                 k_mod = k.replace("module.", "")
