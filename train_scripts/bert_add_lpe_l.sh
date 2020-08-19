@@ -20,7 +20,7 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 
 SEED=$SLURM_ARRAY_TASK_ID
 
-art_len=30
+art_len=128
 hist_len=100
 
 POS_EMBS=("lpe")

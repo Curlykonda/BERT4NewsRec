@@ -23,7 +23,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 TE=None
 
-art_len=30
+art_len=128
 hist_len=100
 
 neg_ratios=(4) # 4 9
