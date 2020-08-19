@@ -3,7 +3,7 @@
 #SBATCH -n 4
 #SBATCH -t 40:00:00
 #SBATCH -p gpu_shared
-#SBATCH --gres=gpu:3
+#SBATCH --gres=gpu:2
 #SBATCH --mem=60G
 
 module load pre2019
@@ -23,16 +23,16 @@ art_len=30
 hist_len=100
 
 POS=None #
-neg_ratios=(4 49 99) # 24
+neg_ratios=(4 9) # 24
 
 enc="wucnn"
-d_art=400
+d_art=768
 
 n_bert_layers=2
 
 nie="lin_gelu"
 LR=(1e-3)
-n_epochs=50
+n_epochs=80
 
 n_users=100000
 exp_descr="100k_cnn" # _brand_s
@@ -45,7 +45,7 @@ do
   do
     echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED" # nl$n_bert_layers
       #1
-    CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
       --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
       --max_article_len=$art_len --max_hist_len=$hist_len \

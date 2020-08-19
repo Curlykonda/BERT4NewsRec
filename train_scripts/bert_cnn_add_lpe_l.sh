@@ -22,16 +22,16 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 
 POS_EMBS=("lpe") #
-neg_ratios=(4 49 99) #
+neg_ratios=(4 9) #
 
 enc="wucnn"
-d_art=400
+d_art=768
 
 n_bert_layers=2
 
 nie="lin_gelu"
 LR=(1e-3)
-n_epochs=50
+n_epochs=80
 
 n_users=100000
 exp_descr="100k_cnn_add"
