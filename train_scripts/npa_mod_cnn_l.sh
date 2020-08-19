@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_mod_cnn
 #SBATCH -n 4
-#SBATCH -t 34:00:00
+#SBATCH -t 10:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -21,7 +21,7 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
 hist_len=100
-neg_ratios=(49 74 99) # 4
+neg_ratios=(4) # 4
 
 d_art=400
 
