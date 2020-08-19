@@ -270,7 +270,7 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                 # get full history
 
                 # train
-                pass
+                raise NotImplementedError()
             else:
                 raise NotImplementedError()
 

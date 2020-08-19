@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=l_bertje_none
 #SBATCH -n 4
-#SBATCH -t 30:00:00
+#SBATCH -t 16:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -26,9 +26,13 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(4 49 99) # 4 9
-lr=1e-3
-n_epochs=50
+neg_ratios=(4) # 4 9
+
+n_layers=(2 3 4)
+n_heads=4
+
+lr=1e-4
+n_epochs=100
 
 nie="lin_gelu"
 d_model=768
@@ -41,17 +45,20 @@ exp_descr="100k"
 
 for K in "${neg_ratios[@]}"
 do
-  echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr s$SEED"
-    #1
-  CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-    --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-    --max_article_len=$art_len --max_hist_len=$hist_len \
-    --nie_layer $nie --n_users=$n_users \
-    --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-    --experiment_description $exp_descr $TE al$art_len k$K lr$lr s$SEED
+  for nl in "${n_layers[@]}"
+  do
+    echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
+      #1
+    CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+      --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+      --max_article_len=$art_len --max_hist_len=$hist_len \
+      --nie_layer $nie --n_users=$n_users \
+      --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+      --experiment_description $exp_descr $TE al$art_len k$K lr$lr L$nl H$n_heads s$SEED
 
-  ((COUNTER++))
-  echo "Exp counter: $COUNTER"
+    ((COUNTER++))
+    echo "Exp counter: $COUNTER"
+  done
 done
 
 #--train_negative_sampler_code=rnd_brand_sens \

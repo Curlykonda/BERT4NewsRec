@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_lpe_l
 #SBATCH -n 2
-#SBATCH -t 12:00:00
+#SBATCH -t 16:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -24,11 +24,14 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(4 49 99) # 99
+neg_ratios=(4) # 99
+
+n_layers=(2 3 4)
+n_heads=4
 
 nie="lin_gelu"
-LR=(1e-3)
-n_epochs=50
+lr=1e-4
+n_epochs=100
 #eval_seq_order="shuffle_exc_t"
 
 n_users=100000
@@ -39,19 +42,19 @@ exp_descr="100k_add" # _brand_s  _shuf_exc_t
 
 for K in "${neg_ratios[@]}"
 do
-  for lr in "${LR[@]}"
+  for nl in "${n_layers[@]}"
   do
     for POS in "${POS_EMBS[@]}"
     do
-      echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED"
+      echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K \
+        --train_negative_sample_size=$K --bert_num_blocks=$nl \
         --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
         --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-        --experiment_description $exp_descr $POS al$art_len k$K lr$lr s$SEED
+        --experiment_description $exp_descr $POS al$art_len k$K lr$lr L$nl H$n_heads s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
