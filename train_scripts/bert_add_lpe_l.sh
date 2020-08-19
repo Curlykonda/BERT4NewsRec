@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_lpe_l
 #SBATCH -n 2
-#SBATCH -t 16:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -31,7 +31,7 @@ n_heads=4
 
 nie="lin_gelu"
 lr=1e-4
-n_epochs=100
+n_epochs=80
 #eval_seq_order="shuffle_exc_t"
 
 n_users=100000
