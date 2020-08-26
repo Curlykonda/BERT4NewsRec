@@ -51,7 +51,7 @@ do
       #1
     CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-      --bert_num_blocks=nl --bert_num_heads=$n_heads \
+      --bert_num_blocks=$nl --bert_num_heads=$n_heads \
       --max_article_len=$art_len --max_hist_len=$hist_len \
       --nie_layer $nie --n_users=$n_users \
       --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
