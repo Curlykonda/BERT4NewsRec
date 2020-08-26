@@ -30,8 +30,8 @@ n_layers=(2 3 4)
 n_heads=4
 
 nie="lin_gelu"
-lr=1e-4
-n_epochs=80
+lr=5e-4
+n_epochs=40
 #eval_seq_order="shuffle_exc_t"
 
 n_users=100000
@@ -49,7 +49,7 @@ do
       echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K --bert_num_blocks=$nl \
+        --train_negative_sample_size=$K --bert_num_blocks=$nl --bert_num_heads=$n_heads \
         --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
