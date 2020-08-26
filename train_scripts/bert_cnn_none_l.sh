@@ -23,15 +23,16 @@ art_len=30
 hist_len=100
 
 POS=None #
-neg_ratios=(4 9) # 24
+neg_ratios=(4) # 24
 
 enc="wucnn"
 d_art=768
 
-n_bert_layers=2
+n_layers=(2 3 4)
+n_heads=4
 
 nie="lin_gelu"
-LR=(1e-3)
+lr=1e-3
 n_epochs=80
 
 n_users=100000
@@ -41,12 +42,12 @@ COUNTER=0
 
 for K in "${neg_ratios[@]}"
 do
-  for lr in "${LR[@]}"
+  for nl in "${n_layers[@]}"
   do
-    echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr s$SEED" # nl$n_bert_layers
+    echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
       #1
     CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-      --bert_num_blocks=$n_bert_layers --train_negative_sample_size=$K \
+      --bert_num_blocks=$nl --bert_num_heads=$n_heads --train_negative_sample_size=$K \
       --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
       --max_article_len=$art_len --max_hist_len=$hist_len \
       --nie_layer=$nie --n_users=$n_users \
