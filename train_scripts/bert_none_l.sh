@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=l_bertje_none
 #SBATCH -n 4
-#SBATCH -t 30:00:00
+#SBATCH -t 45:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -28,11 +28,11 @@ hist_len=100
 
 neg_ratios=(4) # 4 9
 
-n_layers=(2 3 4)
+n_layers=(2 3)
 n_heads=4
 
-lr=5e-4
-n_epochs=40
+lr=1e-4
+n_epochs=200
 
 nie="lin_gelu"
 d_model=768
