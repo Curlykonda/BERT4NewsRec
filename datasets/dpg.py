@@ -31,7 +31,9 @@ class AbstractDatasetDPG(AbstractDataset):
 
         ## time stamps ##
         self.w_time_stamp = args.incl_time_stamp
-        self.parts_time_vec = ['WD', 'HH', 'mm'] if args.parts_time_vec is None else args.parts_time_vec
+        if args.parts_time_vec is None:
+            args.parts_time_vec = ['WD', 'HH', 'mm']
+        self.parts_time_vec = args.parts_time_vec
         args.len_time_vec = len(self.parts_time_vec)
         self.ts_scaler = None
 
@@ -95,7 +97,9 @@ class AbstractDatasetDPG(AbstractDataset):
         # Preprocess data
         news_data = self.prep_dpg_news_data()
 
-        train, val, test, u_id2idx = self.prep_dpg_user_data(news_data)
+        user_data = self.load_raw_read_histories()
+
+        train, val, test, u_id2idx = self.prep_dpg_user_data(user_data, news_data)
 
         #train, val, test = self.split_data(user_data, len(u_id2idx))
 
@@ -111,6 +115,7 @@ class AbstractDatasetDPG(AbstractDataset):
                    'art2words': self.art_idx2word_ids,
                    'art_emb': self.art_embs, # article emb matrix
                    'art_id2info': news_data['all'],
+                   'u_id2info': user_data,
                    'valid_items': self.valid_items,
                    'rnd': self.rnd,
                    'ts_scaler': self.ts_scaler}
@@ -234,9 +239,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
         else:
             raise NotImplementedError()
 
-    def prep_dpg_user_data(self, news_data):
+    def prep_dpg_user_data(self, user_data, news_data):
 
-        user_data = self.load_raw_read_histories()
         u_id2idx = {}
 
         train, val, test = defaultdict(list), defaultdict(list), defaultdict(list)

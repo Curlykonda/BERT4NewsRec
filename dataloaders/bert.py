@@ -1,4 +1,7 @@
 import itertools
+from typing import List, Dict, Tuple, Any
+
+import numpy as np
 
 from dataloaders.base import AbstractDataloader
 # from dataloaders.news import BertTrainDatasetNews, BertEvalDatasetNews
@@ -213,6 +216,145 @@ class BertDataloaderNews(BertDataloader):
 
         return {'train': list(train), 'test': list(test)}
 
+    def create_eval_dataset_modify_timestamps(self, mode):
+
+        if 'val' == mode:
+            u2hist = self.val
+            neg_samples = self.val_negative_samples
+        else:
+            u2hist = self.test
+            neg_samples = self.test_negative_samples
+
+        # select users based on matching criteria
+        match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40}
+
+        valid_u_idx = filter_user_query_time(u2hist, match_criteria=match_crit, ts_scaler=self.ts_scaler,
+                                             time_vec_format=self.args.parts_time_vec, max_users=100)
+
+        # modify sequence based on modification criteria
+        # and compile working data
+        mod_crit = {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 5}
+
+        work_u2hist, work_negs, work_idx2u_id = {}, {}, {}
+
+        for i, u_idx in enumerate(valid_u_idx):
+            u_id = self.idx2u_id[u_idx]
+
+            new_u_idx = len(work_idx2u_id)
+
+            # add orginal data of selected users to working data
+            work_idx2u_id[new_u_idx] = u_id
+            work_negs[new_u_idx] = neg_samples[u_idx]
+            work_u2hist[new_u_idx] = u2hist[u_idx]
+
+            # create u_idx for modified sequence
+            mod_u_idx = len(work_idx2u_id)
+            work_idx2u_id[mod_u_idx] = u_id
+
+            # create modified sequence & add to working data
+            work_negs[mod_u_idx] = neg_samples[u_idx]
+            work_u2hist[mod_u_idx] = modify_query_time_of_seq(u2hist[u_idx], mod_criteria=mod_crit, ts_scaler=self.ts_scaler, time_vec_format=self.args.parts_time_vec)
+
+
+        dataset = BertEvalDatasetNews(work_u2hist, self.art_id2word_ids, work_negs, self.max_hist_len,
+                                      self.max_article_len,
+                                      self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
+                                      seq_order=self.args.eval_seq_order)
+
+        return dataset, work_idx2u_id
+
+def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_criteria: Dict[str, Any], ts_scaler,
+                           time_vec_format, max_users=None) -> List[int]:
+
+    max_users = max_users if max_users is not None else -1
+
+    mode = match_criteria['mode'] # type of match
+    pos = match_criteria['position'] # which article position
+    match_val = match_criteria['match_val']  # value to match, e.g. weekday == 7 to filter for Sundays
+
+    valid_u_idx = []
+    for u_idx, hist in u_data.items():
+        seq, time_stamps = zip(*hist)
+
+        if len(seq) < match_criteria['seq_len']:
+            continue
+
+        # rescale & transform normalised time stamps
+        ts_vec = [ts_scaler.inverse_transform(ts) for ts in time_stamps]
+
+        if 'wd_match' == match_criteria['mode']:
+            # weekday match: map index of ts_vec[pos]
+            ts_vec_idx = time_vec_format.index('WD')
+
+        elif 'dt_match' == match_criteria['mode']:
+            # daytime match
+            ts_vec_idx = time_vec_format.index('HH')
+        else:
+            raise NotImplementedError()
+
+        # compare to matching values
+        if int(ts_vec[pos][ts_vec_idx]) in match_val and not match_criteria['neg']:
+            valid_u_idx.append(u_idx) # add to valid list of matching
+        elif int(ts_vec[pos][ts_vec_idx]) not in match_val and match_criteria['neg']:
+            valid_u_idx.append(u_idx)
+
+        # check break criteria
+        if len(valid_u_idx) == max_users:
+            break
+
+    return valid_u_idx
+
+def modify_query_time_of_seq(hist: List[Tuple[int, int]], mod_criteria: Dict[str, Any], ts_scaler,
+                           time_vec_format) -> List[Tuple[int, int]]:
+
+    seq, time_stamps = zip(*hist)
+
+    ts_org = time_stamps[mod_criteria['pos']]
+
+    # if isinstance(mod_criteria['val'], list):
+    #     # choose random value
+    #     mod_val = mod_criteria['val'][0]
+    # else:
+    #     mod_val = mod_criteria['val']
+
+    # rescale & transform normalised time stamps
+    ts_vec = [ts_scaler.inverse_transform(ts) for ts in time_stamps]
+
+    if 'wd_single' == mod_criteria['mode']:
+        # weekday, modify single value
+        ts_vec_idx = time_vec_format.index('WD')
+        valid_range = [0, 6]
+    elif 'dt_single' == mod_criteria['mode']:
+        ts_vec_idx = time_vec_format.index('HH') # daytime
+        valid_range = [0, 23]
+    else:
+        raise NotImplementedError()
+
+    # modify query time stamp
+    if 'by_val' == mod_criteria['func']:
+        new_time = ts_vec[mod_criteria['pos']][ts_vec_idx] + mod_criteria['val']
+    elif 'to_val' == mod_criteria['func']:
+        new_time = mod_criteria['val']
+    else:
+        raise NotImplementedError(mod_criteria['func'])
+
+    # assert valid range of new time
+    if valid_range[0] <= new_time <= valid_range[1]:
+        ts_vec[mod_criteria['pos']][ts_vec_idx] = new_time
+    elif new_time >= valid_range[1]:
+        ts_vec[mod_criteria['pos']][ts_vec_idx] = valid_range[1]  # set to max
+    elif new_time <= valid_range[0]:
+        ts_vec[mod_criteria['pos']][ts_vec_idx] = valid_range[0]  # set to min
+    else:
+        raise ValueError()
+
+    assert valid_range[0] <= ts_vec[mod_criteria['pos']][ts_vec_idx] <= valid_range[1]
+
+    time_stamps = ts_scaler.transform(np.array(ts_vec)).tolist()  # transform to normalised values
+
+    assert time_stamps[mod_criteria['pos']] != ts_org
+
+    return list(zip(seq, time_stamps))
 
 def art_idx2word_ids(art_idx, mapping):
     if mapping is not None:
@@ -567,3 +709,9 @@ class BertEvalDatasetNews(BertEvalDataset):
         inp['u_id'] = torch.LongTensor([u_idx] * self.max_hist_len)
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}
+
+    def filter_users(self, valid_u_idx):
+        """ Reduce dataset to users indicated by passed indices """
+        # for u_idx in valid_u_idx:
+        # self.u2hist = {u_idx: self.u2hist[u_idx] for u_idx in self.u2hist if u_idx in valid_u_idx}
+        pass

@@ -56,7 +56,20 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
         return loss, metrics
 
     def calculate_metrics(self, batch, avg_metrics=True):
+        """
+        Performs forward pass to compute metrics based on model output (predictions)
 
+        Input:
+            batch -> {input: {hist: Tensor, u_id: Tensor, ..} , lbls: Tensor}
+
+        Output:
+
+        if "avg_metrics":
+            return metrics -> {metric_key: [avg_val]}
+        else:
+            return user_metrics -> {u_id: {metric_key: val}}
+
+        """
         input = batch['input'].items()
         lbls = batch['lbls']
         # self.model.set_train_mode(False)
@@ -73,7 +86,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
         metrics.update(calc_auc_and_mrr(scores, lbls, avg_metrics))
 
         if avg_metrics:
-            return metrics
+            return metrics # metric_key: [avg_val]
 
         else:
             # update individual user metrics
@@ -90,7 +103,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
 
                 user_metrics[u_id]['scores'] = scores[i, :].cpu().numpy()
 
-            return user_metrics
+            return user_metrics # {u_id: {metric_key: val}}
 
 
 class BERTTrainer(AbstractTrainer):

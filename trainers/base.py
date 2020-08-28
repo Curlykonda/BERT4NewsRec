@@ -463,20 +463,22 @@ class ExtendedTrainer(AbstractTrainer):
         else:
             order_emb_code = self.model._get_pos_emb()
 
+        user_metrics = defaultdict()
+
         with torch.no_grad():
 
             for batch_idx, batch in enumerate(eval_loader):
                 batch = self.batch_to_device(batch)
 
-                user_metrics = self.calculate_metrics(batch, avg_metrics=False)
+                batch_u_metrics = self.calculate_metrics(batch, avg_metrics=False)
 
                 if log:
-                    self.logger_service.log_user_val_metrics(user_metrics, self.general_dataloader.idx2u_id,
+                    self.logger_service.log_user_val_metrics(batch_u_metrics, self.general_dataloader.idx2u_id,
                                                              code=data_code, key=order_emb_code)
 
                 if qual_eval:
                     # prints details about user cases (e.g. article IDs and text)
-                    self.add_detail_user_cases(batch, user_metrics)
+                    self.add_detail_user_cases(batch, batch_u_metrics)
 
                 # early stopping for local debugging
                 if self.args.local and batch_idx > 20:
@@ -629,6 +631,13 @@ class ExtendedTrainer(AbstractTrainer):
             # print(pred_scores)
             # print("Labels:")
             # print(lbls)
+
+    def eval_mod_query_time(self):
+
+        #self.load_best_model(self.args.path_test_model)
+
+        val_dataset, work_idx2u_id = self.general_dataloader.create_eval_dataset_modify_timestamps("val")
+
 
     def calculate_metrics(self, batch, avg_metrics=False):
         pass

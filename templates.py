@@ -4,8 +4,12 @@ def set_template(args):
     if args.template is None:
         return
 
+    elif args.template.startswith('load_json'):
+        # load and update args from json config
+        pass
+
     elif args.template.startswith('train_bert_ml'):
-        args.mode = 'train'
+        #args.mode = 'train'
 
         #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
         args.dataset_code = 'ml-1m'
@@ -56,78 +60,10 @@ def set_template(args):
     elif args.template.startswith('train_bert_pcp'):
         set_args_bert_pcp(args)
 
-    # elif args.template.startswith('train_bert_nie'):
-    #     # Bert4News with the Next-Item Embedding objective
-    #     args.mode = 'train'
-    #     args.local = True
-    #
-    #     # dataset
-    #     #args.dataset_code = 'ml-' + input('Input 1 for ml-1m, 20 for ml-20m: ') + 'm'
-    #     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code
-    #
-    #     # preprosessing
-    #     args.n_users = 10000
-    #     args.use_article_content = True
-    #     args.incl_time_stamp = False
-    #     args.pt_news_encoder = 'rnd'
-    #     args.fix_pt_art_emb_fix = True
-    #     args.pd_vocab = True
-    #
-    #     args.max_article_len = 128
-    #     args.dim_art_emb = 256
-    #
-    #     # split strategy
-    #     args.split = 'time_threshold'
-    #
-    #     # dataloader
-    #     args.dataloader_code = 'bert_news'
-    #     batch = 128 if not args.local else 10
-    #     args.train_batch_size = batch
-    #     args.val_batch_size = batch
-    #     args.test_batch_size = batch
-    #     args.eval_method = 'last_as_target'
-    #
-    #     # negative sampling
-    #     args.train_negative_sampler_code = 'random'
-    #     args.train_negative_sample_size = 5
-    #     args.train_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed
-    #     args.test_negative_sampler_code = 'random'
-    #     args.test_negative_sample_size = 99
-    #     args.test_negative_sampling_seed = 42 if args.model_init_seed is None else args.model_init_seed  #98765
-    #
-    #     # training
-    #     args.trainer_code = 'bert_news_dist'
-    #     args.device = 'cuda' if not args.local else 'cpu'
-    #     # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    #     args.train_method = 'masked_item'
-    #
-    #     args.num_gpu = 1
-    #     args.device_idx = '0'
-    #     args.optimizer = 'Adam'
-    #     args.lr = 0.001
-    #     args.enable_lr_schedule = True
-    #     args.decay_step = 25
-    #     args.gamma = 1.0
-    #
-
-    #     args.metric_ks = [5, 10, 50]
-    #     args.best_metric = 'NDCG@10'
-    #
-    #     # model
-    #     args.model_code = 'bert4nie'
-    #     args.model_init_seed = 42 if args.model_init_seed is None else args.model_init_seed
-    #
-    #     args.bert_dropout = 0.1
-    #     args.bert_hidden_units = 256
-    #     args.bert_mask_prob = 0.15
-
-    #     args.bert_num_blocks = 2
-    #     args.bert_num_heads = 4
-
     elif args.template.startswith("local_test"):
-        args.local = True
+        args.local = False
         args.device = 'cuda'
-        args.num_epochs = 2
+        args.num_epochs = 3
         args.train_batch_size = 10
         args.train_negative_sample_size=4
         args.log_period_as_iter=100
@@ -150,6 +86,8 @@ def set_template(args):
         args.path_pt_news_enc = "./BertModelsPT/bert-base-dutch-cased"
         args.language = "dutch"
 
+        #args.path_test_model = './experiments/100k_None_al30_k99_lr1e-4_s1_2020-08-04_1'
+
         args.bert_num_blocks=1
         # args.bert_num_heads=4
 
@@ -168,7 +106,7 @@ def set_template(args):
 
         set_args_bert_pcp(args)
 
-        args.train_negative_sampler_code = 'rnd_brand_sens' # random_common
+        args.train_negative_sampler_code = 'random' # 'rnd_brand_sens'
         args.test_negative_sampler_code = args.train_negative_sampler_code
 
         args.experiment_description.append(args.news_encoder)
@@ -177,25 +115,25 @@ def set_template(args):
         args.norm_art_pos_embs = True
 
         # args.pos_embs = None
-        args.pos_embs = 'lpe'
+        # args.pos_embs = 'lpe'
         # args.incl_time_stamp = False
         #
-        # args.temp_embs = 'nte'
-        # if 'concat' == args.add_embs_func:
-        #     args.temp_embs_hidden_units = [128, args.add_emb_size]
-        # else:
-        #     args.temp_embs_hidden_units = [128, args.dim_art_emb]
-        # args.temp_embs_act_func = "relu"
-        # args.incl_time_stamp = True
-
-        if args.pos_embs is not None:
-            args.experiment_description.append(args.pos_embs)
-            args.experiment_description.append(args.add_embs_func)
-        elif args.temp_embs is not None:
-            args.experiment_description.append(args.temp_embs)
-            args.experiment_description.append(args.add_embs_func)
+        args.temp_embs = 'nte'
+        if 'concat' == args.add_embs_func:
+            args.temp_embs_hidden_units = [128, args.add_emb_size]
         else:
-            args.experiment_description.append("none")
+            args.temp_embs_hidden_units = [128, args.dim_art_emb]
+        args.temp_embs_act_func = "relu"
+        args.incl_time_stamp = True
+        #
+        # if args.pos_embs is not None:
+        #     args.experiment_description.append(args.pos_embs)
+        #     args.experiment_description.append(args.add_embs_func)
+        # elif args.temp_embs is not None:
+        #     args.experiment_description.append(args.temp_embs)
+        #     args.experiment_description.append(args.add_embs_func)
+        # else:
+        #     args.experiment_description.append("none")
 
         # args.lower_case=False
 
@@ -217,7 +155,6 @@ def set_template(args):
             args.dataset_path = "./Data/DPG_nov19/10k_time_split_n_rnd_users"
 
         # NPA model trained with pseudo categorical prediction
-        args.mode = 'train'
         #args.local = True
         args.cuda_launch_blocking = True
 
@@ -307,7 +244,6 @@ def set_template(args):
         #######
 
         # Modified NPA model trained with pseudo categorical prediction
-        args.mode = 'train'
 
         args.cuda_launch_blocking = True
 
@@ -374,7 +310,6 @@ def set_template(args):
 
 def set_args_bert_pcp(args):
     # pseudo categorical prediction
-    args.mode = 'train'
 
     # dataset
     args.dataset_code = 'DPG_nov19' if args.dataset_code is None else args.dataset_code

@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Bert4News')
 ################
 # Top Level
 ################
-parser.add_argument('--mode', type=str, default='train', choices=['train', 'test', 'eval_users'])
+parser.add_argument('--mode', type=str, default='mod_query_time', choices=['train', 'test', 'eval_users', 'mod_query_time'])
 parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
@@ -208,6 +208,12 @@ parser.add_argument('--bert_mask_token', type=int, default=None, help='Token id 
 ################
 parser.add_argument('--experiment_dir', type=str, default='experiments')
 parser.add_argument('--experiment_description', type=str, default='test', nargs='*')
+
+################
+# Qualitative Analysis
+################
+# modify query time
+
 
 
 ################

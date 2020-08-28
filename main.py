@@ -33,5 +33,7 @@ if __name__ == '__main__':
         trainer.test()
     elif 'eval_users' == args.mode:
         trainer.detail_eval_users()
+    elif 'mod_query_time' == args.mode:
+        trainer.eval_mod_query_time()
     else:
         raise ValueError('Invalid mode')
