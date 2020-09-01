@@ -45,9 +45,16 @@ def create_experiment_export_folder(args):
 
     if not os.path.exists(experiment_dir):
         os.mkdir(experiment_dir)
-    experiment_path = get_name_of_experiment_path(experiment_dir, experiment_description)
-    os.mkdir(experiment_path)
-    print('Folder created: ' + os.path.abspath(experiment_path))
+
+    if args.use_test_model_dir and args.path_test_model is not None:
+        experiment_path = args.path_test_model
+        print('Using existing folder: {}'.format(experiment_path))
+
+    else:
+        experiment_path = get_name_of_experiment_path(experiment_dir, experiment_description)
+        os.mkdir(experiment_path)
+        print('Folder created: ' + os.path.abspath(experiment_path))
+
     return experiment_path
 
 
@@ -64,16 +71,23 @@ def _get_experiment_index(experiment_path):
         idx += 1
     return idx
 
-
 def load_weights(model, path):
     pass
-
 
 def save_test_result(export_root, result):
     filepath = Path(export_root).joinpath('test_result.txt')
     with filepath.open('w') as f:
         json.dump(result, f, indent=2)
 
+def import_args_from_json(args, config_path, exclude=['mode', 'local', 'use_test_model_dir']):
+    with open(os.path.join(config_path, 'config.json'), 'r') as infile:
+        config_dict = json.load(infile)
+
+    for key, val in config_dict.items():
+        if key not in exclude:
+            args.__setattr__(key, val)
+
+    return args
 
 def export_experiments_config_as_json(args, experiment_path):
     with open(os.path.join(experiment_path, 'config.json'), 'w') as outfile:

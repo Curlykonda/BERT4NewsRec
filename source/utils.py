@@ -3,6 +3,7 @@ import json
 import os
 import pickle
 import random
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -146,8 +147,6 @@ def init_weights(m):
         pass
     torch.nn.init.xavier_uniform_(m)
 
-
-
     # if isinstance(m, nn.Linear):
     #     if m.reset_parameters():
     #         pass
@@ -212,8 +211,16 @@ def build_vocab_from_word_counts(vocab_raw, max_vocab_size, min_counts_for_vocab
             break
     return vocab
 
-def reverse_mapping_dict(item2idx):
-    return {idx: item for item, idx in item2idx.items()}
+def reverse_mapping_dict(item2idx, multi_key_usage=False):
+    if multi_key_usage:
+
+        res_dict = defaultdict(list)
+        for item, idx in item2idx.items():
+            res_dict[idx].append(item)
+        # {idx : [item1, .., itemN]}
+        return res_dict
+    else:
+        return {idx: item for item, idx in item2idx.items()}
 
 
 def print_setting(config, valid_keys=None):

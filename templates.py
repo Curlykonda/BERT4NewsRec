@@ -1,12 +1,11 @@
-from utils import set_up_gpu
+from utils import set_up_gpu, import_args_from_json
 
 def set_template(args):
     if args.template is None:
         return
 
-    elif args.template.startswith('load_json'):
-        # load and update args from json config
-        pass
+    if args.load_config:
+        args = import_args_from_json(args, args.path_test_model)
 
     elif args.template.startswith('train_bert_ml'):
         #args.mode = 'train'
@@ -63,10 +62,10 @@ def set_template(args):
     elif args.template.startswith("local_test"):
         args.local = False
         args.device = 'cuda'
-        args.num_epochs = 3
+        args.num_epochs = 10
         args.train_batch_size = 10
         args.train_negative_sample_size=4
-        args.log_period_as_iter=100
+        args.log_period_as_iter=5000
         args.n_users=10000
         args.dataset_path="./Data/DPG_nov19/10k_time_split_n_rnd_users"
         args.experiment_description = ["10k"]

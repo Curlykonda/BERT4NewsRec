@@ -22,7 +22,10 @@ parser.add_argument('--local', type=bool, default=False, help="Run model locally
 ################
 # Test
 ################
-parser.add_argument('--path_test_model', type=str, default=None)
+parser.add_argument('--path_test_model', type=str, default='experiments/10k_bertje_2020-08-31_3')
+parser.add_argument('--load_config', type=bool, default=True)
+parser.add_argument('--use_test_model_dir', type=bool, default=True)
+
 
 ################
 # Dataset
@@ -213,7 +216,7 @@ parser.add_argument('--experiment_description', type=str, default='test', nargs=
 # Qualitative Analysis
 ################
 # modify query time
-
+parser.add_argument('--save_analysis_to_file', type=bool, default=True)
 
 
 ################
