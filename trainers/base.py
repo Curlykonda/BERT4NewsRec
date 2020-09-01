@@ -1,16 +1,18 @@
+import sys
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
 from trainers.loggers import *
 from config import STATE_DICT_KEY, OPTIMIZER_STATE_DICT_KEY
 from utils import AverageMeterSet, get_hyper_params
-from source.utils import get_grad_flow_report
+from source.utils import get_grad_flow_report, reverse_mapping_dict
 
 from transformers import get_linear_schedule_with_warmup
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.utils.data as data_utils
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -446,13 +448,14 @@ class ExtendedTrainer(AbstractTrainer):
 
     def eval_indiv_user_scores(self, eval_loader, data_code='val', log=True, qual_eval=False, **kwargs):
         """
-        Compute individual user metrics and stores them with 'logger_service'
+        Compute individual user metrics, in mini-batches from dataloader
+        Can store metrics with 'logger_service'
 
         Input:
             eval_loader: Dataloader
 
         Output:
-            None
+            user_metrics : {u_idx: {metric_key: val}}
 
         """
 
@@ -463,7 +466,7 @@ class ExtendedTrainer(AbstractTrainer):
         else:
             order_emb_code = self.model._get_pos_emb()
 
-        user_metrics = defaultdict()
+        user_metrics = defaultdict(dict)
 
         with torch.no_grad():
 
@@ -471,6 +474,7 @@ class ExtendedTrainer(AbstractTrainer):
                 batch = self.batch_to_device(batch)
 
                 batch_u_metrics = self.calculate_metrics(batch, avg_metrics=False)
+                # -> {u_idx: {metric_key: val}}
 
                 if log:
                     self.logger_service.log_user_val_metrics(batch_u_metrics, self.general_dataloader.idx2u_id,
@@ -480,9 +484,13 @@ class ExtendedTrainer(AbstractTrainer):
                     # prints details about user cases (e.g. article IDs and text)
                     self.add_detail_user_cases(batch, batch_u_metrics)
 
+                user_metrics.update(batch_u_metrics)
+
                 # early stopping for local debugging
                 if self.args.local and batch_idx > 20:
                     break
+
+        return user_metrics
 
 
     def validate(self, epoch, global_step):
@@ -608,21 +616,9 @@ class ExtendedTrainer(AbstractTrainer):
                     print("\t {}".format(text))
 
             print("######################################")
-            print("Candidate Articles:")
-
             pred_scores = user_metrics[u_index]['scores'].cpu().numpy()
             lbls = batch['lbls'][i].numpy()
-
-            for j, art_index in enumerate(cands):
-
-                # mapping from art_index to ID to text
-                art_id = self.general_dataloader.idx2item_id[art_index]
-                text = self.general_dataloader.item_id2info[art_id]['snippet']
-                # ts = interaction_ts[j]
-
-                print("\t Pos:{} / Idx: {} / ID: {}".format(j, art_index, art_id))
-                print("\t Score: {:.3f} / Label: {}".format(pred_scores[j], lbls[j]))
-                print("\t {}".format(text))
+            self.display_cand_text_scores(cands, pred_scores, lbls)
 
             print("Metrics")
             print(get_metric_descr(user_metrics[u_index], metric_ks=[5], avg=False))
@@ -632,11 +628,93 @@ class ExtendedTrainer(AbstractTrainer):
             # print("Labels:")
             # print(lbls)
 
+    def display_cand_text_scores(self, cands, pred_scores, lbls):
+        print("Candidate Articles:")
+
+        for i, art_index in enumerate(cands):
+            # mapping from art_index to ID to text
+            art_id = self.general_dataloader.idx2item_id[art_index]
+            text = self.general_dataloader.item_id2info[art_id]['snippet']
+
+            print("\t Pos:{} / Idx: {} / ID: {}".format(i, art_index, art_id))
+            print("\t Score: {:.3f} / Label: {}".format(pred_scores[i], lbls[i]))
+            print("\t {}".format(text))
+
     def eval_mod_query_time(self):
 
-        #self.load_best_model(self.args.path_test_model)
+        # print to console or write to text file
+        stdout_org = sys.stdout
+        if self.args.save_analysis_to_file:
+            eval_path = self._create_eval_dir()
+            sys.stdout = open(eval_path.joinpath('mod_query_times.txt'), 'w')
 
-        val_dataset, work_idx2u_id = self.general_dataloader.create_eval_dataset_modify_timestamps("val")
+        # get dataloader with working data of selected user and modified query times
+        qt_dataset, work_idx2u_id, query_ts = self.general_dataloader.create_eval_dataset_modify_timestamps("val")
+
+        qt_dataloader = data_utils.DataLoader(qt_dataset, batch_size=self.args.test_batch_size,
+                                              shuffle=False, pin_memory=True)
+
+        # map user ID to samples indices
+        u_id2indices = reverse_mapping_dict(work_idx2u_id, multi_key_usage=True)
+        # {u_id : [idx1, .., idxN]}
+
+        # load model
+        self.load_best_model(self.args.path_test_model)
+
+        # perform forward passes
+        try:
+            user_metrics = self.eval_indiv_user_scores(qt_dataloader, log=False, qual_eval=False)
+        except Exception as e:
+            print(e)
+
+        org_user_data = self.general_dataloader._get_data()['u_id2info']
+
+        # structure and display info
+        hist_cut_off = 10
+        ts_format = "(" + "-".join(self.args.parts_time_vec) + ")"
+
+        # for now, assuming we change query time of last item
+        for u_id, u_indices in u_id2indices.items():
+            u_indices = sorted(u_indices) # note: smallest user index belongs to original sequence
+
+            # load eval instance from dataset
+            for i, u_idx in enumerate(u_indices):
+                eval_sample = qt_dataset.__getitem__(u_idx)
+                hist = eval_sample['input']['hist'].numpy()
+                cands = eval_sample['input']['cands'].numpy()
+                #ts = eval_sample['input']['ts'].numpy()
+                lbls = eval_sample['lbls'].numpy()
+
+                qt = "-".join(list(map(str, map(int, query_ts[u_idx]))))
+
+                if i == 0:
+                    n_qt = "Org QT"
+                    # print detailed user history for A_0, ... A_T-1
+                    print("\n User ID: {}".format(u_id))
+                    print("Reading history (last {}; total len={}):".format(hist_cut_off, (hist != 0).sum()))
+                    for j, art_index in enumerate(hist[-hist_cut_off:-1]):
+                        if art_index != 0:
+                            # mapping from art_index to ID to text
+                            art_id = self.general_dataloader.idx2item_id[art_index]
+                            text = self.general_dataloader.item_id2info[art_id]['snippet']
+                            # ts = interaction_ts[j]
+
+                            print("\t {}. / Idx: {} / ID: {}".format(len(hist)-hist_cut_off+j, art_index, art_id))
+                            print("\t {}".format(text))
+
+                    # print cands & predictions
+                    self.display_cand_text_scores(cands, user_metrics[u_idx]['scores'], lbls)
+
+                else:
+                    n_qt = "QT #{}".format(i+1)
+
+                # print query time
+                print("{}: {}  {}".format(n_qt, qt, ts_format))
+                print("\t {}".format([round(x, 3) for x in user_metrics[u_idx]['scores']]))
+
+        sys.stdout.close()
+        sys.stdout = stdout_org
+
 
 
     def calculate_metrics(self, batch, avg_metrics=False):
@@ -653,6 +731,12 @@ class ExtendedTrainer(AbstractTrainer):
             STATE_DICT_KEY: self.model.state_dict(),
             OPTIMIZER_STATE_DICT_KEY: self.optimizer.state_dict(),
         }
+
+    def _create_eval_dir(self) -> Path:
+        eval_path = Path(self.export_root).joinpath('eval')
+        eval_path.mkdir(parents=True)
+
+        return eval_path
 
     def _create_loggers(self):
         root = Path(self.export_root)

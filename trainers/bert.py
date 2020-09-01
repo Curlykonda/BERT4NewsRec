@@ -67,7 +67,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
         if "avg_metrics":
             return metrics -> {metric_key: [avg_val]}
         else:
-            return user_metrics -> {u_id: {metric_key: val}}
+            return user_metrics -> {u_idx: {metric_key: val}}
 
         """
         input = batch['input'].items()
@@ -90,20 +90,19 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
 
         else:
             # update individual user metrics
-            # { u_id: {'auc': 0.8, 'mrr': 0.4}}
+            # { u_idx: {'auc': 0.8, 'mrr': 0.4}}
             user_metrics = defaultdict(dict)
 
-            # get user ids
-            user_ids = batch['input']['u_id'][:, 0].cpu().numpy()
+            # get user indices
+            u_indices = batch['input']['u_id'][:, 0].cpu().numpy()
 
-            for i, u_id in enumerate(user_ids):
+            for i, u_idx in enumerate(u_indices):
                 for key, vals in metrics.items():
-                    user_metrics[u_id][key] = vals[i]
-                    #assert len(vals) == len(user_ids)
+                    user_metrics[u_idx][key] = vals[i]
 
-                user_metrics[u_id]['scores'] = scores[i, :].cpu().numpy()
+                user_metrics[u_idx]['scores'] = scores[i, :].cpu().numpy()
 
-            return user_metrics # {u_id: {metric_key: val}}
+            return user_metrics # {u_idx: {metric_key: val}}
 
 
 class BERTTrainer(AbstractTrainer):

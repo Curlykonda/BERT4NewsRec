@@ -16,6 +16,8 @@ class BertDataloader(AbstractDataloader):
     def __init__(self, args, dataset):
         super().__init__(args, dataset)
 
+        self.dataset = dataset
+
         args.num_items = len(self.item_id2idx)
         self.max_hist_len = args.max_hist_len
         self.mask_prob = args.bert_mask_prob
@@ -68,6 +70,10 @@ class BertDataloader(AbstractDataloader):
     @classmethod
     def code(cls):
         return 'bert'
+
+    def _get_data(self) -> Dict[str, Any]:
+        data = self.dataset.load_dataset()
+        return data
 
     def _get_train_loader(self):
         dataset = self._get_train_dataset()
@@ -217,6 +223,15 @@ class BertDataloaderNews(BertDataloader):
         return {'train': list(train), 'test': list(test)}
 
     def create_eval_dataset_modify_timestamps(self, mode):
+        """
+        Builds a working EvalDataset featuring original user histories and the ones with modified query times
+        and wraps in Dataloader
+
+        Output:
+            dataloader : Dataloader of working dataset (with original and modified sequences)
+            work_idx2u_id : {u_idx : u_id}, mapping user idx to user ID
+            query_ts : {u_idx : [WD, HH, mm]}, mapping of user / sample idx to the query time
+        """
 
         if 'val' == mode:
             u2hist = self.val
@@ -235,7 +250,7 @@ class BertDataloaderNews(BertDataloader):
         # and compile working data
         mod_crit = {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 5}
 
-        work_u2hist, work_negs, work_idx2u_id = {}, {}, {}
+        work_u2hist, work_negs, work_idx2u_id, query_ts = {}, {}, {}, {}
 
         for i, u_idx in enumerate(valid_u_idx):
             u_id = self.idx2u_id[u_idx]
@@ -247,13 +262,21 @@ class BertDataloaderNews(BertDataloader):
             work_negs[new_u_idx] = neg_samples[u_idx]
             work_u2hist[new_u_idx] = u2hist[u_idx]
 
+            # get and store org query ts
+            seq, ts = zip(*u2hist[u_idx])
+            org_query_ts = self.ts_scaler.inverse_transform(ts[mod_crit['pos']])
+            query_ts[new_u_idx] = org_query_ts
+
+
             # create u_idx for modified sequence
             mod_u_idx = len(work_idx2u_id)
             work_idx2u_id[mod_u_idx] = u_id
 
             # create modified sequence & add to working data
             work_negs[mod_u_idx] = neg_samples[u_idx]
-            work_u2hist[mod_u_idx] = modify_query_time_of_seq(u2hist[u_idx], mod_criteria=mod_crit, ts_scaler=self.ts_scaler, time_vec_format=self.args.parts_time_vec)
+            work_u2hist[mod_u_idx], mod_query_ts = modify_query_time_of_seq(u2hist[u_idx], mod_criteria=mod_crit, ts_scaler=self.ts_scaler, time_vec_format=self.args.parts_time_vec)
+
+            query_ts[mod_u_idx] = mod_query_ts
 
 
         dataset = BertEvalDatasetNews(work_u2hist, self.art_id2word_ids, work_negs, self.max_hist_len,
@@ -261,7 +284,7 @@ class BertDataloaderNews(BertDataloader):
                                       self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
                                       seq_order=self.args.eval_seq_order)
 
-        return dataset, work_idx2u_id
+        return dataset, work_idx2u_id, query_ts
 
 def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_criteria: Dict[str, Any], ts_scaler,
                            time_vec_format, max_users=None) -> List[int]:
@@ -350,11 +373,13 @@ def modify_query_time_of_seq(hist: List[Tuple[int, int]], mod_criteria: Dict[str
 
     assert valid_range[0] <= ts_vec[mod_criteria['pos']][ts_vec_idx] <= valid_range[1]
 
+    query_ts_vec = ts_vec[mod_criteria['pos']]
+
     time_stamps = ts_scaler.transform(np.array(ts_vec)).tolist()  # transform to normalised values
 
     assert time_stamps[mod_criteria['pos']] != ts_org
 
-    return list(zip(seq, time_stamps))
+    return list(zip(seq, time_stamps)), query_ts_vec
 
 def art_idx2word_ids(art_idx, mapping):
     if mapping is not None:
