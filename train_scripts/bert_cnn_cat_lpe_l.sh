@@ -23,6 +23,7 @@ art_len=30
 hist_len=100
 
 POS="lpe"
+add_emb_size=400
 neg_ratios=(4) #
 
 enc="wucnn"

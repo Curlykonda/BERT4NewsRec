@@ -42,7 +42,7 @@ exp_descr="100k_cnn_add"
 COUNTER=0
 ####################################
 
-echo "$data"
+echo "$SLURM_JOBID"
 
 for K in "${neg_ratios[@]}"
 do
