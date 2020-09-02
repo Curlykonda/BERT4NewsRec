@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=l_bertje_none
+#SBATCH --job-name=bertje_none
 #SBATCH -n 4
 #SBATCH -t 45:00:00
 #SBATCH -p gpu_shared
@@ -26,13 +26,13 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(4) # 4 9
+neg_ratios=(9) # 4 9
 
-n_layers=(2 3)
+n_layers=(2 3 4)
 n_heads=4
 
 lr=1e-4
-n_epochs=200
+n_epochs=100
 
 nie="lin_gelu"
 d_model=768
