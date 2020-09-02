@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=npa_cnn_lpe
+#SBATCH --job-name=cnn_lpe_add
 #SBATCH -n 4
-#SBATCH -t 30:00:00
+#SBATCH -t 40:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -20,20 +20,22 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
+hist_len=100
 
-POS_EMBS=("lpe") #
+#POS_EMBS=("lpe") #
+POS="lpe"
 neg_ratios=(4) #
 
 enc="wucnn"
-d_art=768
+d_art=400
 
-n_layers=(2 3)
+n_layers=(2 3 4)
 n_heads=4
-p_dropout=(0.2 0.3)
+p_dropout=(0.1)
 
 nie="lin_gelu"
 lr=1e-3
-n_epochs=80
+n_epochs=100
 
 n_users=100000
 exp_descr="100k_cnn_add"

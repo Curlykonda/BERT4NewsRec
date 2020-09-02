@@ -26,15 +26,15 @@ POS=None #
 neg_ratios=(4) # 24
 
 enc="wucnn"
-d_art=768
+d_art=400
 
-n_layers=(2 3)
+n_layers=(2 3 4)
 n_heads=4
-p_dropout=(0.2 0.3)
+p_dropout=(0.1)
 
 nie="lin_gelu"
 lr=1e-3
-n_epochs=80
+n_epochs=100
 
 n_users=100000
 exp_descr="100k_cnn" # _brand_s
