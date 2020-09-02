@@ -21,40 +21,47 @@ pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-neg_ratios=(99)
+hist_len=100
 
-TEMP_EMBS=("nte" "ntev2") # "lte"
+neg_ratios=(4)
+
+TE=("nte") # "ntev2"
 t_act_func="relu"
+
+n_layers=(2 3)
+n_heads=4
 
 d_model=768
 
 nie="lin_gelu"
-LR=(1e-4)
-n_epochs=50
-#eval_seq_order="shuffle_exc_t"
+lr=1e-4
+
+n_epochs=100
 
 n_users=100000
 COUNTER=0
 #################
 
-exp_descr="100k_add_brans_s" # _shuf_exc_t
+exp_descr="100k_add" # _shuf_exc_t
 
 for K in "${neg_ratios[@]}"
 do
-  for lr in "${LR[@]}"
+  for nl in "${n_layers[@]}"
   do
     for TE in "${TEMP_EMBS[@]}"
     do
-      echo "$exp_descr $TE al$art_len k$K lr$lr s$SEED"
+      echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K --train_negative_sampler_code=rnd_brand_sens \
-        --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-        --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
-        --temp_embs_hidden_units 256 $d_model --temp_embs_act_func $t_act_func \
-        --max_article_len=$art_len --nie_layer $nie --n_users=$n_users \
-        --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-        --experiment_description $exp_descr $TE al$art_len k$K lr$lr s$SEED
+      --train_negative_sampler_code random --train_negative_sample_size=$K \
+      --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
+      --bert_num_blocks=$nl --bert_num_heads=$n_heads \
+      --add_emb_size=$add_emb_size \
+      --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $add_emb_size --temp_embs_act_func $t_act_func \
+      --max_article_len=$art_len --max_hist_len=$hist_len \
+      --nie_layer $nie --n_users=$n_users \
+      --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
+      --experiment_description $exp_descr $TE al$art_len k$K lr$lr L$nl H$n_heads s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
