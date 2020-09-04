@@ -642,75 +642,199 @@ class ExtendedTrainer(AbstractTrainer):
 
     def eval_mod_query_time(self):
 
+        # store results
+        res_dict = {}
+
+        # load model
+        self.load_best_model(self.args.path_test_model)
+
+        # select users based on criteria
+        work_u2hist, work_neg_samples, work_idx2info = self.general_dataloader.get_working_data_match_time_criteria("val")
+        work_idx2u_id = {outer: inner_dict['u_id'] for outer, inner_dict in work_idx2info.items()}
+
+        org_dataset = self.general_dataloader.create_eval_dataset_from_hist_negs(work_u2hist, work_neg_samples)
+        org_dataloader = data_utils.DataLoader(org_dataset, batch_size=self.args.test_batch_size,
+                                              shuffle=False, pin_memory=True)
+
+        # forward pass of org, unmodified data
+        try:
+            org_user_metrics = self.eval_indiv_user_scores(org_dataloader, log=False, qual_eval=False)
+        except Exception as e:
+            print(e)
+
+        # store info in dict
+        res_dict['org'] = {
+            'mod_crit': None,
+            'rec_change': 0.0,
+            'u_ids_change': list(work_idx2u_id.values()),
+            'rel_time_vec': self.args.parts_time_vec,
+        }
+
+        # add query time to user metrics
+        keys_to_exclude = ['scores', 'qt', 'rec_pos']
+
+        average_meter_set = AverageMeterSet()
+
+        conv_metrics = {}
+
+        for u_idx, metrics in org_user_metrics.items():
+
+            for k, v in metrics.items():
+                if k not in keys_to_exclude:
+                    average_meter_set.update(k, v)
+                    metrics[k] = float(v) # type conversion for json serialisation
+
+            metrics['qt'] = list(map(float, work_idx2info[u_idx]['qt']))
+            metrics['rec_pos'] = int(np.argmax(metrics['scores']))
+            metrics['scores'] = list(map(float, metrics['scores']))
+
+            conv_metrics[int(u_idx)] = metrics
+
+        # compute average metrics
+        avg_metrics = {k: average_meter_set[k].avg for k in metrics.keys() if k not in keys_to_exclude}
+        res_dict['org']['avg_metrics'] = avg_metrics
+        res_dict['org']['user_metrics'] = conv_metrics # org_user_metrics
+
+        #############################
+
+        # define modification criteria
+        mod_criteria = [{'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 5},
+                        {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 6}]
+
+        for mod_crit in mod_criteria:
+
+            mod_key = "_".join([mod_crit['mode'], mod_crit['func']])
+
+            # get dataloader with working data of selected user and modified query times
+            qt_dataset, work_idx2info = \
+                self.general_dataloader.create_eval_dataset_modify_timestamps(work_u2hist,
+                                                            work_neg_samples, work_idx2u_id, mod_crit=mod_crit)
+
+            qt_dataloader = data_utils.DataLoader(qt_dataset, batch_size=self.args.test_batch_size,
+                                                  shuffle=False, pin_memory=True)
+
+            # forward pass modified data
+            mod_user_metrics = self.eval_indiv_user_scores(qt_dataloader, log=False, qual_eval=False)
+
+            # store info in dict
+            res_dict[mod_key] = {
+                'mod_crit': mod_crit,
+                'rel_time_vec': self.args.parts_time_vec,
+            }
+
+            rec_change = 0
+            u_ids_change = []
+            average_meter_set = AverageMeterSet()
+
+            conv_metrics = {}
+
+            for u_idx, metrics in mod_user_metrics.items():
+
+                for k, v in metrics.items():
+                    if k not in keys_to_exclude:
+                        average_meter_set.update(k, v)
+                        metrics[k] = float(v)  # type conversion for json serialisation
+
+                metrics['qt'] = list(map(float, work_idx2info[u_idx]['qt']))
+                metrics['rec_pos'] = int(np.argmax(metrics['scores']))
+                metrics['scores'] = list(map(float, metrics['scores']))
+
+                conv_metrics[int(u_idx)] = metrics
+
+                # determine & compare recommendation
+                if metrics['rec_pos'] != org_user_metrics[u_idx]['rec_pos']:
+                    u_ids_change.append(work_idx2u_id[u_idx])
+                    rec_change += 1
+
+            res_dict[mod_key]['rec_change'] = rec_change / len(mod_user_metrics)
+            res_dict[mod_key]['u_ids_change'] = u_ids_change
+            res_dict[mod_key]['user_metrics'] = conv_metrics
+
+            # compute average metrics
+            avg_metrics = {k: average_meter_set[k].avg for k in metrics.keys() if k not in keys_to_exclude}
+            res_dict[mod_key]['avg_metrics'] = avg_metrics
+
+        # save to json file
+        eval_path = self._create_eval_dir()
+        with open(eval_path.joinpath('results_mod_qt.json'), 'w') as fout:
+            json.dump(res_dict, fout, indent=2)
+
+        ###################################
+        # summarise & display info
+        ###################################
+
+
         # print to console or write to text file
         stdout_org = sys.stdout
         if self.args.save_analysis_to_file:
             eval_path = self._create_eval_dir()
             sys.stdout = open(eval_path.joinpath('mod_query_times.txt'), 'w')
 
-        # get dataloader with working data of selected user and modified query times
-        qt_dataset, work_idx2u_id, query_ts = self.general_dataloader.create_eval_dataset_modify_timestamps("val")
+        #org_user_data = self.general_dataloader._get_data()['u_id2info']
 
-        qt_dataloader = data_utils.DataLoader(qt_dataset, batch_size=self.args.test_batch_size,
-                                              shuffle=False, pin_memory=True)
+        # summarise performances
+        for i, mod in enumerate(res_dict):
 
-        # map user ID to samples indices
-        u_id2indices = reverse_mapping_dict(work_idx2u_id, multi_key_usage=True)
-        # {u_id : [idx1, .., idxN]}
+            print("{} |: {}".format(i+1, mod))
 
-        # load model
-        self.load_best_model(self.args.path_test_model)
+            # avg metrics
+            print(get_metric_descr(res_dict[mod]['avg_metrics'], metric_ks=[5], avg=False))
+            print("changed recommendation: {}".format(res_dict[mod]['rec_change']))
 
-        # perform forward passes
-        try:
-            user_metrics = self.eval_indiv_user_scores(qt_dataloader, log=False, qual_eval=False)
-        except Exception as e:
-            print(e)
 
-        org_user_data = self.general_dataloader._get_data()['u_id2info']
-
-        # structure and display info
+        # structure and display info for each user
         hist_cut_off = 10
         ts_format = "(" + "-".join(self.args.parts_time_vec) + ")"
 
         # for now, assuming we change query time of last item
-        for u_id, u_indices in u_id2indices.items():
-            u_indices = sorted(u_indices) # note: smallest user index belongs to original sequence
+        for u_idx in org_user_metrics:
 
             # load eval instance from dataset
-            for i, u_idx in enumerate(u_indices):
-                eval_sample = qt_dataset.__getitem__(u_idx)
-                hist = eval_sample['input']['hist'].numpy()
-                cands = eval_sample['input']['cands'].numpy()
-                #ts = eval_sample['input']['ts'].numpy()
-                lbls = eval_sample['lbls'].numpy()
+            eval_sample = org_dataset.__getitem__(u_idx)
+            hist = eval_sample['input']['hist'].numpy()
+            cands = eval_sample['input']['cands'].numpy()
+            # ts = eval_sample['input']['ts'].numpy()
+            lbls = eval_sample['lbls'].numpy()
 
-                qt = "-".join(list(map(str, map(int, query_ts[u_idx]))))
+            # print detailed user history for A_0, ... A_T-1
+            print("\n User ID: {}".format(work_idx2u_id[u_idx]))
+            print("Reading history (last {}; total len={}):".format(hist_cut_off, (hist != 0).sum()))
+            for j, art_index in enumerate(hist[-hist_cut_off:-1]):
+                if art_index != 0:
+                    # mapping from art_index to ID to text
+                    art_id = self.general_dataloader.idx2item_id[art_index]
+                    text = self.general_dataloader.item_id2info[art_id]['snippet']
+                    # ts = interaction_ts[j]
 
-                if i == 0:
+                    print("\t {}. / Idx: {} / ID: {}".format(len(hist)-hist_cut_off+j, art_index, art_id))
+                    print("\t {}".format(text))
+
+            # print cands & predictions
+            self.display_cand_text_scores(cands, org_user_metrics[u_idx]['scores'], lbls)
+            org_rec_pos = np.argmax(org_user_metrics[u_idx]['scores'])
+
+            # print query times, recommendation and scores
+            print("\n Query Times & Predictions")
+            for i, mod in enumerate(res_dict.keys()):
+
+                print("{} |: {}".format(i + 1, mod))
+                if 'org' == mod:
+                    rec_str = "\t Org. Cand. rec.: {} \n".format(org_rec_pos)
                     n_qt = "Org QT"
-                    # print detailed user history for A_0, ... A_T-1
-                    print("\n User ID: {}".format(u_id))
-                    print("Reading history (last {}; total len={}):".format(hist_cut_off, (hist != 0).sum()))
-                    for j, art_index in enumerate(hist[-hist_cut_off:-1]):
-                        if art_index != 0:
-                            # mapping from art_index to ID to text
-                            art_id = self.general_dataloader.idx2item_id[art_index]
-                            text = self.general_dataloader.item_id2info[art_id]['snippet']
-                            # ts = interaction_ts[j]
-
-                            print("\t {}. / Idx: {} / ID: {}".format(len(hist)-hist_cut_off+j, art_index, art_id))
-                            print("\t {}".format(text))
-
-                    # print cands & predictions
-                    self.display_cand_text_scores(cands, user_metrics[u_idx]['scores'], lbls)
-
                 else:
-                    n_qt = "QT #{}".format(i+1)
+                    n_qt = "QT #{}".format(i + 1)
+                    rec_pos = np.argmax(res_dict[mod]['user_metrics'][u_idx]['scores'])
+                    rec_str = "\t Cand. rec.: {} -> Change from org: {} \n".format(rec_pos, org_rec_pos != rec_pos)
 
-                # print query time
+                qt = "-".join(list(map(str, map(int, res_dict[mod]['user_metrics'][u_idx]['qt']))))
+
+                # query time
                 print("{}: {}  {}".format(n_qt, qt, ts_format))
-                print("\t {}".format([round(x, 3) for x in user_metrics[u_idx]['scores']]))
+                # print scores & metrics
+                print("\t {}".format([round(x, 3) for x in res_dict[mod]['user_metrics'][u_idx]['scores']]))
+
+                # recommendation string
+                print(rec_str)
 
         sys.stdout.close()
         sys.stdout = stdout_org
@@ -734,7 +858,7 @@ class ExtendedTrainer(AbstractTrainer):
 
     def _create_eval_dir(self) -> Path:
         eval_path = Path(self.export_root).joinpath('eval')
-        eval_path.mkdir(parents=True)
+        eval_path.mkdir(parents=True, exist_ok=True)
 
         return eval_path
 

@@ -222,16 +222,15 @@ class BertDataloaderNews(BertDataloader):
 
         return {'train': list(train), 'test': list(test)}
 
-    def create_eval_dataset_modify_timestamps(self, mode):
-        """
-        Builds a working EvalDataset featuring original user histories and the ones with modified query times
-        and wraps in Dataloader
+    def create_eval_dataset_from_hist_negs(self, u2hist, neg_samples):
+        return BertEvalDatasetNews(u2hist, self.art_id2word_ids, neg_samples, self.max_hist_len,
+                                      self.max_article_len,
+                                      self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
+                                      seq_order=self.args.eval_seq_order)
 
-        Output:
-            dataloader : Dataloader of working dataset (with original and modified sequences)
-            work_idx2u_id : {u_idx : u_id}, mapping user idx to user ID
-            query_ts : {u_idx : [WD, HH, mm]}, mapping of user / sample idx to the query time
-        """
+    def get_working_data_match_time_criteria(self, mode='val', match_crit=None):
+        if match_crit is None:
+            match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40, 'n_max': 100}
 
         if 'val' == mode:
             u2hist = self.val
@@ -241,50 +240,70 @@ class BertDataloaderNews(BertDataloader):
             neg_samples = self.test_negative_samples
 
         # select users based on matching criteria
-        match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40}
-
         valid_u_idx = filter_user_query_time(u2hist, match_criteria=match_crit, ts_scaler=self.ts_scaler,
-                                             time_vec_format=self.args.parts_time_vec, max_users=100)
+                                             time_vec_format=self.args.parts_time_vec, max_users=match_crit['n_max'])
 
-        # modify sequence based on modification criteria
-        # and compile working data
-        mod_crit = {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 5}
-
-        work_u2hist, work_negs, work_idx2u_id, query_ts = {}, {}, {}, {}
+        # filter u2hist & neg_samples
+        work_u2hist, work_negs, work_idx2info = {}, {}, {}
 
         for i, u_idx in enumerate(valid_u_idx):
             u_id = self.idx2u_id[u_idx]
 
-            new_u_idx = len(work_idx2u_id)
+            new_u_idx = len(work_idx2info)
 
             # add orginal data of selected users to working data
-            work_idx2u_id[new_u_idx] = u_id
+            work_idx2info[new_u_idx] = {'u_id': u_id}
             work_negs[new_u_idx] = neg_samples[u_idx]
             work_u2hist[new_u_idx] = u2hist[u_idx]
 
             # get and store org query ts
             seq, ts = zip(*u2hist[u_idx])
-            org_query_ts = self.ts_scaler.inverse_transform(ts[mod_crit['pos']])
-            query_ts[new_u_idx] = org_query_ts
+            org_query_ts = self.ts_scaler.inverse_transform(ts[-1])  # hard coding postion = -1
+            # query_ts[new_u_idx] = org_query_ts
+
+            work_idx2info[new_u_idx]['qt'] = org_query_ts
+            work_idx2info[new_u_idx]['mod'] = 'org'
+
+        return work_u2hist, work_negs, work_idx2info
 
 
-            # create u_idx for modified sequence
-            mod_u_idx = len(work_idx2u_id)
-            work_idx2u_id[mod_u_idx] = u_id
+    def create_eval_dataset_modify_timestamps(self, u2hist, neg_samples, idx2u_id, mod_crit=[{'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 5}]):
+        """
+        Builds a working EvalDataset featuring original user histories and the ones with modified query times
+
+        Output:
+            dataloader : Dataloader of working dataset (with original and modified sequences)
+            work_idx2u_id : mapping user idx info
+                { u_idx :
+                    { u_id: 'AbC',
+                    'qt': [WD, HH, mm],
+                    'mod': 'mod_key' }
+                }
+
+        """
+
+        # modify sequence based on modification criteria
+        # and compile working data
+        work_idx2info = {}
+        work_u2hist = {}
+
+        for i, u_idx in enumerate(u2hist):
+            u_id = idx2u_id[u_idx] # map from working u_idx to ID
+
+            # add orginal data of selected users to working data
+            work_idx2info[u_idx] = {'u_id': u_id}
+
+            mod_key = "_".join([mod_crit['mode'], mod_crit['func']])
 
             # create modified sequence & add to working data
-            work_negs[mod_u_idx] = neg_samples[u_idx]
-            work_u2hist[mod_u_idx], mod_query_ts = modify_query_time_of_seq(u2hist[u_idx], mod_criteria=mod_crit, ts_scaler=self.ts_scaler, time_vec_format=self.args.parts_time_vec)
+            work_u2hist[u_idx], mod_query_ts = modify_query_time_of_seq(u2hist[u_idx], mod_criteria=mod_crit, ts_scaler=self.ts_scaler, time_vec_format=self.args.parts_time_vec)
 
-            query_ts[mod_u_idx] = mod_query_ts
+            work_idx2info[u_idx]['qt'] = mod_query_ts
+            work_idx2info[u_idx]['mod'] = mod_key
 
+        dataset = self.create_eval_dataset_from_hist_negs(work_u2hist, neg_samples)
 
-        dataset = BertEvalDatasetNews(work_u2hist, self.art_id2word_ids, work_negs, self.max_hist_len,
-                                      self.max_article_len,
-                                      self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
-                                      seq_order=self.args.eval_seq_order)
-
-        return dataset, work_idx2u_id, query_ts
+        return dataset, work_idx2info
 
 def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_criteria: Dict[str, Any], ts_scaler,
                            time_vec_format, max_users=None) -> List[int]:
@@ -302,24 +321,29 @@ def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_crite
         if len(seq) < match_criteria['seq_len']:
             continue
 
-        # rescale & transform normalised time stamps
-        ts_vec = [ts_scaler.inverse_transform(ts) for ts in time_stamps]
-
-        if 'wd_match' == match_criteria['mode']:
-            # weekday match: map index of ts_vec[pos]
-            ts_vec_idx = time_vec_format.index('WD')
-
-        elif 'dt_match' == match_criteria['mode']:
-            # daytime match
-            ts_vec_idx = time_vec_format.index('HH')
-        else:
-            raise NotImplementedError()
-
-        # compare to matching values
-        if int(ts_vec[pos][ts_vec_idx]) in match_val and not match_criteria['neg']:
-            valid_u_idx.append(u_idx) # add to valid list of matching
-        elif int(ts_vec[pos][ts_vec_idx]) not in match_val and match_criteria['neg']:
+        if 'rnd' == match_criteria['mode']:
             valid_u_idx.append(u_idx)
+
+        else:
+
+            # rescale & transform normalised time stamps
+            ts_vec = [ts_scaler.inverse_transform(ts) for ts in time_stamps]
+
+            if 'wd_match' == match_criteria['mode']:
+                # weekday match: map index of ts_vec[pos]
+                ts_vec_idx = time_vec_format.index('WD')
+
+            elif 'dt_match' == match_criteria['mode']:
+                # daytime match
+                ts_vec_idx = time_vec_format.index('HH')
+            else:
+                raise NotImplementedError()
+
+            # compare to matching values
+            if int(ts_vec[pos][ts_vec_idx]) in match_val and not match_criteria['neg']:
+                valid_u_idx.append(u_idx) # add to valid list of matching
+            elif int(ts_vec[pos][ts_vec_idx]) not in match_val and match_criteria['neg']:
+                valid_u_idx.append(u_idx)
 
         # check break criteria
         if len(valid_u_idx) == max_users:
@@ -329,6 +353,12 @@ def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_crite
 
 def modify_query_time_of_seq(hist: List[Tuple[int, int]], mod_criteria: Dict[str, Any], ts_scaler,
                            time_vec_format) -> List[Tuple[int, int]]:
+
+    valid_ranges = {
+        'WD': [0, 6],
+        'HH': [0, 23],
+        'mm': [0, 59]
+    }
 
     seq, time_stamps = zip(*hist)
 
@@ -343,41 +373,53 @@ def modify_query_time_of_seq(hist: List[Tuple[int, int]], mod_criteria: Dict[str
     # rescale & transform normalised time stamps
     ts_vec = [ts_scaler.inverse_transform(ts) for ts in time_stamps]
 
+
     if 'wd_single' == mod_criteria['mode']:
         # weekday, modify single value
         ts_vec_idx = time_vec_format.index('WD')
-        valid_range = [0, 6]
     elif 'dt_single' == mod_criteria['mode']:
         ts_vec_idx = time_vec_format.index('HH') # daytime
-        valid_range = [0, 23]
+    elif 'mm_single' == mod_criteria['mode']:
+        ts_vec_idx = time_vec_format.index('mm')  # minutes
     else:
         raise NotImplementedError()
 
     # modify query time stamp
+    new_time = ts_vec[mod_criteria['pos']]
     if 'by_val' == mod_criteria['func']:
-        new_time = ts_vec[mod_criteria['pos']][ts_vec_idx] + mod_criteria['val']
+        new_time[ts_vec_idx] += mod_criteria['val']
     elif 'to_val' == mod_criteria['func']:
-        new_time = mod_criteria['val']
+        new_time[ts_vec_idx] = mod_criteria['val']
     else:
         raise NotImplementedError(mod_criteria['func'])
 
-    # assert valid range of new time
-    if valid_range[0] <= new_time <= valid_range[1]:
-        ts_vec[mod_criteria['pos']][ts_vec_idx] = new_time
-    elif new_time >= valid_range[1]:
-        ts_vec[mod_criteria['pos']][ts_vec_idx] = valid_range[1]  # set to max
-    elif new_time <= valid_range[0]:
-        ts_vec[mod_criteria['pos']][ts_vec_idx] = valid_range[0]  # set to min
-    else:
-        raise ValueError()
+    # assert valid range of new time and account for overrun
+    #if valid_range[0] <= new_time <= valid_range[1]:
 
-    assert valid_range[0] <= ts_vec[mod_criteria['pos']][ts_vec_idx] <= valid_range[1]
+    rev_time_format = list(reversed(time_vec_format))
 
-    query_ts_vec = ts_vec[mod_criteria['pos']]
+    for i in range(len(time_vec_format)):
+        time_comp = rev_time_format[i]
+        if new_time[time_vec_format.index(time_comp)] > valid_ranges[time_comp][1]: # exceeding max
+            new_time[time_vec_format.index(time_comp)] -= (valid_ranges[time_comp][1] + 1) # substract max
+
+            if time_comp != time_vec_format[0]:
+                # increment next higher value
+                new_time[time_vec_format.index(rev_time_format[i + 1])] += 1
+
+        # elif new_time[time_vec_format.index(time_comp)] < valid_ranges[time_comp][0]: # under min
+        # # TODO: substracting 'val' is lower than 'min'
+        #     ts_vec[mod_criteria['pos']][ts_vec_idx] = valid_range[0]  # set to min
+
+    query_ts_vec = ts_vec[mod_criteria['pos']] = new_time
+    org_ts_vec = ts_scaler.inverse_transform(ts_org)
 
     time_stamps = ts_scaler.transform(np.array(ts_vec)).tolist()  # transform to normalised values
 
-    assert time_stamps[mod_criteria['pos']] != ts_org
+    if time_stamps[mod_criteria['pos']] == ts_org:
+        print(query_ts_vec)
+        print(org_ts_vec)
+
 
     return list(zip(seq, time_stamps)), query_ts_vec
 
