@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bert_cnn_none
 #SBATCH -n 4
-#SBATCH -t 25:00:00
+#SBATCH -t 15:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -20,7 +20,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30
-hist_len=100
+hist_len=50
 
 POS=None #
 neg_ratios=(4) # 24
