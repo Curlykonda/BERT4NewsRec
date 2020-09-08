@@ -565,9 +565,11 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
         #     methods.append(feature_method)
 
         ## check for existing
-        print(feature_method)
+        #print(feature_method)
         m, n = feature_method
         file_name = get_emb_file_name(m, n, max_article_len, lower_case)
+        print(file_name)
+
         if bert_export_path.joinpath(file_name + ".pkl").is_file():
             with bert_export_path.joinpath(file_name + ".pkl").open('rb') as fin:
                 bert_embeddings = pickle.load(fin)
@@ -576,6 +578,8 @@ def precompute_dpg_art_emb(news_data: dict, news_encoder_code: str, max_article_
             art_id2idx, art_emb_matrix = select_rel_embs_and_stack(all_articles, bert_embeddings)
 
             return art_id2idx, art_emb_matrix
+        else:
+            print("Did NOT find pre-computed embs: {}".format(file_name))
 
         bert_feat_extractor = BertFeatureExtractor(path_to_pt_model, lower_case)
         print("encode news articles ...")
