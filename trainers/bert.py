@@ -72,7 +72,7 @@ class BERT4NewsCategoricalTrainer(ExtendedTrainer):
         """
         input = batch['input'].items()
         lbls = batch['lbls']
-        # self.model.set_train_mode(False)
+
         logits = self.model(None, **batch['input']) # (L x N_c)
 
         scores = nn.functional.softmax(logits, dim=1)

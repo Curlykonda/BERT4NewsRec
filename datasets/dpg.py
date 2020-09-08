@@ -464,8 +464,8 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
                                                                 lower_case=self.args.lower_case,
                                                                 pd_vocab=self.args.pd_vocab,
                                                                 path_to_pt_model=self.args.path_pt_news_enc,
-                                                                feature_method=self.args.bert_feature_method)
-
+                                                                feature_method=self.args.bert_feature_method
+                                                              )
                 self.art_embs = art_embs
 
         else:

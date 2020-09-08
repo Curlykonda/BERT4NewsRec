@@ -130,14 +130,14 @@ class NpaModDataloader(AbstractDataloader):
                                     self.max_hist_len, self.max_article_len, self.rnd)
         return dataset
 
-    def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
-        # sample negative instances for each user
-
-        # use item set for simple neg sampling
-        negative_sampler = negative_sampler_factory(self.args.train_method, mode, code, self.train, self.val, self.test,
-                                                    self.user_count, item_set, neg_sample_size,
-                                                    seed, seq_lengths, self.save_folder)
-        return negative_sampler
+    # def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
+    #     # sample negative instances for each user
+    #
+    #     # use item set for simple neg sampling
+    #     negative_sampler = negative_sampler_factory(self.args.train_method, mode, code, self.train, self.val, self.test,
+    #                                                 self.user_count, item_set, neg_sample_size,
+    #                                                 seed, seq_lengths, self.save_folder)
+    #     return negative_sampler
 
     def get_seq_lengths(self, data: dict, mode='train'):
         # determine sequence length for each user entry
@@ -310,8 +310,7 @@ class NpaEvalDataset(data_utils.Dataset):
             # inp['ts'] = torch.LongTensor(time_stamps)
             raise NotImplementedError()
 
-        if u_idx is not None:
-            inp['u_idx'] = torch.LongTensor(
-                [u_idx] * self.max_hist_len)  # need tensors of equal lenght for collate function
+
+        inp['u_idx'] = torch.LongTensor([u_idx] * self.max_hist_len)  # need tensors of equal lenght for collate function
 
         return {'input': inp, 'lbls': torch.LongTensor(labels)}

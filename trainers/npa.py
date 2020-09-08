@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -45,7 +47,22 @@ class NpaTrainer(ExtendedTrainer):
 
         return loss, metrics
 
-    def calculate_metrics(self, batch):
+    def calculate_metrics(self, batch, avg_metrics=True):
+        """
+        Performs forward pass through NPA model
+         and computes metrics based on model output (predictions)
+
+        Input:
+            batch -> {input: {hist: Tensor, u_id: Tensor, ..} , lbls: Tensor}
+
+        Output:
+
+        if "avg_metrics":
+            return metrics -> {metric_key: [avg_val]}
+        else:
+            return user_metrics -> {u_idx: {metric_key: val}}
+
+        """
 
         #hist, cands, u_idx = batch['input']
         lbls = batch['lbls']
@@ -57,10 +74,27 @@ class NpaTrainer(ExtendedTrainer):
         # select scores for the article indices of candidates
         #scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, lbls))
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks, avg_metrics)
+        metrics.update(calc_auc_and_mrr(scores, lbls, avg_metrics))
 
-        return metrics
+        if avg_metrics:
+            return metrics  # metric_key: [avg_val]
+
+        else:
+            # update individual user metrics
+            # { u_idx: {'auc': 0.8, 'mrr': 0.4}}
+            user_metrics = defaultdict(dict)
+
+            # get user indices
+            u_indices = batch['input']['u_idx'][:, 0].cpu().numpy()
+
+            for i, u_idx in enumerate(u_indices):
+                for key, vals in metrics.items():
+                    user_metrics[u_idx][key] = vals[i]
+
+                user_metrics[u_idx]['scores'] = scores[i, :].cpu().numpy()
+
+            return user_metrics  # {u_idx: {metric_key: val}}
 
 class NpaModTrainer(ExtendedTrainer):
     """
@@ -102,7 +136,7 @@ class NpaModTrainer(ExtendedTrainer):
 
         return loss, metrics
 
-    def calculate_metrics(self, batch):
+    def calculate_metrics(self, batch, avg_metrics=True):
         # hist, cands, u_idx = batch['input']
         lbls = batch['lbls']
 
@@ -113,7 +147,24 @@ class NpaModTrainer(ExtendedTrainer):
         # select scores for the article indices of candidates
         # scores = scores.gather(1, cands)  # (B x n_candidates)
         # labels: (B x N_c)
-        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks)
-        metrics.update(calc_auc_and_mrr(scores, lbls))
+        metrics = calc_recalls_and_ndcgs_for_ks(scores, lbls, self.metric_ks, avg_metrics)
+        metrics.update(calc_auc_and_mrr(scores, lbls, avg_metrics))
 
-        return metrics
+        if avg_metrics:
+            return metrics # metric_key: [avg_val]
+
+        else:
+            # update individual user metrics
+            # { u_idx: {'auc': 0.8, 'mrr': 0.4}}
+            user_metrics = defaultdict(dict)
+
+            # get user indices
+            u_indices = batch['input']['u_idx'][:, 0].cpu().numpy()
+
+            for i, u_idx in enumerate(u_indices):
+                for key, vals in metrics.items():
+                    user_metrics[u_idx][key] = vals[i]
+
+                user_metrics[u_idx]['scores'] = scores[i, :].cpu().numpy()
+
+            return user_metrics # {u_idx: {metric_key: val}}

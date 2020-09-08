@@ -1,6 +1,7 @@
 from abc import *
 import random
 
+from dataloaders.negative_samplers import negative_sampler_factory
 from source.utils import reverse_mapping_dict
 
 class AbstractDataloader(metaclass=ABCMeta):
@@ -84,3 +85,20 @@ class AbstractDataloader(metaclass=ABCMeta):
     @abstractmethod
     def _get_eval_dataset(self, mode):
         pass
+
+    def get_negative_sampler(self, mode, code, neg_sample_size, seed, item_set, seq_lengths):
+        # sample negative instances for each user
+        """
+        param: seq_lengths (dict): how many separate neg samples do we need for this user?
+            E.g. if seq_length[u_id] = 20, we generate 'neg_sample_size' samples for each of the 20 sequence positions
+        """
+
+        # use item set for simple neg sampling
+        negative_sampler = negative_sampler_factory(code=code, train_method=self.args.train_method,
+                                                    mode=mode, train=self.train, val=self.val, test=self.test,
+                                                    n_users=self.user_count, valid_items=item_set,
+                                                    sample_size=neg_sample_size, seq_lengths=seq_lengths, seed=seed,
+                                                    save_folder=self.save_folder, id2idx=self.item_id2idx,
+                                                    id2info=self.item_id2info
+                                                    )
+        return negative_sampler

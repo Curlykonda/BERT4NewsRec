@@ -74,3 +74,6 @@ class NewsRecBaseModel(BaseModel):
             print("{} shape {}".format(key, shape))
 
         return
+
+    def _get_pos_emb(self):
+        return self.code()
