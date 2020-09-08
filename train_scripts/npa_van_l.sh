@@ -25,7 +25,7 @@ neg_ratios=(4 9) # 4 9
 
 d_art=400
 
-lr=0.001
+lr=1e-3
 
 n_users=100000
 exp_descr="100k_npa"
