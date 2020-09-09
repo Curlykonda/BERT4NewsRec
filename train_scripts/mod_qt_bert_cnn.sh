@@ -10,6 +10,7 @@
 module load pre2019
 module load Miniconda3/4.3.27
 source activate thesis-user-modelling
+export PYTHONIOENCODING=utf8
 
 python --version
 
