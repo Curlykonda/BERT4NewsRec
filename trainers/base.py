@@ -790,7 +790,7 @@ class ExtendedTrainer(AbstractTrainer):
         for u_idx in org_user_metrics:
 
             # load eval instance from dataset
-            eval_sample = org_dataset.__getitem__(u_idx)
+            eval_sample = org_dataset.__getitem__(u_idx, map_art2words=False)
             hist = eval_sample['input']['hist'].numpy()
             cands = eval_sample['input']['cands'].numpy()
             # ts = eval_sample['input']['ts'].numpy()

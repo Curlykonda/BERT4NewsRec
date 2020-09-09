@@ -719,15 +719,15 @@ class BertEvalDatasetNews(BertEvalDataset):
         self.w_time_stamps = w_time_stamps
         self.shuffle_seq_order = seq_order
 
-    def __getitem__(self, u_idx):
+    def __getitem__(self, u_idx, map_art2words=True):
         hist = self.u2hist[u_idx]
         negs = self.neg_samples[u_idx]  # get negative samples
 
         # if not self.w_u_id:
         #     u_idx = None
-        return self.gen_eval_instance(hist, negs, u_idx)
+        return self.gen_eval_instance(hist, negs, u_idx, map_art2words)
 
-    def gen_eval_instance(self, hist, negs, u_idx=None):
+    def gen_eval_instance(self, hist, negs, u_idx=None, map_art2words=True):
 
         if self.w_time_stamps:
             hist, time_stamps = zip(*hist)
@@ -754,15 +754,19 @@ class BertEvalDatasetNews(BertEvalDataset):
         labels = [0] * len(candidates)
         labels[candidates.index(target)] = 1
 
-        # map art indices to words if applicable
-        candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
-        hist = [art_idx2word_ids(art, self.art2words) for art in hist[-self.max_hist_len:]]
-        # note: target will be masked off by model
+        if map_art2words:
+            # map art indices to words if applicable
+            candidates = [art_idx2word_ids(cand, self.art2words) for cand in candidates]
+            hist = [art_idx2word_ids(art, self.art2words) for art in hist[-self.max_hist_len:]]
+            # note: target will be masked off by model
 
-        ## apply padding
-        hist = pad_seq(hist, self.pad_token, self.max_hist_len,
-                       max_article_len=(self.max_article_len
-                                        if self.art2words is not None else None))
+            ## apply padding
+            hist = pad_seq(hist, self.pad_token, self.max_hist_len,
+                           max_article_len=(self.max_article_len
+                                            if self.art2words is not None else None))
+        else:
+            hist = pad_seq(hist[-self.max_hist_len:], self.pad_token, self.max_hist_len,
+                           max_article_len=None)
         #
         assert len(hist) == self.max_hist_len
 
