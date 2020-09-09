@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
 #SBATCH -n 4
-#SBATCH -t 40:00:00
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -23,10 +23,10 @@ SEED=$SLURM_ARRAY_TASK_ID
 art_len=30
 hist_len=100
 
-TEMP_EMBS=("nte") #  "ntev2"
+TEMP_EMBS=("ntev2")
 t_act_func="relu"
 
-neg_ratios=(4 9) #
+neg_ratios=(4) #
 
 enc="wucnn"
 d_art=400

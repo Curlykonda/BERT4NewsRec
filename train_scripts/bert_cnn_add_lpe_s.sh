@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cnn_lpe_add
 #SBATCH -n 4
-#SBATCH -t 40:00:00
+#SBATCH -t 20:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
