@@ -37,7 +37,7 @@ p_dropout=(0.2)
 
 nie="lin_gelu"
 lr=1e-3
-n_epochs=100
+n_epochs=200
 
 n_users=10000
 exp_descr="10k_cnn_add"
