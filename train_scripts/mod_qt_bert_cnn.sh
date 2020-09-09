@@ -47,7 +47,7 @@ COUNTER=0
 echo "modify query times"
 echo "$model"
   #1
-CUDA_VISIBLE_DEVICES=0 python -u main.py --template mod_query_time \
+CUDA_VISIBLE_DEVICES=0 python -u main.py --mode mod_query_time \
   --path_test_model=$model --load_config=1 --use_test_model_dir=1 \
 
 ((COUNTER++))
