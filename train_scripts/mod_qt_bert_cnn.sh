@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mod_qt
 #SBATCH -n 4
-#SBATCH -t 2:00:00
+#SBATCH -t 1:00:00
 #SBATCH -p gpu_short
 #SBATCH --gres=gpu:1
 #SBATCH --mem=60G
