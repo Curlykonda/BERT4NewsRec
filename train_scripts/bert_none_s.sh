@@ -24,18 +24,18 @@ SEED=$SLURM_ARRAY_TASK_ID
 
 TE=None
 
-art_len=128
+art_len=30
 hist_len=100
 
-neg_ratios=(4) # 4 9
+neg_ratios=(4 9) # 4 9
 
-n_layers=(2)
+n_layers=(2 3)
 n_heads=4
 p_d=0.2
 p_m=0.15
 
 lr=1e-4
-n_epochs=100
+n_epochs=300
 
 nie="lin_gelu"
 d_model=768
