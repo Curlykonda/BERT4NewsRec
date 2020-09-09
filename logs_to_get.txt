@@ -1,6 +1,4 @@
-10k_cnn_None_al30_k4_lr1e-3_L2_H4_pD0.1_pM0.15_s1_2020-09-04_0
-10k_cnn_None_al30_k4_lr1e-3_L3_H4_pD0.1_pM0.15_s1_2020-09-04_0
-100k_None_al30_k4_lr1e-4_L2_H4_s1_2020-08-26_0
-100k_None_al30_k4_lr1e-4_L3_H4_s1_2020-08-27_0
-100k_cnn_None_al30_k4_lr1e-3_L2_H4_pD0.1_s1_2020-09-02_0
-100k_cnn_None_al30_k4_lr1e-3_L3_H4_pD0.1_s1_2020-09-03_0
+100k_cnn_add_lpe_al30_k4_lr1e-3_L2_H4_pD0.1_s1_2020-09-02_0
+100k_cnn_add_lpe_al30_k4_lr1e-3_L3_H4_pD0.1_s1_2020-09-03_0
+100k_cnn_add_nte_al30_k4_lr1e-3_L2_H4_pD0.1_s1_2020-09-02_0
+100k_cnn_add_nte_al30_k4_lr1e-3_L3_H4_pD0.1_s1_2020-09-03_0
