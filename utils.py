@@ -79,7 +79,7 @@ def save_test_result(export_root, result):
     with filepath.open('w') as f:
         json.dump(result, f, indent=2)
 
-def import_args_from_json(args, config_path, exclude=['mode', 'local', 'use_test_model_dir']):
+def import_args_from_json(args, config_path, exclude=['mode', 'local', 'use_test_model_dir', 'path_test_model', 'load_config']):
 
     print(config_path)
 
@@ -89,6 +89,8 @@ def import_args_from_json(args, config_path, exclude=['mode', 'local', 'use_test
     for key, val in config_dict.items():
         if key not in exclude:
             args.__setattr__(key, val)
+
+    print("config.json loaded!")
 
     return args
 
