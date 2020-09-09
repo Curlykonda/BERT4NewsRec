@@ -25,10 +25,10 @@ hist_len=100
 
 neg_ratios=(4)
 
-TE=("nte") # "ntev2"
+TE=("ntev2") # "ntev2"
 t_act_func="relu"
 
-n_layers=(2 3)
+n_layers=(1 2 3)
 n_heads=4
 
 d_model=768

@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=bertje_pe_l
-#SBATCH -n 4
-#SBATCH -t 25:00:00
+#SBATCH --job-name=bertje_lpe_s
+#SBATCH -n 2
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -14,7 +14,7 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
+data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
 pt_news_enc="BERTje"
 pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
 
@@ -24,38 +24,42 @@ art_len=30
 hist_len=100
 
 POS_EMBS=("lpe")
-neg_ratios=(49 74) # 9
+neg_ratios=(4) # 99
+
+n_layers=(2 3)
+n_heads=4
 
 nie="lin_gelu"
 lr=1e-4
-warmup=(0)
-n_epochs=50
+n_epochs=200
+#eval_seq_order="shuffle_exc_t"
 
-n_users=100000
+n_users=10000
 COUNTER=0
 #####
 
-exp_descr="100k_add"
+exp_descr="10k_add" # _brand_s  _shuf_exc_t
 
-for wu in "${warmup[@]}"
+for K in "${neg_ratios[@]}"
 do
-  for K in "${neg_ratios[@]}"
+  for nl in "${n_layers[@]}"
   do
-
     for POS in "${POS_EMBS[@]}"
     do
-      echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr sch s$SEED"
+      echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
-        --train_negative_sample_size=$K --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
-        --lr_schedule=1 --warmup_ratio=$wu \
+        --train_negative_sample_size=$K --bert_num_blocks=$nl --bert_num_heads=$n_heads \
+        --pt_news_enc=$pt_news_enc --path_pt_news_enc=$pt_news_enc_path \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --pos_embs=$POS --add_embs_func=add --nie_layer $nie \
         --lr $lr --n_users=$n_users --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-        --experiment_description $exp_descr $POS al$art_len k$K lr$lr sch s$SEED
+        --experiment_description $exp_descr $POS al$art_len k$K lr$lr L$nl H$n_heads s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
     done
   done
 done
+
+#--train_negative_sampler_code=rnd_brand_sens
