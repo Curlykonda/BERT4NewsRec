@@ -17,7 +17,7 @@ python --version
 
 data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
 
-model=''
+model='experiments/100k_cnn_cat_nte_al30_k4_lr1e-4_L2_H4_pD0.1_s1_2020-09-02_0'
 
 #pt_news_enc="BERTje"
 #pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
@@ -45,7 +45,7 @@ COUNTER=0
 #################
 
 echo "modify query times"
-echo "$model"
+echo "model path: $model"
   #1
 CUDA_VISIBLE_DEVICES=0 python -u main.py --mode mod_query_time \
   --path_test_model=$model --load_config=1 --use_test_model_dir=1 \

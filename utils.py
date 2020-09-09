@@ -80,6 +80,9 @@ def save_test_result(export_root, result):
         json.dump(result, f, indent=2)
 
 def import_args_from_json(args, config_path, exclude=['mode', 'local', 'use_test_model_dir']):
+
+    print(config_path)
+
     with open(os.path.join(config_path, 'config.json'), 'r') as infile:
         config_dict = json.load(infile)
 
