@@ -230,7 +230,7 @@ class BertDataloaderNews(BertDataloader):
 
     def get_working_data_match_time_criteria(self, mode='val', match_crit=None):
         if match_crit is None:
-            match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40, 'n_max': 100}
+            match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40, 'n_max': 5000}
 
         if 'val' == mode:
             u2hist = self.val
