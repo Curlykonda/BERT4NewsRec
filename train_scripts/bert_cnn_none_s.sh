@@ -28,7 +28,7 @@ neg_ratios=(4) # 24
 enc="wucnn"
 d_art=400
 
-n_layers=(2 3)
+n_layers=(1 4)
 n_heads=4
 p_d=0.2
 p_mask=(0.15)
