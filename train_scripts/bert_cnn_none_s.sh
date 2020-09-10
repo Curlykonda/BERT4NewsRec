@@ -28,10 +28,10 @@ neg_ratios=(4) # 24
 enc="wucnn"
 d_art=400
 
-n_layers=(1 4)
-n_heads=4
+n_layers=(2 3)
+HEADS=(6 8)
 p_d=0.2
-p_mask=(0.15)
+p_m=0.15
 
 nie="lin_gelu"
 lr=1e-3
@@ -46,7 +46,7 @@ for K in "${neg_ratios[@]}"
 do
   for nl in "${n_layers[@]}"
   do
-    for p_m in "${p_mask[@]}"
+    for n_heads in "${HEADS[@]}"
     do
       echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d pM$p_m s$SEED"
         #1
