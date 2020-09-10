@@ -20,12 +20,13 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
-hist_len=(50) # 50
+hist_len=(100) # 50
 neg_ratios=(4 9) # 4 9
 
 d_art=400
 
 lr=0.001
+epochs=200
 
 n_users=10000
 exp_descr="10k_npa"
@@ -40,8 +41,9 @@ do
       #1
     CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_npa --model_init_seed=$SEED --dataset_path=$data \
       --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
+      --train_negative_sample_size=$K \
       --max_article_len=$art_len --max_hist_len=$LEN \
-      --n_users=$n_users --train_negative_sample_size=$K \
+      --n_users=$n_users --num_epochs=$epochs \
       --lr $lr --cuda_launch_blocking=1 \
       --experiment_description $exp_descr al$art_len hl$LEN k$K lr$lr s$SEED
     ((COUNTER++))

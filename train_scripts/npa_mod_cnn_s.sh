@@ -26,7 +26,7 @@ neg_ratios=(4 9) # 4
 d_art=400
 
 lr=1e-3
-epochs=100
+epochs=200
 n_users=10000
 
 exp_descr="10k_npa_mod"
