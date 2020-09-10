@@ -24,7 +24,7 @@ hist_len=100
 
 #POS_EMBS=("lpe") #
 POS="lpe"
-neg_ratios=(4 9) #
+neg_ratios=(4) #
 
 enc="wucnn"
 d_art=400
