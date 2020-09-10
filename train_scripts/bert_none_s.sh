@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bertje_none
 #SBATCH -n 4
-#SBATCH -t 10:00:00
+#SBATCH -t 40:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -27,15 +27,15 @@ TE=None
 art_len=30
 hist_len=100
 
-neg_ratios=(4 9) # 4 9
+neg_ratios=(4) # 4 9
 
-n_layers=(2 3)
+n_layers=(2)
 n_heads=4
 p_d=0.2
 p_m=0.15
 
 lr=1e-4
-n_epochs=300
+n_epochs=1000
 
 nie="lin_gelu"
 d_model=768
@@ -44,8 +44,6 @@ n_users=10000
 exp_descr="10k"
 COUNTER=0
 #################
-
-
 
 for K in "${neg_ratios[@]}"
 do
