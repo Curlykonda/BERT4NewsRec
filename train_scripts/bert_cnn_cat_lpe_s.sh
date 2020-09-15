@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cnn_lpe_cat
 #SBATCH -n 4
-#SBATCH -t 40:00:00
+#SBATCH -t 18:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -29,7 +29,7 @@ neg_ratios=(4) #
 enc="wucnn"
 d_art=400
 
-n_layers=(2 3)
+n_layers=(2)
 n_heads=4
 #p_dropout=(0.1)
 p_d=0.2
@@ -39,7 +39,7 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn_cat"
+exp_descr="10k_cnn_cat_shuffle_exc_t"
 COUNTER=0
 ##########################
 
@@ -54,6 +54,7 @@ do
       --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
       --train_negative_sampler_code random --train_negative_sample_size=$K \
       --pos_embs=$POS --add_embs_func=concat --add_emb_size=$add_emb_size \
+      --eval_seq_order='shuffle_exc_t'\
       --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
       --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
       --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
