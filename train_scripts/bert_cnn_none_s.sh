@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bert_cnn_none
 #SBATCH -n 4
-#SBATCH -t 30:00:00
+#SBATCH -t 15:00:00
 #SBATCH -p gpu_shared
 #SBATCH --gres=gpu:2
 #SBATCH --mem=60G
@@ -14,7 +14,7 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
+data=("./Data/DPG_nov19/10k_min_hl50_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 #pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
 SEED=$SLURM_ARRAY_TASK_ID
@@ -28,8 +28,8 @@ neg_ratios=(4) # 24
 enc="wucnn"
 d_art=400
 
-n_layers=(2 3)
-HEADS=(6 8)
+n_layers=(2)
+HEADS=(4)
 p_d=0.2
 p_m=0.15
 
@@ -38,7 +38,7 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn" # _brand_s
+exp_descr="10k_cnn_min_hl50" # _brand_s
 COUNTER=0
 #############################
 

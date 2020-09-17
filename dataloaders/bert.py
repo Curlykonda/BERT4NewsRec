@@ -717,7 +717,7 @@ class BertEvalDatasetNews(BertEvalDataset):
         self.max_article_len = max_article_len  # len(next(iter(art2words.values())))
         self.eval_mask = [1] * (max_hist_len - 1) + [0]  # insert mask token at the end
         self.w_time_stamps = w_time_stamps
-        self.shuffle_seq_order = seq_order
+        self.seq_order = seq_order
 
     def __getitem__(self, u_idx, map_art2words=True):
         hist = self.u2hist[u_idx]
@@ -744,8 +744,8 @@ class BertEvalDatasetNews(BertEvalDataset):
             time_stamps = None
 
         # adjust sequence if applicable
-        if self.shuffle_seq_order is not None:
-            hist = reorder_sequence(hist, self.rnd, self.shuffle_seq_order)
+        if self.seq_order is not None:
+            hist = reorder_sequence(hist, self.rnd, self.seq_order)
 
         target = hist[-1]  # predict only the next/last token in seq
         candidates = [target] + negs  # candidates as article indices

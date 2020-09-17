@@ -14,7 +14,7 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
+data=("./Data/DPG_nov19/10k_min_hl50_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
 SEED=$SLURM_ARRAY_TASK_ID
@@ -38,7 +38,7 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn_add_shuffle_exc_t"
+exp_descr="10k_cnn_add_min_hl50"
 COUNTER=0
 ####################################
 
@@ -55,7 +55,7 @@ do
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
         --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
         --train_negative_sample_size=$K \
-        --pos_embs=$POS --add_embs_func=add --eval_seq_order='shuffle_exc_t'\
+        --pos_embs=$POS --add_embs_func=add \
         --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --nie_layer=$nie --n_users=$n_users \
@@ -67,3 +67,6 @@ do
     done
   done
 done
+
+
+#--eval_seq_order='shuffle_exc_t'
