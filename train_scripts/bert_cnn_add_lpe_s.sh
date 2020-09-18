@@ -38,7 +38,8 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn_add_min_hl50"
+exp_descr="10k_cnn_add"
+add_info="min_hl50"
 COUNTER=0
 ####################################
 
@@ -50,17 +51,17 @@ do
   do
     for p_d in "${p_dropout[@]}"
     do
-      echo "$exp_descr $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
+      echo "$exp_descr $add_info $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
         #1
       CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
         --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
-        --train_negative_sample_size=$K \
+        --train_negative_sample_size=$K --dataset_add_info=$add_info \
         --pos_embs=$POS --add_embs_func=add \
         --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
         --max_article_len=$art_len --max_hist_len=$hist_len \
         --nie_layer=$nie --n_users=$n_users \
         --lr $lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-        --experiment_description $exp_descr $POS al$art_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED
+        --experiment_description $exp_descr $add_info $POS al$art_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
