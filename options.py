@@ -22,7 +22,7 @@ parser.add_argument('--local', type=bool, default=False, help="Run model locally
 ################
 # Test
 ################
-parser.add_argument('--path_test_model', type=str, default=None) # 'experiments/10k_bertje_2020-08-31_3'
+parser.add_argument('--path_test_model', type=str, default=None) # 'experiments/10k_wucnn_2020-09-09_3'
 parser.add_argument('--load_config', type=bool, default=False)
 parser.add_argument('--use_test_model_dir', type=bool, default=False)
 
@@ -32,6 +32,7 @@ parser.add_argument('--use_test_model_dir', type=bool, default=False)
 ################
 parser.add_argument('--dataset_code', type=str, default='DPG_nov19', choices=DATASETS.keys())
 parser.add_argument('--dataset_path', type=str, default="./Data/DPG_nov19/40k_time_split_n_rnd_users")
+parser.add_argument('--dataset_add_info', type=str, default=None)
 
 ## MovieLens
 parser.add_argument('--min_rating', type=int, default=None, help='Only keep ratings greater than equal to this value')

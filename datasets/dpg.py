@@ -227,6 +227,10 @@ class DPG_Nov19Dataset(AbstractDatasetDPG):
 
         folder_name = '{}_{}-{}-artl{}-histl{}-nenc_{}-time{}' \
             .format(self.code(), size, self.args.dataloader_code, self.args.max_article_len, self.args.max_hist_len, self.pt_news_encoder, int(self.w_time_stamp))
+
+        if self.args.dataset_add_info is not None:
+            folder_name += "-{}".format(self.args.dataset_add_info)
+
         return preprocessed_root.joinpath(folder_name)
 
     def sample_dpg_data(self):
