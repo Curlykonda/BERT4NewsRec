@@ -40,8 +40,9 @@ if __name__ == "__main__":
     copied = 0
     for exp in exps:
         try:
-            shutil.copy(exp_dir.joinpath(exp + "/config.json"), log_dir.joinpath(exp + "/config.json"))
+
             shutil.copytree(exp_dir.joinpath(exp + "/logs/"), log_dir.joinpath(exp))
+            shutil.copy(exp_dir.joinpath(exp + "/config.json"), log_dir.joinpath(exp + "/config.json"))
 
             if args.incl_model:
                 shutil.copytree(exp_dir.joinpath(exp + "/models/"), log_dir.joinpath(exp, "models"))
