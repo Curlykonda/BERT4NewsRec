@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=npa_cnn_te
 #SBATCH -n 4
-#SBATCH -t 30:00:00
+#SBATCH -t 40:00:00
 #SBATCH -p gpu_shared
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:3
 #SBATCH --mem=60G
 
 module load pre2019
@@ -39,8 +39,8 @@ nie="lin_gelu"
 lr=1e-4
 n_epochs=200
 
-n_users=100000
-exp_descr="100k_cnn_cat"
+n_users=10000
+exp_descr="10k_cnn_cat"
 COUNTER=0
 #####################################
 
@@ -54,7 +54,7 @@ do
     do
       echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
 
-      CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+      CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
       --train_negative_sample_size=$K \
       --add_embs_func=concat --add_emb_size=$add_emb_size \
