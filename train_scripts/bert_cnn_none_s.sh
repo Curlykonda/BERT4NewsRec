@@ -15,8 +15,9 @@ python --version
 #srun -n 2 -t 00:30:00 --pty bash -il
 
 data=("./Data/DPG_nov19/10k_min_hl50_n_rnd_users/")
+#data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
-#pt_news_enc="./BertModelsPT/bert-base-dutch-cased"
+
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=30

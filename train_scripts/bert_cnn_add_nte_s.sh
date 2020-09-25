@@ -41,7 +41,7 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn_add_wo_norm"
+exp_descr="10k_cnn_add"
 add_info="min_hl50"
 COUNTER=0
 #############################
@@ -61,7 +61,7 @@ do
           #1
         CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
           --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
-          --norm_art_pos_embs=0 --dataset_add_info=$add_info --train_negative_sample_size=$K \
+          --dataset_add_info=$add_info --train_negative_sample_size=$K \
           --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
           --temp_embs=$TE --incl_time_stamp=1 --add_embs_func=add \
           --temp_embs_hidden_units 256 $d_art --temp_embs_act_func $t_act_func \
