@@ -14,8 +14,8 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/10k_min_hl50_n_rnd_users/")
-#data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
+#data=("./Data/DPG_nov19/10k_min_hl50_n_rnd_users/")
+data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
 w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
 SEED=$SLURM_ARRAY_TASK_ID
@@ -42,7 +42,8 @@ n_epochs=200
 
 n_users=10000
 exp_descr="10k_cnn_cat"
-add_info="min_hl50"
+#add_info="min_hl50"
+# --dataset_add_info=$add_info
 COUNTER=0
 #####################################
 
@@ -54,18 +55,18 @@ do
   do
     for nl in "${n_layers[@]}"
     do
-      echo "$exp_descr $add_info $TE al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
+      echo "$exp_descr $TE al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
 
       CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
-      --dataset_add_info=$add_info --train_negative_sample_size=$K \
+      --train_negative_sample_size=$K \
       --add_embs_func=concat --add_emb_size=$add_emb_size \
       --news_encoder $enc --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
       --temp_embs=$TE --incl_time_stamp=1 --temp_embs_hidden_units 256 $add_emb_size --temp_embs_act_func $t_act_func \
       --max_article_len=$art_len --max_hist_len=$hist_len \
       --nie_layer=$nie --n_users=$n_users \
       --lr=$lr --num_epochs=$n_epochs --cuda_launch_blocking=1 \
-      --experiment_description $exp_descr $add_info $TE al$art_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED
+      --experiment_description $exp_descr $TE al$art_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED
 
       ((COUNTER++))
       echo "Exp counter: $COUNTER"
