@@ -641,6 +641,8 @@ class ExtendedTrainer(AbstractTrainer):
             print("\t {}".format(text))
 
     def eval_mod_query_time(self):
+        """ Evaluate effect of query times on recommendation,
+        comparing results with original and modified query times"""
 
         # store results
         res_dict = {}
@@ -838,6 +840,30 @@ class ExtendedTrainer(AbstractTrainer):
 
         sys.stdout.close()
         sys.stdout = stdout_org
+
+    def eval_order_embs(self):
+        """ Evaluate order embeddings of trained model """
+        # store results
+        res_dict = {}
+
+        # load model
+        self.load_best_model(self.args.path_test_model)
+
+        # retrieve order embeddings
+
+        if 'lpe' == self.model._get_pos_emb():
+            order_embs = self.model.user_encoder.embedding.position_emb.pe.weight
+        elif self.model._get_pos_emb().startswith('nte'):
+            temp_embs = self.model.user_encoder.embedding.position_emb.pe
+
+        # select users based on criteria
+        eval_dataloader = self.general_dataloader._get_eval_loader("val")
+
+        # forward pass
+        try:
+            user_metrics = self.eval_indiv_user_scores(eval_dataloader, log=False, qual_eval=False)
+        except Exception as e:
+            print(e)
 
 
 

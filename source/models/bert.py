@@ -106,6 +106,11 @@ class BERT4NewsRecModel(NewsRecBaseModel):
         self.nie_layer = nie_layer
 
         # trainable mask embedding
+        # TODO: consider alternative initialisation of mask emb
+        # w = torch.empty(1, args.dim_art_emb, requires_grad=True, device=args.device)
+        # torch.nn.init.xavier_uniform_(w)
+        # mask_emb = w.squeeze(0)
+
         self.mask_embedding = torch.randn(args.dim_art_emb, requires_grad=True, device=args.device)
         self.mask_token = args.bert_mask_token
         self.encoded_art = None

@@ -448,7 +448,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_dir', type=str, default='../../Data/DPG_nov19/', help='data path')
+    parser.add_argument('--data_dir', type=str, default='../../../../../../media/henning/Data/Developing/BERT4NewsRec/Data/DPG_nov19/', help='data path')
     parser.add_argument('--save_path', type=str, default='../../Data/DPG_nov19/', help='path to save data')
     #parser.add_argument('--sample_name', type=str, default='', help='name for directory')
     parser.add_argument('--overwrite_existing', type=bool, default=True)
@@ -456,7 +456,7 @@ if __name__ == "__main__":
     parser.add_argument('--item_sample_method', type=str, default='n_rnd_users', choices=['random', 'most_common', 'n_rnd_users'], help='')
     parser.add_argument('--size', type=str, default='10k', choices=["dev", "medium", "custom"], help='size of dataset')
     parser.add_argument('--n_articles', type=int, default=2000, help='number of articles')
-    parser.add_argument('--n_users', type=int, default=100000, help='number of users')
+    parser.add_argument('--n_users', type=int, default=10000, help='number of users')
     parser.add_argument('--ratio_user_items', type=int, default=USER_ITEM_RATIO, help='ratio of user to items, e.g. 1 : 10')
 
     #parser.add_argument('--vocab_size', type=int, default=30000, help='vocab')
@@ -465,7 +465,7 @@ if __name__ == "__main__":
                         help="Specify the format for the time threshold if it defiates from ISO 8601, e.g. >> 2013-09-30T15:34:00.000-07:00 <<")
 
     parser.add_argument('--news_len', type=int, default=30, help='number of words from news body')
-    parser.add_argument('--min_hist_len', type=int, default=10, help='minimum number of articles in reading history')
+    parser.add_argument('--min_hist_len', type=int, default=50, help='minimum number of articles in reading history')
     parser.add_argument('--max_hist_len', type=int, default=400, help='max number of articles in reading history')
     parser.add_argument('--min_test_len', type=int, default=2, help='minimum number of articles in test interval')
 
@@ -483,7 +483,7 @@ if __name__ == "__main__":
 
 
     delim = "_"
-    sample_name = delim.join([size, "time_split", config.item_sample_method])
+    sample_name = delim.join([size, "min_hl{}".format(config.min_hist_len), config.item_sample_method])
 
     if config.time_format is not None:
         threshold_time = time_stamp2unix(config.time_threshold, config.time_format)

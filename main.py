@@ -35,5 +35,7 @@ if __name__ == '__main__':
         trainer.detail_eval_users()
     elif 'mod_query_time' == args.mode:
         trainer.eval_mod_query_time()
+    elif "eval_embs" == args.mode:
+        trainer.eval_order_embs()
     else:
         raise ValueError('Invalid mode')
