@@ -37,7 +37,7 @@ n_heads=4
 p_d=0.2
 
 nie="lin_gelu"
-lr=1e-4
+lr=1e-3
 n_epochs=200
 
 n_users=10000
