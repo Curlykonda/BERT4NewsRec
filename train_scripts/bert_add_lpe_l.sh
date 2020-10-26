@@ -26,12 +26,12 @@ hist_len=100
 POS_EMBS=("lpe")
 neg_ratios=(4) # 99
 
-n_layers=(2 3 4)
+n_layers=(1 2 3 4)
 n_heads=4
 
 nie="lin_gelu"
-lr=5e-4
-n_epochs=40
+lr=1e-4
+n_epochs=100
 #eval_seq_order="shuffle_exc_t"
 
 n_users=100000
