@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=cnn_lpe_cat
 #SBATCH -n 4
-#SBATCH -t 18:00:00
+#SBATCH -t 30:00:00
 #SBATCH -p gpu_shared
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:3
 #SBATCH --mem=60G
 
 module load pre2019
@@ -20,12 +20,12 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
 SEED=$SLURM_ARRAY_TASK_ID
 
-art_len=64
+art_len=30
 hist_len=100
 
 POS="lpe"
 add_emb_size=400
-neg_ratios=(4) #
+neg_ratios=(9 14) #
 
 enc="wucnn"
 d_art=400
@@ -51,7 +51,7 @@ do
 
     echo "$exp_descr $add_info $POS al$art_len hl$hist_len k$K lr$lr L$nl H$n_heads pD$p_d s$SEED"
       #1
-    CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
+    CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
       --train_negative_sample_size=$K --dataset_add_info=$add_info \
       --pos_embs=$POS --add_embs_func=concat --add_emb_size=$add_emb_size \
