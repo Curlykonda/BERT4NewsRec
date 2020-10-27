@@ -382,7 +382,7 @@ def modify_query_time_of_seq(hist: List[Tuple[int, int]], mod_criteria: Dict[str
     elif 'mm_single' == mod_criteria['mode']:
         ts_vec_idx = time_vec_format.index('mm')  # minutes
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(mod_criteria['mode'])
 
     # modify query time stamp
     new_time = ts_vec[mod_criteria['pos']]

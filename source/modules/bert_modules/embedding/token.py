@@ -41,6 +41,7 @@ class TokenEmbedding(nn.Module):
 def get_token_embeddings(args):
 
     vocab_size = args.max_vocab_size  # account for all items including PAD token
+    #vocab_size = 17023
 
     # load pretrained embeddings
     if args.fix_pt_art_emb:

@@ -657,6 +657,8 @@ class ExtendedTrainer(AbstractTrainer):
         work_idx2u_id = {outer: inner_dict['u_id'] for outer, inner_dict in work_idx2info.items()}
 
         org_dataset = self.general_dataloader.create_eval_dataset_from_hist_negs(work_u2hist, work_neg_samples)
+
+        #self.args.test_batch_size = 5
         org_dataloader = data_utils.DataLoader(org_dataset, batch_size=self.args.test_batch_size,
                                               shuffle=False, pin_memory=True)
 
@@ -707,7 +709,7 @@ class ExtendedTrainer(AbstractTrainer):
                         {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 3},
                         {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 4},
                         {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 5},
-                        {'mode': 'hh_single', 'pos': -1, 'func': 'by_val', 'val': 1},
+                        {'mode': 'dt_single', 'pos': -1, 'func': 'by_val', 'val': 1},
                         {'mode': 'wd_single', 'pos': -1, 'func': 'by_val', 'val': 1},
                         {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 6}]
 
