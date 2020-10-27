@@ -651,7 +651,9 @@ class ExtendedTrainer(AbstractTrainer):
         self.load_best_model(self.args.path_test_model)
 
         # select users based on criteria
-        work_u2hist, work_neg_samples, work_idx2info = self.general_dataloader.get_working_data_match_time_criteria("val")
+        ds = self.args.mod_qt_dataset
+        ds = 'test'
+        work_u2hist, work_neg_samples, work_idx2info = self.general_dataloader.get_working_data_match_time_criteria(ds)
         work_idx2u_id = {outer: inner_dict['u_id'] for outer, inner_dict in work_idx2info.items()}
 
         org_dataset = self.general_dataloader.create_eval_dataset_from_hist_negs(work_u2hist, work_neg_samples)
@@ -700,8 +702,16 @@ class ExtendedTrainer(AbstractTrainer):
         #############################
 
         # define modification criteria
-        mod_criteria = [{'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 5},
+        mod_criteria = [{'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 1},
+                        {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 2},
+                        {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 3},
+                        {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 4},
+                        {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 5},
+                        {'mode': 'hh_single', 'pos': -1, 'func': 'by_val', 'val': 1},
+                        {'mode': 'wd_single', 'pos': -1, 'func': 'by_val', 'val': 1},
                         {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 6}]
+
+        prev_metrics = None
 
         for mod_crit in mod_criteria:
 
@@ -724,7 +734,7 @@ class ExtendedTrainer(AbstractTrainer):
                 'rel_time_vec': self.args.parts_time_vec,
             }
 
-            rec_change = 0
+            n_changes_to_default, n_changes_to_prev = 0, 0
             u_ids_change = []
             average_meter_set = AverageMeterSet()
 
@@ -743,18 +753,31 @@ class ExtendedTrainer(AbstractTrainer):
 
                 conv_metrics[int(u_idx)] = metrics
 
-                # determine & compare recommendation
+                # compare article recommendations with default
                 if metrics['rec_pos'] != org_user_metrics[u_idx]['rec_pos']:
                     u_ids_change.append(work_idx2u_id[u_idx])
-                    rec_change += 1
+                    n_changes_to_default += 1
 
-            res_dict[mod_key]['rec_change'] = rec_change / len(mod_user_metrics)
-            res_dict[mod_key]['u_ids_change'] = u_ids_change
-            res_dict[mod_key]['user_metrics'] = conv_metrics
+                # compare with previous modification (if its the same time dimension)
+                if prev_metrics is not None:
+                    if prev_metrics['mode'] == mod_crit['mode'] and \
+                        metrics['rec_pos'] != prev_metrics['metrics'][u_idx]['rec_pos']:
+                        n_changes_to_prev += 1
+
 
             # compute average metrics
             avg_metrics = {k: average_meter_set[k].avg for k in metrics.keys() if k not in keys_to_exclude}
+
+            # store results in dictionary
+            res_dict[mod_key]['rec_changes_default'] = n_changes_to_default / len(mod_user_metrics)
+            res_dict[mod_key]['rec_changes_prev'] = n_changes_to_prev / len(mod_user_metrics)
+            res_dict[mod_key]['u_ids_change'] = u_ids_change
+            res_dict[mod_key]['user_metrics'] = conv_metrics
+
             res_dict[mod_key]['avg_metrics'] = avg_metrics
+
+            prev_metrics = {'mode': mod_crit['mode'], 'mod_key': mod_key,
+                            'metrics': mod_user_metrics}
 
         # save to json file
         eval_path = self._create_eval_dir()
@@ -857,13 +880,13 @@ class ExtendedTrainer(AbstractTrainer):
             temp_embs = self.model.user_encoder.embedding.position_emb.pe
 
         # select users based on criteria
-        eval_dataloader = self.general_dataloader._get_eval_loader("val")
-
-        # forward pass
-        try:
-            user_metrics = self.eval_indiv_user_scores(eval_dataloader, log=False, qual_eval=False)
-        except Exception as e:
-            print(e)
+        # eval_dataloader = self.general_dataloader._get_eval_loader("val")
+        #
+        # # forward pass
+        # try:
+        #     user_metrics = self.eval_indiv_user_scores(eval_dataloader, log=False, qual_eval=False)
+        # except Exception as e:
+        #     print(e)
 
 
 

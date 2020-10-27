@@ -16,9 +16,10 @@ python --version
 
 #srun -n 2 -t 00:30:00 --pty bash -il
 
-data=("./Data/DPG_nov19/100k_time_split_n_rnd_users/")
+data=("./Data/DPG_nov19/10k_time_split_n_rnd_users/")
+w_emb="./pc_word_embeddings/cc.nl.300.bin"
+model='experiments/10k_cnn_cat_ntev2_al30_k4_lr1e-3_L2_H4_pD0.2_s2_2020-10-23_0'
 
-model='experiments/100k_cnn_cat_nte_al30_k4_lr1e-4_L2_H4_pD0.1_s1_2020-09-02_0'
 
 #pt_news_enc="BERTje"
 #pt_news_enc_path="./BertModelsPT/bert-base-dutch-cased"
@@ -41,7 +42,7 @@ model='experiments/100k_cnn_cat_nte_al30_k4_lr1e-4_L2_H4_pD0.1_s1_2020-09-02_0'
 #nie="lin_gelu"
 #d_model=768
 
-n_users=100000
+n_users=10000
 COUNTER=0
 #################
 
