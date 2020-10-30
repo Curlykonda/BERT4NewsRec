@@ -25,7 +25,7 @@ hist_len=100
 
 POS="lpe"
 add_emb_size=400
-neg_ratios=(9 14) #
+neg_ratios=(4) #
 
 enc="wucnn"
 d_art=400
@@ -39,7 +39,7 @@ lr=1e-3
 n_epochs=200
 
 n_users=10000
-exp_descr="10k_cnn_cat" # _shuffle_exc_t
+exp_descr="10k_cnn_cat_shuffle_exc_t" #
 add_info="min_hl50"
 COUNTER=0
 ##########################
@@ -53,7 +53,7 @@ do
       #1
     CUDA_VISIBLE_DEVICES=0,1,2 python -u main.py --template train_bert_pcp --model_init_seed=$SEED --dataset_path=$data \
       --bert_num_blocks=$nl --bert_num_heads=$n_heads --bert_dropout=$p_d \
-      --train_negative_sample_size=$K --dataset_add_info=$add_info \
+      --eval_seq_order='shuffle_exc_t' --train_negative_sample_size=$K --dataset_add_info=$add_info \
       --pos_embs=$POS --add_embs_func=concat --add_emb_size=$add_emb_size \
       --news_encoder $enc --dim_art_emb $d_art  --pt_word_emb_path=$w_emb --lower_case=1 \
       --max_article_len=$art_len --nie_layer=$nie --n_users=$n_users \
