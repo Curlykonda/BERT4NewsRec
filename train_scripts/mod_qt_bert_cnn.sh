@@ -53,6 +53,6 @@ echo "model path: $model"
   #1
 CUDA_VISIBLE_DEVICES=0 python -u main.py --mode mod_query_time \
   --path_test_model=$model --load_config=1 --use_test_model_dir=1 \
-
+  --save_analysis_to_file=1
 ((COUNTER++))
 echo "Exp counter: $COUNTER"

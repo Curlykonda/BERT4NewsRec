@@ -712,6 +712,8 @@ class ExtendedTrainer(AbstractTrainer):
                         {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 4},
                         {'mode': 'mm_single', 'pos': -1, 'func': 'by_val', 'val': 5},
                         {'mode': 'dt_single', 'pos': -1, 'func': 'by_val', 'val': 1},
+                        {'mode': 'dt_single', 'pos': -1, 'func': 'by_val', 'val': 2},
+                        {'mode': 'dt_single', 'pos': -1, 'func': 'by_val', 'val': 8},
                         {'mode': 'wd_single', 'pos': -1, 'func': 'by_val', 'val': 1},
                         {'mode': 'wd_single', 'pos': -1, 'func': 'to_val', 'val': 6}]
 
