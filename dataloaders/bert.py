@@ -228,9 +228,7 @@ class BertDataloaderNews(BertDataloader):
                                       self.mask_token, self.rnd, self.w_time_stamps, self.w_u_id,
                                       seq_order=self.args.eval_seq_order)
 
-    def get_working_data_match_time_criteria(self, mode='val', match_crit=None):
-        if match_crit is None:
-            match_crit = {'mode': 'wd_match', 'position': -1, 'match_val': [0, 1, 3, 4], 'neg': False, 'seq_len': 40, 'n_max': 5000}
+    def get_working_data_match_time_criteria(self, match_crit, mode='val'):
 
         if 'val' == mode:
             u2hist = self.val
@@ -318,7 +316,7 @@ def filter_user_query_time(u_data: Dict[int, List[Tuple[int, int]]], match_crite
     for u_idx, hist in u_data.items():
         seq, time_stamps = zip(*hist)
 
-        if len(seq) < match_criteria['seq_len']:
+        if len(seq) < match_criteria['min_seq_len']:
             continue
 
         if 'rnd' == match_criteria['mode']:
