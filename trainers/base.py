@@ -671,7 +671,8 @@ class ExtendedTrainer(AbstractTrainer):
         # store info in dict
         res_dict['org'] = {
             'mod_crit': None,
-            'rec_change': 0.0,
+            'rec_changes_default': 0.0,
+            'rec_changes_prev': 0.0,
             'u_ids_change': list(work_idx2u_id.values()),
             'rel_time_vec': self.args.parts_time_vec,
         }
