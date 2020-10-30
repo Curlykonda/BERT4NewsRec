@@ -1,3 +1,4 @@
+import codecs
 import sys
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
@@ -718,7 +719,7 @@ class ExtendedTrainer(AbstractTrainer):
 
         for mod_crit in mod_criteria:
 
-            mod_key = "_".join([mod_crit['mode'], mod_crit['func'], mod_crit['val']])
+            mod_key = "_".join([mod_crit['mode'], mod_crit['func'], str(mod_crit['val'])])
 
             # get dataloader with working data of selected user and modified query times
             qt_dataset, work_idx2info = \
@@ -797,6 +798,8 @@ class ExtendedTrainer(AbstractTrainer):
         if self.args.save_analysis_to_file:
             eval_path = self._create_eval_dir()
             sys.stdout = open(eval_path.joinpath('mod_query_times.txt'), 'w')
+        # else:
+        #     sys.stdout = codecs.getwriter('UTF-8')(sys.stdout)
 
         #org_user_data = self.general_dataloader._get_data()['u_id2info']
 

@@ -43,6 +43,9 @@ model='experiments/10k_cnn_cat_ntev2_al30_k4_lr1e-3_L2_H4_pD0.2_s2_2020-10-23_0'
 
 n_users=10000
 COUNTER=0
+
+# --save_analysis_to_file=0
+
 #################
 
 echo "modify query times"
@@ -50,6 +53,6 @@ echo "model path: $model"
   #1
 CUDA_VISIBLE_DEVICES=0 python -u main.py --mode mod_query_time \
   --path_test_model=$model --load_config=1 --use_test_model_dir=1 \
-  --save_analysis_to_file=0
+
 ((COUNTER++))
 echo "Exp counter: $COUNTER"
