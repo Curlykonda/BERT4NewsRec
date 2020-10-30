@@ -718,7 +718,7 @@ class ExtendedTrainer(AbstractTrainer):
 
         for mod_crit in mod_criteria:
 
-            mod_key = "_".join([mod_crit['mode'], mod_crit['func']])
+            mod_key = "_".join([mod_crit['mode'], mod_crit['func'], mod_crit['val']])
 
             # get dataloader with working data of selected user and modified query times
             qt_dataset, work_idx2info = \
