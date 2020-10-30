@@ -20,8 +20,8 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 
 SEED=$SLURM_ARRAY_TASK_ID
 
-art_len=(30)
-hist_len=100
+al=(30)
+hist_len=(50 100)
 neg_ratios=(4) # 4
 
 d_art=400
@@ -31,24 +31,23 @@ epochs=200
 n_users=10000
 
 exp_descr="10k_npa_mod"
-add_info="min_hl50"
+#add_info="min_hl50" --dataset_add_info=$add_info \
 COUNTER=0
 #######
 
-for LEN in "${art_len[@]}"
+for hl in "${hist_len[@]}"
 do
   for K in "${neg_ratios[@]}"
   do
-    echo "$exp_descr $add_info al$LEN hl$hist_len k$K lr$lr s$SEED"
+    echo "$exp_descr al$al hl$hl k$K lr$lr s$SEED"
       #1
     CUDA_VISIBLE_DEVICES=0,1 python -u main.py --template train_mod_npa --model_init_seed=$SEED --dataset_path=$data \
-      --dataset_add_info=$add_info \
       --dim_art_emb $d_art --pt_word_emb_path=$w_emb --lower_case=1 \
-      --train_negative_sample_size=$K --max_article_len=$LEN \
-      --max_hist_len=$hist_len --news_encoder=wucnn --npa_variant=custom \
+      --train_negative_sample_size=$K --max_article_len=$al \
+      --max_hist_len=$hl --news_encoder=wucnn --npa_variant=custom \
       --n_users=$n_users --num_epochs=$epochs \
       --lr $lr --cuda_launch_blocking=1 \
-      --experiment_description $exp_descr $add_info al$LEN hl$hist_len k$K lr$lr s$SEED
+      --experiment_description $exp_descr al$al hl$hl k$K lr$lr s$SEED
 
     ((COUNTER++))
     echo "$COUNTER"
