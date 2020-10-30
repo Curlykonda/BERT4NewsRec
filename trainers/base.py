@@ -654,7 +654,7 @@ class ExtendedTrainer(AbstractTrainer):
         # select users based on criteria
         ds = self.args.mod_qt_dataset
         ds = 'test'
-        work_u2hist, work_neg_samples, work_idx2info = self.general_dataloader.get_working_data_match_time_criteria(ds)
+        work_u2hist, work_neg_samples, work_idx2info = self.general_dataloader.get_working_data_match_time_criteria(ds, n_max=None)
         work_idx2u_id = {outer: inner_dict['u_id'] for outer, inner_dict in work_idx2info.items()}
 
         org_dataset = self.general_dataloader.create_eval_dataset_from_hist_negs(work_u2hist, work_neg_samples)
