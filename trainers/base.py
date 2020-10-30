@@ -806,7 +806,8 @@ class ExtendedTrainer(AbstractTrainer):
 
             # avg metrics
             print(get_metric_descr(res_dict[mod]['avg_metrics'], metric_ks=[5], avg=False))
-            print("changed recommendation: {}".format(res_dict[mod]['rec_change']))
+            print("changed from default: {}".format(res_dict[mod]['rec_changes_default']))
+            print("changed from prev: {}".format(res_dict[mod]['rec_changes_prev']))
 
 
         # structure and display info for each user
