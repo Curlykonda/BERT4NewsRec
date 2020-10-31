@@ -20,7 +20,7 @@ w_emb="./pc_word_embeddings/cc.nl.300.bin"
 SEED=$SLURM_ARRAY_TASK_ID
 
 art_len=(30)
-hist_len=(50 100) # 50
+hist_len=(50) # 50
 neg_ratios=(4) # 4 9
 
 d_art=400
