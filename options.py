@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Bert4News')
 ################
 # Top Level
 ################
-parser.add_argument('--mode', type=str, default='mod_query_time', choices=['train', 'test', 'eval_users', 'mod_query_time', 'eval_embs'])
+parser.add_argument('--mode', type=str, default='train', choices=['train', 'test', 'eval_users', 'mod_query_time', 'eval_embs'])
 parser.add_argument('--template', type=str, default='local_test', choices=['train_bert_pcp', 'train_bert', 'train_bert_ml', 'local_test', 'train_npa', 'train_mod_npa'])
 parser.add_argument('--local', type=bool, default=False, help="Run model locally reduces the batch size and other params")
 
@@ -23,8 +23,8 @@ parser.add_argument('--local', type=bool, default=False, help="Run model locally
 # Test
 ################
 parser.add_argument('--path_test_model', type=str, default='experiments/10k_cnn_cat_ntev2_al30_k4_lr1e-3_L2_H4_pD0.2_s2_2020-10-23_0') # 'experiments/10k_wucnn_2020-09-09_3'
-parser.add_argument('--load_config', type=bool, default=True)
-parser.add_argument('--use_test_model_dir', type=bool, default=True)
+parser.add_argument('--load_config', type=bool, default=False)
+parser.add_argument('--use_test_model_dir', type=bool, default=False)
 
 
 ################
